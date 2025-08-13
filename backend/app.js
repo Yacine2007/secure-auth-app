@@ -7,7 +7,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 const QRCode = require('qrcode');
-const jsQR = require('@undecaf/jsQR');
+const jsQR = require('jsqr');
 const cors = require('cors');
 const nodemailer = require('nodemailer');
 
