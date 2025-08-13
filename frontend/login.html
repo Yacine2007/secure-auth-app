@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Authentication System</title>
+    <title>نظام المصادقة الآمن عبر الإنترنت</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
@@ -25,7 +25,6 @@
             position: relative;
         }
 
-        /* Glass effect background */
         .glass-bg {
             position: absolute;
             top: 0;
@@ -38,7 +37,6 @@
             z-index: -1;
         }
 
-        /* Main container */
         .auth-container {
             background: rgba(30, 30, 30, 0.85);
             backdrop-filter: blur(12px);
@@ -54,7 +52,6 @@
             transition: all 0.4s ease;
         }
 
-        /* Header styles */
         .header {
             text-align: center;
             margin-bottom: 25px;
@@ -88,7 +85,6 @@
             font-size: 14px;
         }
 
-        /* Form styles */
         .form-container {
             display: flex;
             flex-direction: column;
@@ -175,7 +171,6 @@
             margin-top: 10px;
         }
 
-        /* QR code section */
         .qr-container {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
@@ -219,7 +214,6 @@
             background: rgba(255, 255, 255, 0.1);
         }
 
-        /* Verification code */
         .code-inputs {
             display: flex;
             gap: 10px;
@@ -234,7 +228,6 @@
             padding: 0;
         }
 
-        /* Password visibility toggle */
         .password-container {
             position: relative;
         }
@@ -248,7 +241,6 @@
             z-index: 10;
         }
 
-        /* Image upload */
         .image-upload {
             text-align: center;
             margin: 20px 0;
@@ -289,7 +281,6 @@
             cursor: pointer;
         }
 
-        /* Generated QR code display */
         .generated-qr {
             background: rgba(255, 255, 255, 0.05);
             border-radius: 12px;
@@ -318,7 +309,6 @@
             display: inline-block;
         }
 
-        /* Footer links */
         .footer-links {
             display: flex;
             justify-content: center;
@@ -339,7 +329,6 @@
             color: #0078d7;
         }
 
-        /* Progress indicators */
         .progress-steps {
             display: flex;
             justify-content: center;
@@ -358,7 +347,6 @@
             background: #0078d7;
         }
 
-        /* Error message */
         .error-message {
             background: rgba(255, 50, 50, 0.15);
             border: 1px solid rgba(255, 50, 50, 0.3);
@@ -381,7 +369,6 @@
             display: none;
         }
 
-        /* Responsive design */
         @media (max-width: 480px) {
             .auth-container {
                 padding: 20px 15px;
@@ -408,7 +395,6 @@
             }
         }
         
-        /* QR validation result */
         .qr-validation-result {
             text-align: center;
             margin: 15px 0;
@@ -457,6 +443,27 @@
             font-size: 14px;
             border-radius: 6px;
         }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #0078d7;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
     </style>
 </head>
 <body>
@@ -467,60 +474,65 @@
             <div class="logo">
                 <i class="fas fa-lock"></i>
             </div>
-            <h1>Secure Authentication</h1>
-            <p>QR Code & Password Login</p>
+            <h1>المصادقة الآمنة</h1>
+            <p>تسجيل الدخول بواسطة كود QR وكلمة المرور</p>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>جاري المعالجة...</p>
         </div>
         
         <div class="form-container">
-            <!-- Step 1: QR Login (Default) -->
+            <!-- الخطوة 1: تسجيل الدخول بالكود QR -->
             <div class="form-step active" id="step1">
                 <div class="qr-container">
-                    <p>Scan your QR code to login</p>
+                    <p>امسح كود QR الخاص بك لتسجيل الدخول</p>
                     <div class="qr-placeholder" id="qr-scanner">
                         <i class="fas fa-qrcode"></i>
-                        <span>Click to upload QR code</span>
+                        <span>اضغط لرفع كود QR</span>
                         <input type="file" id="qr-file-input" accept="image/*" style="display:none">
                     </div>
                     
                     <div class="qr-preview" id="qr-preview">
-                        <img id="preview-image" src="" alt="QR Preview">
+                        <img id="preview-image" src="" alt="معاينة QR">
                     </div>
                     
                     <div class="qr-validation-result" id="qr-validation-result"></div>
                     
                     <div class="qr-actions" id="qr-actions" style="display:none">
                         <div class="btn btn-small" id="validate-qr">
-                            <i class="fas fa-check"></i> Validate
+                            <i class="fas fa-check"></i> تحقق
                         </div>
                         <div class="btn btn-small btn-secondary" id="change-qr">
-                            <i class="fas fa-sync"></i> Change
+                            <i class="fas fa-sync"></i> تغيير
                         </div>
                     </div>
                 </div>
                 
                 <div class="btn btn-secondary" id="no-qr-btn">
-                    <i class="fas fa-key"></i> Use ID & Password
+                    <i class="fas fa-key"></i> استخدم المعرف وكلمة المرور
                 </div>
             </div>
             
-            <!-- Step 2: ID/Password Login -->
+            <!-- الخطوة 2: تسجيل الدخول بالمعرف وكلمة المرور -->
             <div class="form-step" id="step2">
                 <div class="error-message" id="password-error">
-                    <i class="fas fa-exclamation-circle"></i> The password you entered is incorrect
+                    <i class="fas fa-exclamation-circle"></i> كلمة المرور التي أدخلتها غير صحيحة
                 </div>
                 
                 <div class="success-message" id="qr-success-message">
-                    <i class="fas fa-check-circle"></i> QR code validated! Your credentials have been filled
+                    <i class="fas fa-check-circle"></i> تم التحقق من كود QR! تم تعبئة بيانات الاعتماد الخاصة بك
                 </div>
                 
                 <div class="input-group">
-                    <label for="user-id">User ID</label>
-                    <input type="text" id="user-id" placeholder="Enter your ID">
+                    <label for="user-id">معرف المستخدم</label>
+                    <input type="text" id="user-id" placeholder="أدخل معرفك">
                 </div>
                 
                 <div class="input-group password-container">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="Enter your password">
+                    <label for="password">كلمة المرور</label>
+                    <input type="password" id="password" placeholder="أدخل كلمة المرور">
                     <span class="toggle-password" id="toggle-password">
                         <i class="fas fa-eye"></i>
                     </span>
@@ -528,44 +540,44 @@
                 
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step1">
-                        <i class="fas fa-arrow-left"></i> Back
+                        <i class="fas fa-arrow-left"></i> رجوع
                     </div>
                     <div class="btn" id="login-btn">
-                        Login <i class="fas fa-sign-in-alt"></i>
+                        تسجيل الدخول <i class="fas fa-sign-in-alt"></i>
                     </div>
                 </div>
                 
                 <div class="footer-links">
-                    <a href="#" id="forgot-password">Forgot password?</a>
-                    <a href="#" id="create-account">Create account</a>
+                    <a href="#" id="forgot-password">نسيت كلمة المرور؟</a>
+                    <a href="#" id="create-account">إنشاء حساب</a>
                 </div>
             </div>
             
-            <!-- Step 3: Forgot Password -->
+            <!-- الخطوة 3: نسيت كلمة المرور -->
             <div class="form-step" id="step3">
                 <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    Enter your email to reset your password
+                    أدخل بريدك الإلكتروني لإعادة تعيين كلمة المرور
                 </p>
                 
                 <div class="input-group">
-                    <label for="email">Email Address</label>
-                    <input type="email" id="email" placeholder="Enter your email">
+                    <label for="email">البريد الإلكتروني</label>
+                    <input type="email" id="email" placeholder="أدخل بريدك الإلكتروني">
                 </div>
                 
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step2">
-                        <i class="fas fa-arrow-left"></i> Back
+                        <i class="fas fa-arrow-left"></i> رجوع
                     </div>
                     <div class="btn" id="send-code-btn">
-                        Send Code <i class="fas fa-paper-plane"></i>
+                        إرسال الرمز <i class="fas fa-paper-plane"></i>
                     </div>
                 </div>
             </div>
             
-            <!-- Step 4: Verification Code -->
+            <!-- الخطوة 4: رمز التحقق -->
             <div class="form-step" id="step4">
                 <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    We've sent a verification code to your email. Please enter it below.
+                    لقد أرسلنا رمز التحقق إلى بريدك الإلكتروني. يرجى إدخاله أدناه.
                 </p>
                 
                 <div class="code-inputs">
@@ -579,27 +591,27 @@
                 
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step3">
-                        <i class="fas fa-arrow-left"></i> Back
+                        <i class="fas fa-arrow-left"></i> رجوع
                     </div>
                     <div class="btn" id="verify-code-btn">
-                        Verify <i class="fas fa-check"></i>
+                        تحقق <i class="fas fa-check"></i>
                     </div>
                 </div>
             </div>
             
-            <!-- Step 5: Reset Password -->
+            <!-- الخطوة 5: إعادة تعيين كلمة المرور -->
             <div class="form-step" id="step5">
                 <div class="input-group password-container">
-                    <label for="new-password">New Password</label>
-                    <input type="password" id="new-password" placeholder="Create a new password">
+                    <label for="new-password">كلمة المرور الجديدة</label>
+                    <input type="password" id="new-password" placeholder="أنشئ كلمة مرور جديدة">
                     <span class="toggle-password" id="toggle-new-password">
                         <i class="fas fa-eye"></i>
                     </span>
                 </div>
                 
                 <div class="input-group password-container">
-                    <label for="confirm-password">Confirm Password</label>
-                    <input type="password" id="confirm-password" placeholder="Confirm your new password">
+                    <label for="confirm-password">تأكيد كلمة المرور</label>
+                    <input type="password" id="confirm-password" placeholder="أكد كلمة المرور الجديدة">
                     <span class="toggle-password" id="toggle-confirm-password">
                         <i class="fas fa-eye"></i>
                     </span>
@@ -607,40 +619,40 @@
                 
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step4">
-                        <i class="fas fa-arrow-left"></i> Back
+                        <i class="fas fa-arrow-left"></i> رجوع
                     </div>
                     <div class="btn" id="reset-password-btn">
-                        Reset Password <i class="fas fa-sync-alt"></i>
+                        إعادة تعيين <i class="fas fa-sync-alt"></i>
                     </div>
                 </div>
             </div>
             
-            <!-- Step 6: Signup -->
+            <!-- الخطوة 6: التسجيل -->
             <div class="form-step" id="step6">
                 <div class="input-group">
-                    <label for="full-name">Full Name</label>
-                    <input type="text" id="full-name" placeholder="Enter your full name">
+                    <label for="full-name">الاسم الكامل</label>
+                    <input type="text" id="full-name" placeholder="أدخل اسمك الكامل">
                 </div>
                 
                 <div class="input-group">
-                    <label for="signup-email">Email Address</label>
-                    <input type="email" id="signup-email" placeholder="Enter your email">
+                    <label for="signup-email">البريد الإلكتروني</label>
+                    <input type="email" id="signup-email" placeholder="أدخل بريدك الإلكتروني">
                 </div>
                 
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step1-from-signup">
-                        <i class="fas fa-arrow-left"></i> Back
+                        <i class="fas fa-arrow-left"></i> رجوع
                     </div>
                     <div class="btn" id="signup-send-code">
-                        Send Code <i class="fas fa-paper-plane"></i>
+                        إرسال الرمز <i class="fas fa-paper-plane"></i>
                     </div>
                 </div>
             </div>
             
-            <!-- Step 7: Signup Verification -->
+            <!-- الخطوة 7: تحقق التسجيل -->
             <div class="form-step" id="step7">
                 <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    We've sent a verification code to your email. Please enter it below.
+                    لقد أرسلنا رمز التحقق إلى بريدك الإلكتروني. يرجى إدخاله أدناه.
                 </p>
                 
                 <div class="code-inputs">
@@ -654,78 +666,114 @@
                 
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step6">
-                        <i class="fas fa-arrow-left"></i> Back
+                        <i class="fas fa-arrow-left"></i> رجوع
                     </div>
                     <div class="btn" id="signup-verify-code">
-                        Verify <i class="fas fa-check"></i>
+                        تحقق <i class="fas fa-check"></i>
                     </div>
                 </div>
             </div>
             
-            <!-- Step 8: Create Password & Profile -->
+            <!-- الخطوة 8: إنشاء كلمة المرور والملف الشخصي -->
             <div class="form-step" id="step8">
                 <div class="input-group password-container">
-                    <label for="signup-password">Create Password</label>
-                    <input type="password" id="signup-password" placeholder="Create a password">
+                    <label for="signup-password">إنشاء كلمة المرور</label>
+                    <input type="password" id="signup-password" placeholder="أنشئ كلمة مرور">
                     <span class="toggle-password" id="toggle-signup-password">
                         <i class="fas fa-eye"></i>
                     </span>
                 </div>
                 
                 <div class="input-group password-container">
-                    <label for="signup-confirm-password">Confirm Password</label>
-                    <input type="password" id="signup-confirm-password" placeholder="Confirm your password">
+                    <label for="signup-confirm-password">تأكيد كلمة المرور</label>
+                    <input type="password" id="signup-confirm-password" placeholder="أكد كلمة المرور">
                     <span class="toggle-password" id="toggle-signup-confirm">
                         <i class="fas fa-eye"></i>
                     </span>
                 </div>
                 
                 <div class="image-upload">
-                    <label>Choose Profile Image</label>
+                    <label>اختر صورة الملف الشخصي</label>
                     <div class="image-preview" id="image-preview">
                         <i class="fas fa-user-circle"></i>
-                        <img id="profile-preview" src="" alt="Profile Preview">
+                        <img id="profile-preview" src="" alt="معاينة الصورة">
                         <input type="file" id="profile-image" accept="image/*">
                     </div>
-                    <p style="color: #aaa; font-size: 14px;">Click to upload your photo</p>
+                    <p style="color: #aaa; font-size: 14px;">اضغط لرفع صورتك</p>
                 </div>
                 
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step7">
-                        <i class="fas fa-arrow-left"></i> Back
+                        <i class="fas fa-arrow-left"></i> رجوع
                     </div>
                     <div class="btn" id="complete-signup">
-                        Complete Signup <i class="fas fa-user-plus"></i>
+                        إكمال التسجيل <i class="fas fa-user-plus"></i>
                     </div>
                 </div>
             </div>
             
-            <!-- Step 9: Generated QR Code -->
+            <!-- الخطوة 9: كود QR المنشأ -->
             <div class="form-step" id="step9">
-                <h2 style="color: white; text-align: center; margin-bottom: 15px;">Account Created Successfully!</h2>
+                <h2 style="color: white; text-align: center; margin-bottom: 15px;">تم إنشاء الحساب بنجاح!</h2>
                 <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    Your account QR code has been generated. Save this for future logins.
+                    تم إنشاء كود QR لحسابك. احفظ هذا لتسجيل الدخول في المستقبل.
                 </p>
                 
                 <div class="generated-qr">
                     <div id="qr-code"></div>
                     <div class="user-id-display" id="user-id-display">ID: USER-5F3D9A</div>
-                    <p style="color: #aaa; margin: 10px 0;">Scan this QR code to login to your account</p>
+                    <p style="color: #aaa; margin: 10px 0;">امسح هذا الكود لتسجيل الدخول إلى حسابك</p>
                 </div>
                 
                 <div class="btn" id="download-qr-btn">
-                    <i class="fas fa-download"></i> Download QR Code
+                    <i class="fas fa-download"></i> تنزيل كود QR
                 </div>
                 
                 <div class="btn btn-secondary" id="back-to-login">
-                    <i class="fas fa-sign-in-alt"></i> Back to Login
+                    <i class="fas fa-sign-in-alt"></i> العودة لتسجيل الدخول
                 </div>
             </div>
         </div>
     </div>
 
     <script>
-        // Navigation logic
+        // عنوان API للخادم (يجب تغييره إلى عنوان الخادم الحقيقي عند النشر)
+        const API_BASE_URL = 'https://your-api-server.com/api';
+        
+        // متغيرات التطبيق
+        let currentUser = null;
+        let tempUserData = {};
+        let verificationCodes = {};
+
+        // وظائف المساعدة
+        function showLoading() {
+            document.getElementById('loading').style.display = 'block';
+        }
+        
+        function hideLoading() {
+            document.getElementById('loading').style.display = 'none';
+        }
+        
+        function showError(message) {
+            alert(`خطأ: ${message}`);
+        }
+
+        // الاتصال بالخادم عند تحميل الصفحة
+        document.addEventListener('DOMContentLoaded', async () => {
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/health`);
+                if (!response.ok) {
+                    showError('لا يمكن الاتصال بالخادم');
+                }
+                hideLoading();
+            } catch (err) {
+                showError('فشل الاتصال بالخادم');
+                hideLoading();
+            }
+        });
+
+        // التنقل بين الخطوات
         document.getElementById('no-qr-btn').addEventListener('click', () => {
             document.getElementById('step1').classList.remove('active');
             document.getElementById('step2').classList.add('active');
@@ -739,29 +787,39 @@
             resetQRValidation();
         });
         
-        // تغيير هذا الجزء من الكود
-document.getElementById('login-btn').addEventListener('click', async () => {
-    const userId = document.getElementById('user-id').value;
-    const password = document.getElementById('password').value;
+        // تسجيل الدخول
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const userId = document.getElementById('user-id').value;
+            const password = document.getElementById('password').value;
 
-    try {
-        const response = await fetch('http://localhost:5000/api/auth/login', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ userId, password })
+            if (!userId || !password) {
+                showError('يرجى ملء جميع الحقول');
+                return;
+            }
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, password })
+                });
+
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    currentUser = data.user;
+                    alert(`مرحباً ${data.user.name}!`);
+                    // يمكنك توجيه المستخدم لصفحة أخرى هنا
+                } else {
+                    document.getElementById('password-error').style.display = 'block';
+                }
+            } catch (err) {
+                hideLoading();
+                document.getElementById('password-error').style.display = 'block';
+            }
         });
-
-        const data = await response.json();
-        if (response.ok) {
-            // تسجيل الدخول ناجح
-            alert(`Welcome ${data.user.name}!`);
-        } else {
-            document.getElementById('password-error').style.display = 'block';
-        }
-    } catch (err) {
-        console.error('Login error:', err);
-    }
-});
         
         document.getElementById('forgot-password').addEventListener('click', (e) => {
             e.preventDefault();
@@ -777,65 +835,250 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             updateProgress(1);
         });
         
-        document.getElementById('send-code-btn').addEventListener('click', () => {
-            document.getElementById('step3').classList.remove('active');
-            document.getElementById('step4').classList.add('active');
-            updateProgress(4);
-        });
-        
-        document.getElementById('verify-code-btn').addEventListener('click', () => {
-            document.getElementById('step4').classList.remove('active');
-            document.getElementById('step5').classList.add('active');
-            updateProgress(5);
-        });
-        
-        document.getElementById('reset-password-btn').addEventListener('click', () => {
-            // Return to login after password reset
-            document.getElementById('step5').classList.remove('active');
-            document.getElementById('step2').classList.add('active');
-            document.getElementById('password-error').style.display = 'none';
-            updateProgress(2);
-        });
-        
-        // Signup navigation
-        document.getElementById('signup-send-code').addEventListener('click', () => {
-            document.getElementById('step6').classList.remove('active');
-            document.getElementById('step7').classList.add('active');
-            updateProgress(2);
-        });
-        
-        document.getElementById('signup-verify-code').addEventListener('click', () => {
-            document.getElementById('step7').classList.remove('active');
-            document.getElementById('step8').classList.add('active');
-            updateProgress(3);
-        });
-        
-        document.getElementById('complete-signup').addEventListener('click', () => {
-            // Generate QR code
-            const userId = "USER-" + Math.floor(100000 + Math.random() * 900000).toString(16).toUpperCase().substring(0, 6);
-            document.getElementById('user-id-display').textContent = "ID: " + userId;
+        // إرسال رمز التحقق (نسيت كلمة المرور)
+        document.getElementById('send-code-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
             
-            // Generate QR code with user data
-            const qrData = `ID:${userId}|PWD:${document.getElementById('signup-password').value}`;
-            const qrCodeElement = document.getElementById('qr-code');
-            qrCodeElement.innerHTML = "";
-            
-            new QRCode(qrCodeElement, {
-                text: qrData,
-                width: 180,
-                height: 180,
-                colorDark: "#000000",
-                colorLight: "#ffffff",
-                correctLevel: QRCode.CorrectLevel.H
-            });
-            
-            // Show QR code step
-            document.getElementById('step8').classList.remove('active');
-            document.getElementById('step9').classList.add('active');
-            updateProgress(4);
+            if (!email) {
+                showError('يرجى إدخال البريد الإلكتروني');
+                return;
+            }
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/send-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, type: 'reset' })
+                });
+
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    document.getElementById('step3').classList.remove('active');
+                    document.getElementById('step4').classList.add('active');
+                    updateProgress(4);
+                } else {
+                    alert(data.message || 'فشل إرسال رمز التحقق');
+                }
+            } catch (err) {
+                hideLoading();
+                alert('فشل إرسال رمز التحقق');
+            }
         });
         
-        // Back buttons
+        // التحقق من رمز التحقق (نسيت كلمة المرور)
+        document.getElementById('verify-code-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const code = Array.from(document.querySelectorAll('.code-input'))
+                            .map(input => input.value)
+                            .join('');
+            
+            if (code.length !== 6) {
+                alert('الرجاء إدخال رمز التحقق المكون من 6 أرقام');
+                return;
+            }
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/verify-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code, type: 'reset' })
+                });
+
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    document.getElementById('step4').classList.remove('active');
+                    document.getElementById('step5').classList.add('active');
+                    updateProgress(5);
+                } else {
+                    alert(data.message || 'رمز التحقق غير صحيح');
+                }
+            } catch (err) {
+                hideLoading();
+                alert('فشل التحقق');
+            }
+        });
+        
+        // إعادة تعيين كلمة المرور
+        document.getElementById('reset-password-btn').addEventListener('click', async () => {
+            const email = document.getElementById('email').value;
+            const newPassword = document.getElementById('new-password').value;
+            const confirmPassword = document.getElementById('confirm-password').value;
+            
+            if (newPassword !== confirmPassword) {
+                alert('كلمات المرور غير متطابقة');
+                return;
+            }
+            
+            if (newPassword.length < 8) {
+                alert('يجب أن تكون كلمة المرور 8 أحرف على الأقل');
+                return;
+            }
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/reset-password`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, newPassword })
+                });
+
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    alert('تم إعادة تعيين كلمة المرور بنجاح');
+                    document.getElementById('step5').classList.remove('active');
+                    document.getElementById('step2').classList.add('active');
+                    document.getElementById('password-error').style.display = 'none';
+                    updateProgress(2);
+                } else {
+                    alert(data.message || 'فشل إعادة تعيين كلمة المرور');
+                }
+            } catch (err) {
+                hideLoading();
+                alert('فشل إعادة تعيين كلمة المرور');
+            }
+        });
+        
+        // إرسال رمز التحقق (تسجيل جديد)
+        document.getElementById('signup-send-code').addEventListener('click', async () => {
+            const fullName = document.getElementById('full-name').value;
+            const email = document.getElementById('signup-email').value;
+            
+            if (!fullName || !email) {
+                showError('يرجى ملء جميع الحقول');
+                return;
+            }
+            
+            tempUserData = { fullName, email };
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/send-verification`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, type: 'signup' })
+                });
+
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    document.getElementById('step6').classList.remove('active');
+                    document.getElementById('step7').classList.add('active');
+                    updateProgress(2);
+                } else {
+                    alert(data.message || 'فشل إرسال رمز التحقق');
+                }
+            } catch (err) {
+                hideLoading();
+                alert('فشل إرسال رمز التحقق');
+            }
+        });
+        
+        // التحقق من رمز التحقق (تسجيل جديد)
+        document.getElementById('signup-verify-code').addEventListener('click', async () => {
+            const email = tempUserData.email;
+            const code = Array.from(document.querySelectorAll('.code-input'))
+                            .map(input => input.value)
+                            .join('');
+            
+            if (code.length !== 6) {
+                alert('الرجاء إدخال رمز التحقق المكون من 6 أرقام');
+                return;
+            }
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/verify-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, code, type: 'signup' })
+                });
+
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    document.getElementById('step7').classList.remove('active');
+                    document.getElementById('step8').classList.add('active');
+                    updateProgress(3);
+                } else {
+                    alert(data.message || 'رمز التحقق غير صحيح');
+                }
+            } catch (err) {
+                hideLoading();
+                alert('فشل التحقق');
+            }
+        });
+        
+        // إكمال التسجيل
+        document.getElementById('complete-signup').addEventListener('click', async () => {
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            const profileImage = document.getElementById('profile-image').files[0];
+            
+            if (password !== confirmPassword) {
+                alert('كلمات المرور غير متطابقة');
+                return;
+            }
+            
+            if (password.length < 8) {
+                alert('يجب أن تكون كلمة المرور 8 أحرف على الأقل');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('name', tempUserData.fullName);
+            formData.append('email', tempUserData.email);
+            formData.append('password', password);
+            if (profileImage) formData.append('profileImage', profileImage);
+
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/signup`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideLoading();
+                
+                if (response.ok) {
+                    // إنشاء QR code
+                    const qrData = `ID:${data.user.userId}|PWD:${password}`;
+                    const qrCodeElement = document.getElementById('qr-code');
+                    qrCodeElement.innerHTML = "";
+                    
+                    new QRCode(qrCodeElement, {
+                        text: qrData,
+                        width: 180,
+                        height: 180,
+                        colorDark: "#000000",
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
+                    });
+                    
+                    document.getElementById('user-id-display').textContent = `ID: ${data.user.userId}`;
+                    document.getElementById('step8').classList.remove('active');
+                    document.getElementById('step9').classList.add('active');
+                    updateProgress(4);
+                } else {
+                    alert(data.message || 'فشل التسجيل');
+                }
+            } catch (err) {
+                hideLoading();
+                alert('حدث خطأ أثناء التسجيل');
+            }
+        });
+        
+        // أزرار الرجوع
         document.getElementById('back-to-step2').addEventListener('click', () => {
             document.getElementById('step3').classList.remove('active');
             document.getElementById('step2').classList.add('active');
@@ -879,7 +1122,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             resetQRValidation();
         });
         
-        // Password visibility toggle
+        // إظهار/إخفاء كلمة المرور
         const togglePassword = (inputId, toggleId) => {
             const passwordInput = document.getElementById(inputId);
             const toggleIcon = document.querySelector(`#${toggleId} i`);
@@ -915,7 +1158,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             togglePassword('signup-confirm-password', 'toggle-signup-confirm');
         });
         
-        // Image upload preview
+        // معاينة صورة الملف الشخصي
         document.getElementById('profile-image').addEventListener('change', function(e) {
             const preview = document.getElementById('profile-preview');
             const icon = preview.previousElementSibling;
@@ -933,7 +1176,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             }
         });
         
-        // Verification code input navigation
+        // التنقل بين حقول رمز التحقق
         const codeInputs = document.querySelectorAll('.code-input');
         codeInputs.forEach((input, index) => {
             input.addEventListener('input', () => {
@@ -949,7 +1192,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             });
         });
         
-        // Download QR code
+        // تنزيل كود QR
         document.getElementById('download-qr-btn').addEventListener('click', function() {
             const qrCodeElement = document.getElementById('qr-code');
             const canvas = qrCodeElement.querySelector('canvas');
@@ -960,11 +1203,11 @@ document.getElementById('login-btn').addEventListener('click', async () => {
                 link.href = canvas.toDataURL('image/png');
                 link.click();
             } else {
-                alert('QR code not generated yet');
+                alert('لم يتم إنشاء كود QR بعد');
             }
         });
         
-        // Update progress indicators
+        // تحديث مؤشرات التقدم
         function updateProgress(step) {
             const steps = document.querySelectorAll('.step');
             steps.forEach((s, index) => {
@@ -976,7 +1219,7 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             });
         }
         
-        // QR Code Validation System
+        // نظام التحقق من كود QR
         document.getElementById('qr-scanner').addEventListener('click', () => {
             document.getElementById('qr-file-input').click();
         });
@@ -985,9 +1228,9 @@ document.getElementById('login-btn').addEventListener('click', async () => {
             if (this.files && this.files[0]) {
                 const file = this.files[0];
                 
-                // Check if it's an image
+                // التحقق من أن الملف صورة
                 if (!file.type.match('image.*')) {
-                    showQRValidationResult('Please select an image file', 'error');
+                    showQRValidationResult('الرجاء تحديد ملف صورة', 'error');
                     return;
                 }
                 
@@ -997,9 +1240,9 @@ document.getElementById('login-btn').addEventListener('click', async () => {
                     const preview = document.getElementById('preview-image');
                     preview.src = e.target.result;
                     
-                    // Show preview and actions
+                    // إظهار المعاينة والإجراءات
                     document.getElementById('qr-preview').style.display = 'block';
-                    document.getElementById('qr-placeholder').style.display = 'none';
+                    document.getElementById('qr-scanner').style.display = 'none';
                     document.getElementById('qr-actions').style.display = 'flex';
                 }
                 
@@ -1009,68 +1252,47 @@ document.getElementById('login-btn').addEventListener('click', async () => {
         
         document.getElementById('change-qr').addEventListener('click', resetQRValidation);
         
-        document.getElementById('validate-qr').addEventListener('click', function() {
+        document.getElementById('validate-qr').addEventListener('click', async function() {
             const fileInput = document.getElementById('qr-file-input');
             if (!fileInput.files || !fileInput.files[0]) {
-                showQRValidationResult('No QR code selected', 'error');
+                showQRValidationResult('لم يتم تحديد كود QR', 'error');
                 return;
             }
             
-            const file = fileInput.files[0];
-            const reader = new FileReader();
+            const formData = new FormData();
+            formData.append('qrImage', fileInput.files[0]);
             
-            reader.onload = function(e) {
-                const img = new Image();
-                img.src = e.target.result;
+            try {
+                showLoading();
+                const response = await fetch(`${API_BASE_URL}/auth/validate-qr`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                hideLoading();
                 
-                img.onload = function() {
-                    const canvas = document.createElement('canvas');
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                if (response.ok) {
+                    showQRValidationResult('تم التحقق من كود QR بنجاح!', 'success');
                     
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
-                    if (code) {
-                        // Check if it's a valid QR code for our system
-                        const pattern = /^ID:([A-Z0-9-]+)\|PWD:(.+)$/;
-                        const match = code.data.match(pattern);
+                    setTimeout(() => {
+                        document.getElementById('step1').classList.remove('active');
+                        document.getElementById('step2').classList.add('active');
+                        updateProgress(2);
                         
-                        if (match) {
-                            // Valid QR code
-                            showQRValidationResult('QR code validated successfully!', 'success');
-                            
-                            // Extract user ID and password
-                            const userId = match[1];
-                            const password = match[2];
-                            
-                            // Fill in the login form
-                            setTimeout(() => {
-                                document.getElementById('step1').classList.remove('active');
-                                document.getElementById('step2').classList.add('active');
-                                updateProgress(2);
-                                
-                                document.getElementById('user-id').value = userId;
-                                document.getElementById('password').value = password;
-                                
-                                // Show success message
-                                document.getElementById('qr-success-message').style.display = 'block';
-                                
-                                // Hide password error if shown
-                                document.getElementById('password-error').style.display = 'none';
-                            }, 1500);
-                        } else {
-                            showQRValidationResult('Invalid QR format', 'error');
-                        }
-                    } else {
-                        showQRValidationResult('No QR code found in image', 'error');
-                    }
-                };
-            };
-            
-            reader.readAsDataURL(file);
+                        document.getElementById('user-id').value = data.userId;
+                        document.getElementById('password').value = data.password;
+                        
+                        document.getElementById('qr-success-message').style.display = 'block';
+                        document.getElementById('password-error').style.display = 'none';
+                    }, 1500);
+                } else {
+                    showQRValidationResult(data.message || 'كود QR غير صالح', 'error');
+                }
+            } catch (err) {
+                hideLoading();
+                showQRValidationResult('خطأ في التحقق من كود QR', 'error');
+            }
         });
         
         function showQRValidationResult(message, type) {
@@ -1090,13 +1312,13 @@ document.getElementById('login-btn').addEventListener('click', async () => {
         function resetQRValidation() {
             document.getElementById('qr-file-input').value = '';
             document.getElementById('qr-preview').style.display = 'none';
-            document.getElementById('qr-placeholder').style.display = 'flex';
+            document.getElementById('qr-scanner').style.display = 'flex';
             document.getElementById('qr-actions').style.display = 'none';
             document.getElementById('qr-validation-result').style.display = 'none';
         }
         
-        // Initialize progress indicators
+        // تهيئة مؤشرات التقدم
         updateProgress(1);
     </script>
 </body>
-  </html>
+</html>
