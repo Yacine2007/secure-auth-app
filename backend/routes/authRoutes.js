@@ -2,21 +2,48 @@ const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
 const upload = require('./multerConfig');
+const User = require('../models/User');
 
-// تأكد من استيراد الدوال بشكل صحيح
-const {
-  signup,
-  verifyCode,
-  login,
-  forgotPassword,
-  resetPassword
-} = authController;
+exports.signup = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
+    
+    // ... التحقق من البيانات المطلوبة ...
 
-// استخدام الدوال مباشرة
-router.post('/signup', upload.single('profileImage'), signup);
-router.post('/verify', verifyCode);
-router.post('/login', login);
-router.post('/forgot-password', forgotPassword);
-router.post('/reset-password', resetPassword);
+    const verificationCode = Math.floor(100000 + Math.random() * 900000); // رقم عشوائي مكون من 6 أرقام
 
-module.exports = router;
+    // إرسال البريد الإلكتروني
+    const emailSent = await sendVerificationEmail(email, verificationCode);
+    
+    if (!emailSent) {
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send verification email'
+      });
+    }
+
+    // حفظ المستخدم في قاعدة البيانات
+    const user = new User({
+      name,
+      email,
+      password,
+      verificationCode,
+      verificationCodeExpires: Date.now() + 10 * 60 * 1000 // 10 دقائق
+    });
+
+    await user.save();
+
+    res.status(201).json({
+      success: true,
+      message: 'Verification code sent to your email',
+      userId: user._id
+    });
+
+  } catch (err) {
+    console.error('Signup error:', err);
+    res.status(500).json({
+      success: false,
+      message: 'Server error'
+    });
+  }
+};
