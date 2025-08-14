@@ -75,7 +75,7 @@ const upload = multer({
 // Serve static files
 app.use('/uploads', express.static(uploadDir));
 
-// Email Transporter - Using the configuration that works
+// Email Transporter - Using tested configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
@@ -84,7 +84,29 @@ const transporter = nodemailer.createTransport({
   }
 });
 
-// User Model with enhanced validation
+// Test email function
+const testEmail = () => {
+  const mailOptions = {
+    from: process.env.EMAIL_USER,
+    to: 'yassinebenmokran@gmail.com',
+    subject: '🔐 Test Email from Auth System',
+    html: `<h2>This is a test email from your auth system</h2>
+           <p>If you see this, email sending is working!</p>`
+  };
+
+  transporter.sendMail(mailOptions, (error, info) => {
+    if (error) {
+      console.log('❌ Email sending failed:', error);
+    } else {
+      console.log('✅ Email sent:', info.response);
+    }
+  });
+};
+
+// Run email test on startup
+testEmail();
+
+// User Model
 const userSchema = new mongoose.Schema({
   name: { 
     type: String, 
@@ -169,9 +191,9 @@ const User = mongoose.model('User', userSchema);
 // Helper Functions
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000);
 
-// Improved email sending function with logging
+// Email sending function
 const sendEmail = async (options) => {
-  try {
+  return new Promise((resolve, reject) => {
     const mailOptions = {
       from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
       to: options.email,
@@ -179,32 +201,16 @@ const sendEmail = async (options) => {
       html: options.html
     };
 
-    console.log('📧 Attempting to send email to:', options.email);
-    console.log('📧 Email subject:', options.subject);
-    
-    const info = await transporter.sendMail(mailOptions);
-    
-    console.log('✅ Email sent successfully!');
-    console.log('📧 Message ID:', info.messageId);
-    console.log('📧 Response:', info.response);
-    
-    return { success: true, info };
-  } catch (error) {
-    console.error('❌ Email sending failed!');
-    console.error('❌ Error details:', error);
-    
-    if (error.responseCode) {
-      console.error('❌ SMTP response code:', error.responseCode);
-    }
-    if (error.response) {
-      console.error('❌ SMTP response:', error.response);
-    }
-    if (error.command) {
-      console.error('❌ Last command:', error.command);
-    }
-    
-    return { success: false, error };
-  }
+    transporter.sendMail(mailOptions, (error, info) => {
+      if (error) {
+        console.error('❌ Email sending failed:', error);
+        resolve(false);
+      } else {
+        console.log('✅ Email sent:', info.response);
+        resolve(true);
+      }
+    });
+  });
 };
 
 // Routes
@@ -225,7 +231,7 @@ app.get('/', (req, res) => {
   });
 });
 
-// Signup with enhanced validation
+// Signup endpoint
 app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => {
   try {
     const { name, email, password } = req.body;
@@ -279,7 +285,7 @@ app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => 
     });
 
     // Send welcome email with verification code
-    const emailResult = await sendEmail({
+    const emailSent = await sendEmail({
       email: user.email,
       subject: 'Welcome to Secure Auth - Verify Your Email',
       html: `
@@ -298,8 +304,7 @@ app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => 
       `
     });
 
-    if (!emailResult.success) {
-      console.error('Failed to send verification email:', emailResult.error);
+    if (!emailSent) {
       return res.status(500).json({
         success: false,
         message: 'Account created but failed to send verification email. Please contact support.'
@@ -333,7 +338,7 @@ app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => 
   }
 });
 
-// Login with account lock feature
+// Login endpoint
 app.post('/api/auth/login', async (req, res) => {
   try {
     const { userId, password } = req.body;
@@ -474,7 +479,7 @@ app.post('/api/auth/login-qr', async (req, res) => {
   }
 });
 
-// Forgot Password with rate limiting
+// Forgot Password endpoint
 app.post('/api/auth/forgot-password', async (req, res) => {
   try {
     const { email } = req.body;
@@ -510,7 +515,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     await user.save();
 
     // Send email with reset code
-    const emailResult = await sendEmail({
+    const emailSent = await sendEmail({
       email: email,
       subject: 'Password Reset Code',
       html: `
@@ -526,8 +531,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
       `
     });
 
-    if (!emailResult.success) {
-      console.error('Failed to send reset code email:', emailResult.error);
+    if (!emailSent) {
       return res.status(500).json({
         success: false,
         message: 'Failed to send reset code. Please try again later.'
@@ -550,7 +554,7 @@ app.post('/api/auth/forgot-password', async (req, res) => {
   }
 });
 
-// Verify Reset Code
+// Verify Reset Code endpoint
 app.post('/api/auth/verify-reset-code', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -591,7 +595,7 @@ app.post('/api/auth/verify-reset-code', async (req, res) => {
   }
 });
 
-// Reset Password
+// Reset Password endpoint
 app.post('/api/auth/reset-password', async (req, res) => {
   try {
     const { email, code, newPassword, confirmPassword } = req.body;
@@ -638,7 +642,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
     await user.save();
 
     // Send confirmation email
-    const emailResult = await sendEmail({
+    sendEmail({
       email: email,
       subject: 'Password Changed Successfully',
       html: `
@@ -649,11 +653,6 @@ app.post('/api/auth/reset-password', async (req, res) => {
         </div>
       `
     });
-
-    if (!emailResult.success) {
-      console.error('Failed to send password changed email:', emailResult.error);
-      // We don't return an error to the user because the password was changed
-    }
 
     res.json({ 
       success: true,
@@ -669,7 +668,7 @@ app.post('/api/auth/reset-password', async (req, res) => {
   }
 });
 
-// Generate QR Code
+// Generate QR Code endpoint
 app.post('/api/auth/generate-qr', async (req, res) => {
   try {
     const { userId } = req.body;
