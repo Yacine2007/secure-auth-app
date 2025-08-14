@@ -209,10 +209,6 @@
             color: #0078d7;
         }
 
-        .qr-option:hover {
-            background: rgba(255, 255, 255, 0.1);
-        }
-
         .code-inputs {
             display: flex;
             gap: 10px;
@@ -368,6 +364,50 @@
             display: none;
         }
 
+        .resend-code {
+            color: #aaa;
+            font-size: 14px;
+            margin-top: 10px;
+            cursor: pointer;
+            transition: color 0.3s ease;
+            text-align: center;
+        }
+
+        .resend-code:hover {
+            color: #0078d7;
+        }
+
+        .resend-code.disabled {
+            color: #555;
+            cursor: not-allowed;
+        }
+
+        .countdown {
+            color: #0078d7;
+            font-weight: bold;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .loading-spinner {
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top: 4px solid #0078d7;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
         @media (max-width: 480px) {
             .auth-container {
                 padding: 20px 15px;
@@ -392,98 +432,6 @@
                 flex-wrap: wrap;
                 gap: 10px;
             }
-        }
-        
-        .qr-validation-result {
-            text-align: center;
-            margin: 15px 0;
-            padding: 10px;
-            border-radius: 8px;
-            font-size: 14px;
-            display: none;
-        }
-        
-        .qr-success {
-            background: rgba(0, 200, 0, 0.15);
-            color: #66ff66;
-            border: 1px solid rgba(0, 200, 0, 0.3);
-        }
-        
-        .qr-error {
-            background: rgba(255, 50, 50, 0.15);
-            color: #ff6666;
-            border: 1px solid rgba(255, 50, 50, 0.3);
-        }
-        
-        .qr-preview {
-            width: 180px;
-            height: 180px;
-            margin: 0 auto 15px;
-            border-radius: 8px;
-            overflow: hidden;
-            display: none;
-        }
-        
-        .qr-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-        
-        .qr-actions {
-            display: flex;
-            justify-content: center;
-            gap: 10px;
-            margin-top: 10px;
-        }
-        
-        .btn-small {
-            padding: 8px 15px;
-            font-size: 14px;
-            border-radius: 6px;
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            margin: 20px 0;
-        }
-        
-        .loading-spinner {
-            border: 4px solid rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            border-top: 4px solid #0078d7;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .resend-code {
-            color: #aaa;
-            font-size: 14px;
-            margin-top: 10px;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .resend-code:hover {
-            color: #0078d7;
-        }
-
-        .resend-code.disabled {
-            color: #555;
-            cursor: not-allowed;
-        }
-
-        .countdown {
-            color: #0078d7;
-            font-weight: bold;
         }
     </style>
 </head>
@@ -665,12 +613,38 @@
                     <input type="email" id="signup-email" placeholder="Enter your email">
                 </div>
                 
+                <div class="input-group password-container">
+                    <label for="signup-password">Password</label>
+                    <input type="password" id="signup-password" placeholder="Create password">
+                    <span class="toggle-password" id="toggle-signup-password">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+                
+                <div class="input-group password-container">
+                    <label for="signup-confirm-password">Confirm Password</label>
+                    <input type="password" id="signup-confirm-password" placeholder="Confirm password">
+                    <span class="toggle-password" id="toggle-signup-confirm">
+                        <i class="fas fa-eye"></i>
+                    </span>
+                </div>
+                
+                <div class="image-upload">
+                    <label>Choose Profile Picture</label>
+                    <div class="image-preview" id="image-preview">
+                        <i class="fas fa-user-circle"></i>
+                        <img id="profile-preview" src="" alt="Profile Preview">
+                        <input type="file" id="profile-image" accept="image/*">
+                    </div>
+                    <p style="color: #aaa; font-size: 14px;">Click to upload your photo</p>
+                </div>
+                
                 <div class="btn-container">
                     <div class="btn btn-secondary" id="back-to-step1-from-signup">
                         <i class="fas fa-arrow-left"></i> Back
                     </div>
-                    <div class="btn" id="signup-send-code">
-                        Send Code <i class="fas fa-paper-plane"></i>
+                    <div class="btn" id="signup-btn">
+                        Sign Up <i class="fas fa-user-plus"></i>
                     </div>
                 </div>
             </div>
@@ -699,52 +673,14 @@
                     <div class="btn btn-secondary" id="back-to-step6">
                         <i class="fas fa-arrow-left"></i> Back
                     </div>
-                    <div class="btn" id="signup-verify-code">
+                    <div class="btn" id="signup-verify-code-btn">
                         Verify <i class="fas fa-check"></i>
                     </div>
                 </div>
             </div>
             
-            <!-- Step 8: Complete Signup -->
+            <!-- Step 8: Generated QR -->
             <div class="form-step" id="step8">
-                <div class="input-group password-container">
-                    <label for="signup-password">Create Password</label>
-                    <input type="password" id="signup-password" placeholder="Create password">
-                    <span class="toggle-password" id="toggle-signup-password">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                
-                <div class="input-group password-container">
-                    <label for="signup-confirm-password">Confirm Password</label>
-                    <input type="password" id="signup-confirm-password" placeholder="Confirm password">
-                    <span class="toggle-password" id="toggle-signup-confirm">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                
-                <div class="image-upload">
-                    <label>Choose Profile Picture</label>
-                    <div class="image-preview" id="image-preview">
-                        <i class="fas fa-user-circle"></i>
-                        <img id="profile-preview" src="" alt="Profile Preview">
-                        <input type="file" id="profile-image" accept="image/*">
-                    </div>
-                    <p style="color: #aaa; font-size: 14px;">Click to upload your photo</p>
-                </div>
-                
-                <div class="btn-container">
-                    <div class="btn btn-secondary" id="back-to-step7">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </div>
-                    <div class="btn" id="complete-signup">
-                        Complete Signup <i class="fas fa-user-plus"></i>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- Step 9: Generated QR -->
-            <div class="form-step" id="step9">
                 <h2 style="color: white; text-align: center; margin-bottom: 15px;">Account Created Successfully!</h2>
                 <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
                     Your account QR code has been generated. Save this for future logins.
@@ -920,10 +856,10 @@
 
             try {
                 showLoading();
-                const response = await fetch(`${API_BASE_URL}/api/auth/send-verification`, {
+                const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, type: 'reset' })
+                    body: JSON.stringify({ email })
                 });
 
                 const data = await response.json();
@@ -954,7 +890,7 @@
             
             try {
                 showLoading();
-                const response = await fetch(`${API_BASE_URL}/api/auth/resend-code`, {
+                const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ email })
@@ -994,10 +930,10 @@
 
             try {
                 showLoading();
-                const response = await fetch(`${API_BASE_URL}/api/auth/verify-code`, {
+                const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, code, type: 'reset' })
+                    body: JSON.stringify({ email, code })
                 });
 
                 const data = await response.json();
@@ -1017,6 +953,9 @@
         // Reset Password
         document.getElementById('reset-password-btn').addEventListener('click', async () => {
             const email = document.getElementById('email').value;
+            const code = Array.from(document.querySelectorAll('.code-input'))
+                            .map(input => input.value)
+                            .join('');
             const newPassword = document.getElementById('new-password').value;
             const confirmPassword = document.getElementById('confirm-password').value;
             
@@ -1035,7 +974,7 @@
                 const response = await fetch(`${API_BASE_URL}/api/auth/reset-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, newPassword })
+                    body: JSON.stringify({ email, code, newPassword, confirmPassword })
                 });
 
                 const data = await response.json();
@@ -1054,30 +993,50 @@
             }
         });
 
-        // Signup - Send Verification Code
-        document.getElementById('signup-send-code').addEventListener('click', async () => {
+        // Signup
+        document.getElementById('signup-btn').addEventListener('click', async () => {
             const fullName = document.getElementById('full-name').value;
             const email = document.getElementById('signup-email').value;
+            const password = document.getElementById('signup-password').value;
+            const confirmPassword = document.getElementById('signup-confirm-password').value;
+            const profileImage = document.getElementById('profile-image').files[0];
             
-            if (!fullName || !email) {
+            if (!fullName || !email || !password || !confirmPassword) {
                 showError('Please fill all fields');
                 return;
             }
 
-            tempUserData = { fullName, email };
+            if (password !== confirmPassword) {
+                showError('Passwords do not match');
+                return;
+            }
+            
+            if (password.length < 8) {
+                showError('Password must be at least 8 characters');
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('name', fullName);
+            formData.append('email', email);
+            formData.append('password', password);
+            if (profileImage) formData.append('profileImage', profileImage);
 
             try {
                 showLoading();
                 const response = await fetch(`${API_BASE_URL}/api/auth/signup`, {
                     method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name: fullName, email })
+                    body: formData
                 });
 
                 const data = await response.json();
                 hideLoading();
                 
                 if (response.ok) {
+                    tempUserData = {
+                        email,
+                        userId: data.user.userId
+                    };
                     goToStep(7);
                     // Start countdown for resend
                     clearInterval(signupResendTimer);
@@ -1086,26 +1045,24 @@
                     });
                     document.getElementById('signup-resend-code').classList.add('disabled');
                 } else {
-                    showError(data.message || 'Failed to send verification code');
+                    showError(data.message || 'Signup failed');
                 }
             } catch (err) {
                 hideLoading();
-                showError('Failed to send verification code');
+                showError('Signup failed');
             }
         });
 
-        // Signup - Resend Verification Code
+        // Signup Resend Verification Code
         document.getElementById('signup-resend-code').addEventListener('click', async function() {
             if (this.classList.contains('disabled')) return;
             
-            const email = tempUserData.email;
-            
             try {
                 showLoading();
-                const response = await fetch(`${API_BASE_URL}/api/auth/resend-code`, {
+                const response = await fetch(`${API_BASE_URL}/api/auth/forgot-password`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email })
+                    body: JSON.stringify({ email: tempUserData.email })
                 });
 
                 const data = await response.json();
@@ -1128,9 +1085,8 @@
             }
         });
 
-        // Signup - Verify Code
-        document.getElementById('signup-verify-code').addEventListener('click', async () => {
-            const email = tempUserData.email;
+        // Signup Verify Code
+        document.getElementById('signup-verify-code-btn').addEventListener('click', async () => {
             const code = Array.from(document.querySelectorAll('.code-input'))
                             .map(input => input.value)
                             .join('');
@@ -1142,18 +1098,46 @@
 
             try {
                 showLoading();
-                const response = await fetch(`${API_BASE_URL}/api/auth/verify-email`, {
+                const response = await fetch(`${API_BASE_URL}/api/auth/verify-reset-code`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email, code })
+                    body: JSON.stringify({ email: tempUserData.email, code })
                 });
 
                 const data = await response.json();
                 hideLoading();
                 
                 if (response.ok) {
-                    tempUserData.userId = data.userId;
-                    goToStep(8);
+                    // Generate QR Code
+                    const qrResponse = await fetch(`${API_BASE_URL}/api/auth/generate-qr`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ userId: tempUserData.userId })
+                    });
+                    
+                    const qrData = await qrResponse.json();
+                    
+                    if (qrResponse.ok) {
+                        const qrCodeElement = document.getElementById('qr-code');
+                        qrCodeElement.innerHTML = "";
+                        
+                        new QRCode(qrCodeElement, {
+                            text: JSON.stringify({
+                                userId: qrData.user.userId,
+                                email: qrData.user.email
+                            }),
+                            width: 180,
+                            height: 180,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
+                        
+                        document.getElementById('user-id-display').textContent = `ID: ${qrData.user.userId}`;
+                        goToStep(8);
+                    } else {
+                        showError(qrData.message || 'Failed to generate QR code');
+                    }
                 } else {
                     showError(data.message || 'Invalid verification code');
                 }
@@ -1163,64 +1147,37 @@
             }
         });
 
-        // Complete Signup
-        document.getElementById('complete-signup').addEventListener('click', async () => {
-            const password = document.getElementById('signup-password').value;
-            const confirmPassword = document.getElementById('signup-confirm-password').value;
-            const profileImage = document.getElementById('profile-image').files[0];
-            
-            if (password !== confirmPassword) {
-                showError('Passwords do not match');
+        // Login
+        document.getElementById('login-btn').addEventListener('click', async () => {
+            const userId = document.getElementById('user-id').value;
+            const password = document.getElementById('password').value;
+
+            if (!userId || !password) {
+                showError('Please fill all fields');
                 return;
             }
-            
-            if (password.length < 8) {
-                showError('Password must be at least 8 characters');
-                return;
-            }
-            
-            const formData = new FormData();
-            formData.append('userId', tempUserData.userId);
-            formData.append('password', password);
-            formData.append('confirmPassword', confirmPassword);
-            if (profileImage) formData.append('profileImage', profileImage);
 
             try {
                 showLoading();
-                const response = await fetch(`${API_BASE_URL}/api/auth/complete-registration`, {
+                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
                     method: 'POST',
-                    body: formData
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ userId, password })
                 });
 
                 const data = await response.json();
                 hideLoading();
                 
                 if (response.ok) {
-                    // Generate QR code
-                    const qrCodeElement = document.getElementById('qr-code');
-                    qrCodeElement.innerHTML = "";
-                    
-                    new QRCode(qrCodeElement, {
-                        text: JSON.stringify({
-                            userId: data.user.userId,
-                            email: data.user.email,
-                            createdAt: new Date().toISOString()
-                        }),
-                        width: 180,
-                        height: 180,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                    
-                    document.getElementById('user-id-display').textContent = `ID: ${data.user.userId}`;
-                    goToStep(9);
+                    currentUser = data.user;
+                    showSuccess(`Welcome ${data.user.name}!`);
+                    // Redirect to dashboard or home page
                 } else {
-                    showError(data.message || 'Registration failed');
+                    document.getElementById('password-error').style.display = 'block';
                 }
             } catch (err) {
                 hideLoading();
-                showError('Registration failed');
+                document.getElementById('password-error').style.display = 'block';
             }
         });
 
@@ -1350,40 +1307,6 @@
             document.getElementById('qr-actions').style.display = 'none';
             document.getElementById('qr-validation-result').style.display = 'none';
         }
-
-        // Login
-        document.getElementById('login-btn').addEventListener('click', async () => {
-            const userId = document.getElementById('user-id').value;
-            const password = document.getElementById('password').value;
-
-            if (!userId || !password) {
-                showError('Please fill all fields');
-                return;
-            }
-
-            try {
-                showLoading();
-                const response = await fetch(`${API_BASE_URL}/api/auth/login`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ userId, password })
-                });
-
-                const data = await response.json();
-                hideLoading();
-                
-                if (response.ok) {
-                    currentUser = data.user;
-                    showSuccess(`Welcome ${data.user.name}!`);
-                    // Redirect to dashboard or home page
-                } else {
-                    document.getElementById('password-error').style.display = 'block';
-                }
-            } catch (err) {
-                hideLoading();
-                document.getElementById('password-error').style.display = 'block';
-            }
-        });
 
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
