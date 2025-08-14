@@ -30,15 +30,6 @@
     "nodemon": "^3.0.1",
     "supertest": "^6.3.3"
   },
-
-
-
-
-{
-  "scripts": {
-    "start": "node backend/app.js",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
     "eject": "react-scripts eject",
     "deploy": "gh-pages -d build"
   }
