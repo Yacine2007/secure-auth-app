@@ -75,18 +75,13 @@ const upload = multer({
 // Serve static files
 app.use('/uploads', express.static(uploadDir));
 
-// Email Transporter with improved configuration
+// Email Transporter - Using the configuration that works
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
-  },
-  tls: { rejectUnauthorized: false },
-  pool: true,
-  maxConnections: 1,
-  rateDelta: 20000, // 20 seconds delay between emails
-  rateLimit: 5 // Max 5 emails per rateDelta
+  }
 });
 
 // User Model with enhanced validation
@@ -174,6 +169,44 @@ const User = mongoose.model('User', userSchema);
 // Helper Functions
 const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000);
 
+// Improved email sending function with logging
+const sendEmail = async (options) => {
+  try {
+    const mailOptions = {
+      from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
+      to: options.email,
+      subject: options.subject,
+      html: options.html
+    };
+
+    console.log('📧 Attempting to send email to:', options.email);
+    console.log('📧 Email subject:', options.subject);
+    
+    const info = await transporter.sendMail(mailOptions);
+    
+    console.log('✅ Email sent successfully!');
+    console.log('📧 Message ID:', info.messageId);
+    console.log('📧 Response:', info.response);
+    
+    return { success: true, info };
+  } catch (error) {
+    console.error('❌ Email sending failed!');
+    console.error('❌ Error details:', error);
+    
+    if (error.responseCode) {
+      console.error('❌ SMTP response code:', error.responseCode);
+    }
+    if (error.response) {
+      console.error('❌ SMTP response:', error.response);
+    }
+    if (error.command) {
+      console.error('❌ Last command:', error.command);
+    }
+    
+    return { success: false, error };
+  }
+};
+
 // Routes
 app.get('/', (req, res) => {
   res.json({
@@ -246,9 +279,8 @@ app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => 
     });
 
     // Send welcome email with verification code
-    await transporter.sendMail({
-      from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
-      to: email,
+    const emailResult = await sendEmail({
+      email: user.email,
       subject: 'Welcome to Secure Auth - Verify Your Email',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -265,6 +297,14 @@ app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => 
         </div>
       `
     });
+
+    if (!emailResult.success) {
+      console.error('Failed to send verification email:', emailResult.error);
+      return res.status(500).json({
+        success: false,
+        message: 'Account created but failed to send verification email. Please contact support.'
+      });
+    }
 
     res.status(201).json({
       success: true,
@@ -470,9 +510,8 @@ app.post('/api/auth/forgot-password', async (req, res) => {
     await user.save();
 
     // Send email with reset code
-    await transporter.sendMail({
-      from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
-      to: email,
+    const emailResult = await sendEmail({
+      email: email,
       subject: 'Password Reset Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -486,6 +525,14 @@ app.post('/api/auth/forgot-password', async (req, res) => {
         </div>
       `
     });
+
+    if (!emailResult.success) {
+      console.error('Failed to send reset code email:', emailResult.error);
+      return res.status(500).json({
+        success: false,
+        message: 'Failed to send reset code. Please try again later.'
+      });
+    }
 
     res.json({ 
       success: true,
@@ -591,9 +638,8 @@ app.post('/api/auth/reset-password', async (req, res) => {
     await user.save();
 
     // Send confirmation email
-    await transporter.sendMail({
-      from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
-      to: email,
+    const emailResult = await sendEmail({
+      email: email,
       subject: 'Password Changed Successfully',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -603,6 +649,11 @@ app.post('/api/auth/reset-password', async (req, res) => {
         </div>
       `
     });
+
+    if (!emailResult.success) {
+      console.error('Failed to send password changed email:', emailResult.error);
+      // We don't return an error to the user because the password was changed
+    }
 
     res.json({ 
       success: true,
