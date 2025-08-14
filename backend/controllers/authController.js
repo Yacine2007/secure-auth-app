@@ -2,63 +2,91 @@ const User = require('../models/User');
 const { sendEmail } = require('../config/mailer');
 const { generateVerificationCode } = require('../utils/generateCode');
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+
+// تحسينات رئيسية:
+// 1. إضافة معالجة كلمة المرور
+// 2. تحسين رسائل الأخطاء
+// 3. إضافة JWT عند التسجيل
 
 exports.signup = async (req, res) => {
   try {
     const { name, email, password } = req.body;
     
-    // التحقق من البيانات
     if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'All fields are required' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'الرجاء إدخال جميع الحقول المطلوبة' 
+      });
     }
 
-    // التحقق من البريد الإلكتروني
+    // التحقق من صحة البريد الإلكتروني
+    if (!/^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/.test(email)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: 'صيغة البريد الإلكتروني غير صالحة' 
+      });
+    }
+
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ success: false, message: 'Email already exists' });
+      return res.status(409).json({ 
+        success: false, 
+        message: 'البريد الإلكتروني مسجل مسبقاً' 
+      });
     }
 
-    // إنشاء المستخدم
+    // تشفير كلمة المرور
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(password, salt);
+
     const verificationCode = generateVerificationCode();
     const user = new User({
-      name, email, password,
+      name, 
+      email, 
+      password: hashedPassword,
       verificationCode,
-      verificationCodeExpires: Date.now() + 10 * 60 * 1000 // 10 دقائق
+      verificationCodeExpires: Date.now() + 10 * 60 * 1000
     });
 
     await user.save();
 
     // إرسال البريد الإلكتروني
-    const emailSent = await sendEmail({
-      email: user.email,
-      subject: '🔐 رمز التحقق الخاص بك',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #2563eb;">مرحباً ${name}!</h2>
-          <p>رمز التحقق الخاص بك هو:</p>
-          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
-            <h1 style="margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
+    try {
+      await sendEmail({
+        email: user.email,
+        subject: '🔐 رمز التحقق الخاص بك',
+        html: `
+          <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+            <h2 style="color: #2563eb;">مرحباً ${name}!</h2>
+            <p>رمز التحقق الخاص بك هو:</p>
+            <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+              <h1 style="margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
+            </div>
+            <p style="font-size: 12px; color: #6b7280;">هذا الرمز سينتهي خلال 10 دقائق.</p>
           </div>
-          <p style="font-size: 12px; color: #6b7280;">هذا الرمز سينتهي خلال 10 دقائق.</p>
-        </div>
-      `
-    });
-
-    if (!emailSent) {
+        `
+      });
+    } catch (emailError) {
+      console.error('فشل إرسال البريد:', emailError);
       return res.status(500).json({ 
         success: false, 
-        message: 'Account created but failed to send verification email' 
+        message: 'تم إنشاء الحساب ولكن فشل إرسال رمز التحقق' 
       });
     }
 
     res.status(201).json({
       success: true,
-      message: 'Verification code sent to your email',
-      userId: user.userId
+      message: 'تم إرسال رمز التحقق إلى بريدك الإلكتروني',
+      userId: user._id
     });
 
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('خطأ في التسجيل:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'حدث خطأ في الخادم' 
+    });
   }
 };
 
@@ -73,16 +101,35 @@ exports.verifyCode = async (req, res) => {
     });
 
     if (!user) {
-      return res.status(400).json({ success: false, message: 'Invalid or expired code' });
+      return res.status(400).json({ 
+        success: false, 
+        message: 'رمز التحقق غير صالح أو منتهي الصلاحية' 
+      });
     }
 
     user.isVerified = true;
     user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
     await user.save();
 
-    res.json({ success: true, message: 'Account verified successfully' });
+    // إنشاء توكن JWT
+    const token = jwt.sign(
+      { id: user._id }, 
+      process.env.JWT_SECRET, 
+      { expiresIn: '30d' }
+    );
+
+    res.json({ 
+      success: true, 
+      message: 'تم التحقق من الحساب بنجاح',
+      token 
+    });
     
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Server error' });
+    console.error('خطأ في التحقق:', err);
+    res.status(500).json({ 
+      success: false, 
+      message: 'حدث خطأ في الخادم' 
+    });
   }
 };
