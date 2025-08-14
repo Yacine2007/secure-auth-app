@@ -1,5 +1,5 @@
 // Application State
-const BACKEND_URL = 'https://secure-auth-app-5w01.onrender.com'; // Replace with your actual backend URL
+const BACKEND_URL = 'https://secure-auth-app-5w01.onrender.com';
 let currentUser = null;
 let tempUserData = {};
 let resendTimer = null;
@@ -56,7 +56,12 @@ function resetFormSteps() {
 
 function goToStep(stepNumber) {
     resetFormSteps();
-    document.getElementById(`step${stepNumber}`).classList.add('active');
+    const stepElement = document.getElementById(`step${stepNumber}`);
+    if (stepElement) {
+        stepElement.classList.add('active');
+    } else {
+        console.error(`Step ${stepNumber} element not found`);
+    }
 }
 
 // Initialize Countdown Timer
@@ -148,7 +153,7 @@ document.getElementById('create-account').addEventListener('click', (e) => {
 
 // Send Verification Code (Forgot Password)
 document.getElementById('send-code-btn').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     
     if (!email) {
         showError('Please enter your email');
@@ -166,23 +171,24 @@ document.getElementById('send-code-btn').addEventListener('click', async () => {
         });
         
         const data = await response.json();
-        hideLoading();
+        console.log('Forgot Password Response:', data);
         
-        if (data.success) {
-            showSuccess('Verification code sent to your email');
-            goToStep(4);
-            // Start countdown for resend
-            clearInterval(resendTimer);
-            resendTimer = startCountdown('countdown', 30, () => {
-                document.getElementById('resend-code').classList.remove('disabled');
-            });
-            document.getElementById('resend-code').classList.add('disabled');
-        } else {
-            showError(data.message || 'Failed to send verification code');
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to send code');
         }
+        
+        hideLoading();
+        showSuccess('Verification code sent to your email', 'forgot-password-message');
+        goToStep(4);
+        
+        clearInterval(resendTimer);
+        resendTimer = startCountdown('countdown', 30, () => {
+            document.getElementById('resend-code').classList.remove('disabled');
+        });
+        document.getElementById('resend-code').classList.add('disabled');
     } catch (err) {
         hideLoading();
-        showError('Network error. Please try again.');
+        showError(err.message || 'Failed to send verification code');
     }
 });
 
@@ -190,7 +196,7 @@ document.getElementById('send-code-btn').addEventListener('click', async () => {
 document.getElementById('resend-code').addEventListener('click', async function() {
     if (this.classList.contains('disabled')) return;
     
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     
     try {
         showLoading('Resending code...');
@@ -203,28 +209,28 @@ document.getElementById('resend-code').addEventListener('click', async function(
         });
         
         const data = await response.json();
-        hideLoading();
         
-        if (data.success) {
-            showSuccess('New verification code sent');
-            // Reset countdown
-            clearInterval(resendTimer);
-            resendTimer = startCountdown('countdown', 30, () => {
-                document.getElementById('resend-code').classList.remove('disabled');
-            });
-            document.getElementById('resend-code').classList.add('disabled');
-        } else {
-            showError(data.message || 'Failed to resend code');
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to resend code');
         }
+        
+        hideLoading();
+        showSuccess('New verification code sent');
+        
+        clearInterval(resendTimer);
+        resendTimer = startCountdown('countdown', 30, () => {
+            document.getElementById('resend-code').classList.remove('disabled');
+        });
+        document.getElementById('resend-code').classList.add('disabled');
     } catch (err) {
         hideLoading();
-        showError('Network error. Please try again.');
+        showError(err.message || 'Failed to resend code');
     }
 });
 
 // Verify Code (Forgot Password)
 document.getElementById('verify-code-btn').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     const code = Array.from(document.querySelectorAll('.code-input'))
                     .map(input => input.value)
                     .join('');
@@ -245,22 +251,22 @@ document.getElementById('verify-code-btn').addEventListener('click', async () =>
         });
         
         const data = await response.json();
-        hideLoading();
         
-        if (data.success) {
-            goToStep(5);
-        } else {
-            showError(data.message || 'Invalid verification code');
+        if (!response.ok) {
+            throw new Error(data.message || 'Invalid verification code');
         }
+        
+        hideLoading();
+        goToStep(5);
     } catch (err) {
         hideLoading();
-        showError('Verification failed. Please try again.');
+        showError(err.message || 'Verification failed');
     }
 });
 
 // Reset Password
 document.getElementById('reset-password-btn').addEventListener('click', async () => {
-    const email = document.getElementById('email').value;
+    const email = document.getElementById('email').value.trim();
     const newPassword = document.getElementById('new-password').value;
     const confirmPassword = document.getElementById('confirm-password').value;
     
@@ -285,25 +291,24 @@ document.getElementById('reset-password-btn').addEventListener('click', async ()
         });
         
         const data = await response.json();
-        hideLoading();
         
-        if (data.success) {
-            showSuccess('Password reset successfully');
-            goToStep(2);
-            document.getElementById('password-error').style.display = 'none';
-        } else {
-            showError(data.message || 'Failed to reset password');
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to reset password');
         }
+        
+        hideLoading();
+        showSuccess('Password reset successfully');
+        goToStep(2);
     } catch (err) {
         hideLoading();
-        showError('Network error. Please try again.');
+        showError(err.message || 'Failed to reset password');
     }
 });
 
 // Signup
 document.getElementById('signup-btn').addEventListener('click', async () => {
-    const fullName = document.getElementById('full-name').value;
-    const email = document.getElementById('signup-email').value;
+    const fullName = document.getElementById('full-name').value.trim();
+    const email = document.getElementById('signup-email').value.trim();
     const password = document.getElementById('signup-password').value;
     const confirmPassword = document.getElementById('signup-confirm-password').value;
     const profileImage = document.getElementById('profile-image').files[0];
@@ -338,28 +343,30 @@ document.getElementById('signup-btn').addEventListener('click', async () => {
         });
         
         const data = await response.json();
-        hideLoading();
+        console.log('Signup Response:', data);
         
-        if (data.success) {
-            tempUserData = {
-                email,
-                userId: data.userId,
-                name: fullName
-            };
-            showSuccess('Account created! Verification code sent to your email');
-            goToStep(7);
-            // Start countdown for resend
-            clearInterval(signupResendTimer);
-            signupResendTimer = startCountdown('signup-countdown', 30, () => {
-                document.getElementById('signup-resend-code').classList.remove('disabled');
-            });
-            document.getElementById('signup-resend-code').classList.add('disabled');
-        } else {
-            showError(data.message || 'Signup failed');
+        if (!response.ok) {
+            throw new Error(data.message || 'Signup failed');
         }
+        
+        tempUserData = {
+            email,
+            userId: data.userId,
+            name: fullName
+        };
+        
+        hideLoading();
+        showSuccess('Account created! Verification code sent to your email');
+        goToStep(7);
+        
+        clearInterval(signupResendTimer);
+        signupResendTimer = startCountdown('signup-countdown', 30, () => {
+            document.getElementById('signup-resend-code').classList.remove('disabled');
+        });
+        document.getElementById('signup-resend-code').classList.add('disabled');
     } catch (err) {
         hideLoading();
-        showError('Network error. Please try again.');
+        showError(err.message || 'Signup failed');
     }
 });
 
@@ -378,22 +385,22 @@ document.getElementById('signup-resend-code').addEventListener('click', async fu
         });
         
         const data = await response.json();
-        hideLoading();
         
-        if (data.success) {
-            showSuccess('New verification code sent');
-            // Reset countdown
-            clearInterval(signupResendTimer);
-            signupResendTimer = startCountdown('signup-countdown', 30, () => {
-                document.getElementById('signup-resend-code').classList.remove('disabled');
-            });
-            document.getElementById('signup-resend-code').classList.add('disabled');
-        } else {
-            showError(data.message || 'Failed to resend code');
+        if (!response.ok) {
+            throw new Error(data.message || 'Failed to resend code');
         }
+        
+        hideLoading();
+        showSuccess('New verification code sent');
+        
+        clearInterval(signupResendTimer);
+        signupResendTimer = startCountdown('signup-countdown', 30, () => {
+            document.getElementById('signup-resend-code').classList.remove('disabled');
+        });
+        document.getElementById('signup-resend-code').classList.add('disabled');
     } catch (err) {
         hideLoading();
-        showError('Network error. Please try again.');
+        showError(err.message || 'Failed to resend code');
     }
 });
 
@@ -422,23 +429,23 @@ document.getElementById('signup-verify-code-btn').addEventListener('click', asyn
         });
         
         const data = await response.json();
-        hideLoading();
         
-        if (data.success) {
-            generateQRCode(data.user);
-            goToStep(8);
-        } else {
-            showError(data.message || 'Invalid verification code');
+        if (!response.ok) {
+            throw new Error(data.message || 'Invalid verification code');
         }
+        
+        hideLoading();
+        generateQRCode(data.user);
+        goToStep(8);
     } catch (err) {
         hideLoading();
-        showError('Verification failed. Please try again.');
+        showError(err.message || 'Verification failed');
     }
 });
 
 // Login
 document.getElementById('login-btn').addEventListener('click', async () => {
-    const userId = document.getElementById('user-id').value;
+    const userId = document.getElementById('user-id').value.trim();
     const password = document.getElementById('password').value;
 
     if (!userId || !password) {
@@ -460,13 +467,13 @@ document.getElementById('login-btn').addEventListener('click', async () => {
         });
         
         const data = await response.json();
-        hideLoading();
         
-        if (data.success) {
-            loginUser(data.user);
-        } else {
-            document.getElementById('password-error').style.display = 'block';
+        if (!response.ok) {
+            throw new Error(data.message || 'Login failed');
         }
+        
+        hideLoading();
+        loginUser(data.user);
     } catch (err) {
         hideLoading();
         document.getElementById('password-error').style.display = 'block';
@@ -482,11 +489,9 @@ function loginUser(user) {
         lastLogin: new Date().toLocaleString()
     };
     
-    // Set dashboard data
     document.getElementById('dashboard-name').textContent = `Welcome, ${currentUser.name}`;
     document.getElementById('last-login').textContent = currentUser.lastLogin;
     
-    // Update profile image
     const dashboardAvatar = document.getElementById('dashboard-avatar');
     if (user.profileImage) {
         dashboardAvatar.src = `${BACKEND_URL}/uploads/${user.profileImage}`;
@@ -555,7 +560,6 @@ document.getElementById('qr-file-input').addEventListener('change', function(e) 
             document.getElementById('qr-preview').style.display = 'block';
             document.getElementById('qr-scanner').style.display = 'none';
             
-            // Automatically validate the QR code after selection
             validateQRCode(file);
         }
         
@@ -585,7 +589,6 @@ function validateQRCode(file) {
                 try {
                     const qrData = JSON.parse(code.data);
                     
-                    // Send login request with QR data
                     fetch(`${BACKEND_URL}/api/auth/login-qr`, {
                         method: 'POST',
                         headers: {
@@ -602,18 +605,15 @@ function validateQRCode(file) {
                         if (data.success) {
                             showQRValidationResult('Login successful!', 'success');
                             
-                            // Store token in localStorage (optional)
                             if (data.token) {
                                 localStorage.setItem('token', data.token);
                             }
                             
-                            // Login automatically
                             setTimeout(() => {
                                 loginUser(data.user);
                             }, 1500);
                         } else {
                             showQRValidationResult(data.message || 'Login failed', 'error');
-                            // Reset QR input after a delay
                             setTimeout(resetQRValidation, 3000);
                         }
                     })
@@ -670,18 +670,14 @@ document.getElementById('logout-btn').addEventListener('click', function() {
 
 // Initialize
 document.addEventListener('DOMContentLoaded', () => {
-    // Initialize QR placeholder
     resetQRValidation();
     
-    // Simulate server connection
     setTimeout(() => {
         document.getElementById('loading').style.display = 'none';
     }, 1000);
     
-    // Check if user is already logged in
     const token = localStorage.getItem('token');
     if (token) {
-        // Verify token and log user in automatically
         fetch(`${BACKEND_URL}/api/auth/verify-token`, {
             method: 'POST',
             headers: {
