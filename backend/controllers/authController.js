@@ -1,40 +1,46 @@
 const User = require('../models/User');
 const { sendVerificationEmail } = require('../config/mailer');
+const { generateVerificationCode } = require('../utils/generateCode');
 
 exports.signup = async (req, res) => {
   try {
-    const { name, email, password } = req.body;
+    const { email, password, name } = req.body;
     
-    // التحقق من البيانات
-    if (!name || !email || !password) {
-      return res.status(400).json({ success: false, message: 'All fields required' });
+    // 1. التحقق من البيانات
+    if (!email || !password || !name) {
+      return res.status(400).json({ error: 'All fields are required' });
     }
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000);
+    // 2. إنشاء رمز التحقق
+    const verificationCode = generateVerificationCode();
+    
+    // 3. إرسال البريد
     const emailSent = await sendVerificationEmail(email, verificationCode);
-
+    
     if (!emailSent) {
-      return res.status(500).json({ success: false, message: 'Failed to send email' });
+      return res.status(500).json({ error: 'Failed to send verification email' });
     }
 
+    // 4. حفظ المستخدم
     const user = new User({
-      name,
       email,
       password,
+      name,
       verificationCode,
-      verificationCodeExpires: Date.now() + 600000
+      verificationCodeExpires: Date.now() + 600000 // 10 دقائق
     });
 
     await user.save();
 
+    // 5. الاستجابة
     res.status(201).json({
       success: true,
       message: 'Verification code sent',
       userId: user._id
     });
 
-  } catch (err) {
-    console.error('Signup error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+  } catch (error) {
+    console.error('Signup error:', error);
+    res.status(500).json({ error: 'Server error during signup' });
   }
 };
