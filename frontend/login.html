@@ -1,313 +1,52 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Secure Authentication System</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.1/build/qrcode.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
-    <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Secure Auth App</title>
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="glass-bg"></div>
-    
-    <div class="auth-container">
-        <div class="header">
-            <div class="logo">
-                <i class="fas fa-lock"></i>
-            </div>
-            <h1>Secure Authentication</h1>
-            <p>Login with QR code or credentials</p>
-        </div>
-        
-        <div class="loading" id="loading">
-            <div class="loading-spinner"></div>
-            <p>Processing...</p>
-        </div>
-        
-        <div class="form-container">
-            <!-- Step 1: QR Code Login -->
-            <div class="form-step active" id="step1">
-                <div class="qr-container">
-                    <p>Scan your QR code to login</p>
-                    <div class="qr-placeholder" id="qr-scanner">
-                        <i class="fas fa-qrcode"></i>
-                        <span>Click to upload QR code</span>
-                        <input type="file" id="qr-file-input" accept="image/*" style="display:none">
-                    </div>
-                    
-                    <div class="qr-preview" id="qr-preview" style="display:none">
-                        <img id="preview-image" src="" alt="QR Preview" style="max-width:180px; max-height:180px; margin:0 auto; display:block">
-                    </div>
-                    
-                    <div class="qr-validation-result" id="qr-validation-result"></div>
-                </div>
-                
-                <div class="btn btn-secondary" id="no-qr-btn">
-                    <i class="fas fa-key"></i> Use ID and Password
-                </div>
-            </div>
-            
-            <!-- Step 2: Credentials Login -->
-            <div class="form-step" id="step2">
-                <div class="error-message" id="password-error">
-                    <i class="fas fa-exclamation-circle"></i> The password you entered is incorrect
-                </div>
-                
-                <div class="input-group">
-                    <label for="user-id">User ID</label>
-                    <input type="text" id="user-id" placeholder="Enter your ID">
-                </div>
-                
-                <div class="input-group password-container">
-                    <label for="password">Password</label>
-                    <input type="password" id="password" placeholder="Enter password">
-                    <span class="toggle-password" id="toggle-password">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn btn-secondary" id="back-to-step1">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="login-btn">
-                        Login <i class="fas fa-sign-in-alt"></i>
-                    </button>
-                </div>
-                
-                <div class="footer-links">
-                    <a href="#" id="forgot-password">Forgot Password?</a>
-                    <a href="#" id="create-account">Create Account</a>
-                </div>
-            </div>
-            
-            <!-- Step 3: Forgot Password -->
-            <div class="form-step" id="step3">
-                <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    Enter your email to reset your password
-                </p>
-                
-                <div class="input-group">
-                    <label for="email">Email</label>
-                    <input type="email" id="email" placeholder="Enter your email">
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn btn-secondary" id="back-to-step2">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="send-code-btn">
-                        Send Code <i class="fas fa-paper-plane"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Step 4: Verification Code -->
-            <div class="form-step" id="step4">
-                <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    We've sent a verification code to your email. Please enter it below.
-                </p>
-                
-                <div class="code-inputs">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                </div>
-                
-                <div class="resend-code" id="resend-code">
-                    Didn't receive code? <span id="resend-text">Resend</span>
-                    <span class="countdown" id="countdown" style="display: none;"></span>
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn btn-secondary" id="back-to-step3">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="verify-code-btn">
-                        Verify <i class="fas fa-check"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Step 5: Reset Password -->
-            <div class="form-step" id="step5">
-                <div class="input-group password-container">
-                    <label for="new-password">New Password</label>
-                    <input type="password" id="new-password" placeholder="Create new password">
-                    <span class="toggle-password" id="toggle-new-password">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                
-                <div class="input-group password-container">
-                    <label for="confirm-password">Confirm Password</label>
-                    <input type="password" id="confirm-password" placeholder="Confirm new password">
-                    <span class="toggle-password" id="toggle-confirm-password">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn btn-secondary" id="back-to-step4">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="reset-password-btn">
-                        Reset <i class="fas fa-sync-alt"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Step 6: Signup -->
-            <div class="form-step" id="step6">
-                <div class="input-group">
-                    <label for="full-name">Full Name</label>
-                    <input type="text" id="full-name" placeholder="Enter your full name">
-                </div>
-                
-                <div class="input-group">
-                    <label for="signup-email">Email</label>
-                    <input type="email" id="signup-email" placeholder="Enter your email">
-                </div>
-                
-                <div class="input-group password-container">
-                    <label for="signup-password">Password</label>
-                    <input type="password" id="signup-password" placeholder="Create password">
-                    <span class="toggle-password" id="toggle-signup-password">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                
-                <div class="input-group password-container">
-                    <label for="signup-confirm-password">Confirm Password</label>
-                    <input type="password" id="signup-confirm-password" placeholder="Confirm password">
-                    <span class="toggle-password" id="toggle-signup-confirm">
-                        <i class="fas fa-eye"></i>
-                    </span>
-                </div>
-                
-                <div class="image-upload">
-                    <label>Choose Profile Picture</label>
-                    <div class="image-preview" id="image-preview">
-                        <i class="fas fa-user-circle"></i>
-                        <img id="profile-preview" src="" alt="Profile Preview">
-                        <input type="file" id="profile-image" accept="image/*">
-                    </div>
-                    <p style="color: #aaa; font-size: 14px;">Click to upload your photo</p>
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn btn-secondary" id="back-to-step1-from-signup">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="signup-btn">
-                        Sign Up <i class="fas fa-user-plus"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Step 7: Signup Verification -->
-            <div class="form-step" id="step7">
-                <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    We've sent a verification code to your email. Please enter it below.
-                </p>
-                
-                <div class="code-inputs">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                    <input type="text" maxlength="1" class="code-input">
-                </div>
-                
-                <div class="resend-code" id="signup-resend-code">
-                    Didn't receive code? <span id="signup-resend-text">Resend</span>
-                    <span class="countdown" id="signup-countdown" style="display: none;"></span>
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn btn-secondary" id="back-to-step6">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="signup-verify-code-btn">
-                        Verify <i class="fas fa-check"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Step 8: Generated QR -->
-            <div class="form-step" id="step8">
-                <h2 style="color: white; text-align: center; margin-bottom: 15px;">Account Created Successfully!</h2>
-                <p style="color: #ccc; text-align: center; margin-bottom: 20px;">
-                    Your account QR code has been generated. Save this for future logins.
-                </p>
-                
-                <div class="generated-qr">
-                    <div id="qr-code"></div>
-                    <div class="user-id-display" id="user-id-display">ID: USER-5F3D9A</div>
-                    <p style="color: #aaa; margin: 10px 0;">Scan this code to login to your account</p>
-                </div>
-                
-                <div class="btn-container">
-                    <button class="btn" id="download-qr-btn">
-                        <i class="fas fa-download"></i> Download QR Code
-                    </button>
-                    <button class="btn btn-secondary" id="back-to-login">
-                        <i class="fas fa-sign-in-alt"></i> Back to Login
-                    </button>
-                </div>
-            </div>
-            
-            <!-- Step 9: Dashboard -->
-            <div class="form-step" id="step9">
-                <div class="dashboard-container">
-                    <div class="dashboard-header">
-                        <img id="dashboard-avatar" src="https://randomuser.me/api/portraits/men/41.jpg" alt="Profile">
-                        <h2 id="dashboard-name" style="color: white; margin-bottom: 5px;">Welcome, User</h2>
-                        <p style="color: #aaa; font-size: 16px;">Last login: <span id="last-login">Just now</span></p>
-                    </div>
-                    
-                    <div class="dashboard-stats">
-                        <div class="stat-card">
-                            <i class="fas fa-shield-alt"></i>
-                            <div class="value">98%</div>
-                            <div class="label">Security Score</div>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-history"></i>
-                            <div class="value">12</div>
-                            <div class="label">Login Sessions</div>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-qrcode"></i>
-                            <div class="value">5</div>
-                            <div class="label">QR Logins</div>
-                        </div>
-                        <div class="stat-card">
-                            <i class="fas fa-key"></i>
-                            <div class="value">2FA</div>
-                            <div class="label">Enabled</div>
-                        </div>
-                    </div>
-                    
-                    <div class="btn-container" style="margin-top: 20px;">
-                        <button class="btn btn-secondary" id="security-settings-btn">
-                            <i class="fas fa-cog"></i> Security Settings
-                        </button>
-                        <button class="btn" id="logout-btn">
-                            <i class="fas fa-sign-out-alt"></i> Logout
-                        </button>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
 
-    <script src="script.js"></script>
+<div id="authContainer">
+
+  <!-- تسجيل الدخول -->
+  <form id="loginForm">
+    <h2>Login</h2>
+    <input type="email" id="loginEmail" placeholder="Email" required>
+    <input type="password" id="loginPassword" placeholder="Password" required>
+    <button type="submit">Login</button>
+    <p><a href="#" id="showSignup">Sign Up</a> | <a href="#" id="showForgot">Forgot Password?</a></p>
+  </form>
+
+  <!-- تسجيل حساب جديد -->
+  <form id="signupForm" style="display:none;">
+    <h2>Sign Up</h2>
+    <input type="text" name="name" placeholder="Name" required>
+    <input type="email" name="email" placeholder="Email" required>
+    <input type="password" name="password" placeholder="Password" required>
+    <button type="submit">Sign Up</button>
+    <p><a href="#" id="showLogin1">Back to Login</a></p>
+  </form>
+
+  <!-- إدخال رمز التحقق -->
+  <form id="verificationForm" style="display:none;">
+    <h2>Enter Verification Code</h2>
+    <input type="hidden" id="userIdInput">
+    <input type="text" id="verificationCode" placeholder="6-digit Code" required>
+    <button type="submit">Verify</button>
+  </form>
+
+  <!-- نسيت كلمة المرور -->
+  <form id="forgotForm" style="display:none;">
+    <h2>Forgot Password</h2>
+    <input type="email" id="forgotEmail" placeholder="Email" required>
+    <button type="submit">Send Reset Code</button>
+    <p><a href="#" id="showLogin2">Back to Login</a></p>
+  </form>
+
+</div>
+
+<script src="script.js"></script>
 </body>
 </html>
