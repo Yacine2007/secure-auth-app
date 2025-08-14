@@ -1,39 +1,42 @@
-const multer = require('multer');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
-const fs = require('fs');
+require('dotenv').config();
+const nodemailer = require('nodemailer');
 
-// إنشاء مجلد التحميلات إذا لم يكن موجوداً
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
+// استخدم نفس الإعدادات التي نجحت في الاختبار
+const transporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
+  },
+  tls: {
+    rejectUnauthorized: false // مهم لبيئات الاستضافة
+  }
+});
+
+async function sendVerificationEmail(email, verificationCode) {
+  const mailOptions = {
+    from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
+    to: email,
+    subject: '🔐 Verification Code',
+    html: `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2 style="color: #2563eb;">Your Verification Code</h2>
+        <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+          <h1 style="margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
+        </div>
+        <p style="font-size: 12px; color: #6b7280;">This code will expire in 10 minutes.</p>
+      </div>
+    `
+  };
+
+  try {
+    const info = await transporter.sendMail(mailOptions);
+    console.log('Email sent:', info.response);
+    return true;
+  } catch (error) {
+    console.error('Error sending email:', error);
+    return false;
+  }
 }
 
-// إعدادات التخزين
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    cb(null, `${uuidv4()}${ext}`);
-  }
-});
-
-// تصفية أنواع الملفات
-const fileFilter = (req, file, cb) => {
-  if (file.mimetype.startsWith('image/')) {
-    cb(null, true);
-  } else {
-    cb(new Error('يسمح فقط بتحميل الصور!'), false);
-  }
-};
-
-// تهيئة multer
-const upload = multer({
-  storage,
-  limits: { fileSize: 5 * 1024 * 1024 }, // 5MB
-  fileFilter
-});
-
-module.exports = upload;
+module.exports = { sendVerificationEmail };
