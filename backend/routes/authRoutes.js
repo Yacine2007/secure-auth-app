@@ -3,7 +3,7 @@ const router = express.Router();
 const path = require('path');
 const authController = require('../controllers/authController');
 const { protect } = require('../middlewares/authMiddleware');
-const upload = require(path.join(__dirname, '../config/multer'));
+const upload = require('./multerConfig');
 
 router.post('/signup', upload.single('profileImage'), authController.signup);
 router.post('/verify', authController.verifyCode);
