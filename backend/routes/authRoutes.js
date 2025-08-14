@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const upload = require('../config/multerConfig'); // تصحيح المسار
+const upload = require('../config/multerConfig'); // ← تأكد من هذا السطر
 
 router.post('/signup', upload.single('profileImage'), authController.signup);
 
