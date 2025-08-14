@@ -545,15 +545,6 @@
                     </div>
                     
                     <div class="qr-validation-result" id="qr-validation-result"></div>
-                    
-                    <div class="btn-container" id="qr-actions" style="display:none; margin-top:15px;">
-                        <button class="btn" id="validate-qr">
-                            <i class="fas fa-check"></i> Validate
-                        </button>
-                        <button class="btn btn-secondary" id="change-qr">
-                            <i class="fas fa-sync"></i> Change
-                        </button>
-                    </div>
                 </div>
                 
                 <div class="btn btn-secondary" id="no-qr-btn">
@@ -565,10 +556,6 @@
             <div class="form-step" id="step2">
                 <div class="error-message" id="password-error">
                     <i class="fas fa-exclamation-circle"></i> The password you entered is incorrect
-                </div>
-                
-                <div class="success-message" id="qr-success-message">
-                    <i class="fas fa-check-circle"></i> QR code validated! Your credentials have been filled
                 </div>
                 
                 <div class="input-group">
@@ -826,28 +813,13 @@
 
     <script>
         // Application State
+        const BACKEND_URL = 'https://secure-auth-app-5w01.onrender.com'; // Replace with your actual backend URL
         let currentUser = null;
         let tempUserData = {};
         let resendTimer = null;
         let signupResendTimer = null;
         let generatedQRCode = null;
         let qrFile = null;
-        let demoUsers = {
-            "USER-5F3D9A": {
-                userId: "USER-5F3D9A",
-                name: "John Doe",
-                email: "john.doe@example.com",
-                password: "securePass123",
-                profileImage: "https://randomuser.me/api/portraits/men/41.jpg"
-            },
-            "DEMO-USER": {
-                userId: "DEMO-USER",
-                name: "Demo User",
-                email: "demo@example.com",
-                password: "demo123",
-                profileImage: "https://randomuser.me/api/portraits/women/32.jpg"
-            }
-        };
 
         // Helper Functions
         function showLoading() {
@@ -923,10 +895,9 @@
         // Toggle Password Visibility
         const togglePassword = (inputId, toggleId) => {
             const passwordInput = document.getElementById(inputId);
-            if (!passwordInput) return;
-            
             const toggleIcon = document.querySelector(`#${toggleId} i`);
-            if (!toggleIcon) return;
+            
+            if (!passwordInput || !toggleIcon) return;
             
             if (passwordInput.type === "password") {
                 passwordInput.type = "text";
@@ -1129,13 +1100,8 @@
                         email,
                         userId: `USER-${Math.floor(Math.random() * 1000000).toString(16).toUpperCase()}`,
                         name: fullName,
-                        password: password,
                         profileImage: profileImage ? URL.createObjectURL(profileImage) : null
                     };
-                    
-                    // Add to demo users
-                    demoUsers[tempUserData.userId] = tempUserData;
-                    
                     goToStep(7);
                     // Start countdown for resend
                     clearInterval(signupResendTimer);
@@ -1233,10 +1199,8 @@
                 // Simulate API call
                 setTimeout(() => {
                     hideLoading();
-                    
-                    // Check if user exists
-                    if (demoUsers[userId] && demoUsers[userId].password === password) {
-                        loginUser(demoUsers[userId]);
+                    if (password === "password123") { // Hardcoded for demo
+                        loginUser(userId);
                     } else {
                         document.getElementById('password-error').style.display = 'block';
                     }
@@ -1260,12 +1224,10 @@
             document.getElementById('dashboard-name').textContent = `Welcome, ${currentUser.name}`;
             document.getElementById('last-login').textContent = currentUser.lastLogin;
             
-            // Set profile image
+            // Update profile image
             const dashboardAvatar = document.getElementById('dashboard-avatar');
             if (user.profileImage) {
                 dashboardAvatar.src = user.profileImage;
-            } else {
-                dashboardAvatar.src = 'https://randomuser.me/api/portraits/men/41.jpg';
             }
             
             goToStep(9);
@@ -1330,92 +1292,97 @@
                     
                     document.getElementById('qr-preview').style.display = 'block';
                     document.getElementById('qr-scanner').style.display = 'none';
-                    document.getElementById('qr-actions').style.display = 'flex';
                     
-                    // Auto validate the QR code
-                    setTimeout(() => {
-                        document.getElementById('validate-qr').click();
-                    }, 500);
+                    // Automatically validate the QR code after selection
+                    validateQRCode(file);
                 }
                 
                 reader.readAsDataURL(file);
             }
         });
 
-        document.getElementById('change-qr').addEventListener('click', resetQRValidation);
-
-        document.getElementById('validate-qr').addEventListener('click', async function() {
-            if (!qrFile) {
-                showQRValidationResult('No QR code selected', 'error');
-                return;
-            }
+        function validateQRCode(file) {
+            showLoading();
+            const reader = new FileReader();
             
-            try {
-                showLoading();
-                const reader = new FileReader();
+            reader.onload = function(e) {
+                const img = new Image();
+                img.src = e.target.result;
                 
-                reader.onload = function(e) {
-                    const img = new Image();
-                    img.src = e.target.result;
+                img.onload = function() {
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
                     
-                    img.onload = function() {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0, img.width, img.height);
-                        
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
-                        
-                        if (code) {
-                            try {
-                                const userData = JSON.parse(code.data);
-                                
-                                if (userData.userId && userData.email) {
-                                    // Check if user exists
-                                    if (demoUsers[userData.userId]) {
-                                        showQRValidationResult('QR code validated successfully!', 'success');
-                                        
-                                        setTimeout(() => {
-                                            // Auto login with the user data
-                                            loginUser(demoUsers[userData.userId]);
-                                        }, 1500);
-                                    } else {
-                                        showQRValidationResult('User not found', 'error');
-                                        hideLoading();
-                                    }
-                                } else {
-                                    showQRValidationResult('Invalid user data in QR code', 'error');
-                                    hideLoading();
-                                }
-                            } catch (err) {
-                                showQRValidationResult('Invalid QR code format', 'error');
+                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, imageData.height);
+                    
+                    if (code) {
+                        try {
+                            const qrData = JSON.parse(code.data);
+                            
+                            // Send login request with QR data
+                            fetch(`${BACKEND_URL}/api/auth/login-qr`, {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({
+                                    userId: qrData.userId,
+                                    email: qrData.email
+                                })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
                                 hideLoading();
-                            }
-                        } else {
-                            showQRValidationResult('No QR code found in image', 'error');
+                                if (data.success) {
+                                    showQRValidationResult('Login successful!', 'success');
+                                    
+                                    // Store token in localStorage (optional)
+                                    if (data.token) {
+                                        localStorage.setItem('token', data.token);
+                                    }
+                                    
+                                    // Login automatically
+                                    setTimeout(() => {
+                                        loginUser(data.user);
+                                    }, 1500);
+                                } else {
+                                    showQRValidationResult(data.message || 'Login failed', 'error');
+                                    // Reset QR input after a delay
+                                    setTimeout(resetQRValidation, 3000);
+                                }
+                            })
+                            .catch(error => {
+                                hideLoading();
+                                showQRValidationResult('Failed to login with QR code', 'error');
+                                setTimeout(resetQRValidation, 3000);
+                            });
+                        } catch (err) {
                             hideLoading();
+                            showQRValidationResult('Invalid QR code format', 'error');
+                            setTimeout(resetQRValidation, 3000);
                         }
-                    };
-                    
-                    img.onerror = function() {
-                        showQRValidationResult('Error loading image', 'error');
+                    } else {
                         hideLoading();
-                    };
+                        showQRValidationResult('No QR code found in image', 'error');
+                        setTimeout(resetQRValidation, 3000);
+                    }
                 };
-                
-                reader.onerror = function() {
-                    showQRValidationResult('Error reading file', 'error');
-                    hideLoading();
-                };
-                
-                reader.readAsDataURL(qrFile);
-            } catch (err) {
-                hideLoading();
-                showQRValidationResult('QR validation failed', 'error');
-            }
-        });
+            };
+            
+            reader.readAsDataURL(file);
+        }
+
+        function resetQRValidation() {
+            document.getElementById('qr-file-input').value = '';
+            qrFile = null;
+            document.getElementById('qr-preview').style.display = 'none';
+            document.getElementById('qr-scanner').style.display = 'flex';
+            document.getElementById('qr-validation-result').style.display = 'none';
+        }
 
         function showQRValidationResult(message, type) {
             const resultElement = document.getElementById('qr-validation-result');
@@ -1429,15 +1396,6 @@
             }
             
             resultElement.style.display = 'block';
-        }
-
-        function resetQRValidation() {
-            document.getElementById('qr-file-input').value = '';
-            qrFile = null;
-            document.getElementById('qr-preview').style.display = 'none';
-            document.getElementById('qr-scanner').style.display = 'flex';
-            document.getElementById('qr-actions').style.display = 'none';
-            document.getElementById('qr-validation-result').style.display = 'none';
         }
 
         // Logout
