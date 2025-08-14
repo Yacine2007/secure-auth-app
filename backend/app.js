@@ -183,6 +183,7 @@ app.get('/', (req, res) => {
     endpoints: {
       signup: '/api/auth/signup',
       login: '/api/auth/login',
+      loginQR: '/api/auth/login-qr',
       forgotPassword: '/api/auth/forgot-password',
       verifyCode: '/api/auth/verify-reset-code',
       resetPassword: '/api/auth/reset-password',
@@ -236,8 +237,7 @@ app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => 
     // Generate QR Code
     const qrData = JSON.stringify({
       userId: user.userId,
-      email: user.email,
-      createdAt: new Date().toISOString()
+      email: user.email
     });
     const qrCode = await QRCode.toDataURL(qrData, {
       errorCorrectionLevel: 'H',
@@ -363,6 +363,70 @@ app.post('/api/auth/login', async (req, res) => {
 
   } catch (err) {
     console.error('Login error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Login failed. Please try again.' 
+    });
+  }
+});
+
+// Login with QR Code
+app.post('/api/auth/login-qr', async (req, res) => {
+  try {
+    const { userId, email } = req.body;
+    
+    if (!userId || !email) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'User ID and email are required' 
+      });
+    }
+
+    const user = await User.findOne({ userId, email });
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
+
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingTime = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+      return res.status(403).json({ 
+        success: false,
+        message: `Account temporarily locked. Try again in ${remainingTime} minutes.` 
+      });
+    }
+
+    // Reset login attempts on successful login
+    await user.resetLoginAttempts();
+
+    const token = jwt.sign(
+      { 
+        id: user._id, 
+        userId: user.userId,
+        email: user.email
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        userId: user.userId,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage ? `/uploads/${user.profileImage}` : null
+      }
+    });
+
+  } catch (err) {
+    console.error('QR login error:', err);
     res.status(500).json({ 
       success: false,
       message: 'Login failed. Please try again.' 
