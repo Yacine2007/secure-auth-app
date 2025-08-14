@@ -6,14 +6,20 @@ const morgan = require('morgan');
 const rateLimit = require('express-rate-limit');
 const connectDB = require('./config/db');
 const path = require('path');
+const fs = require('fs');
 
 // تهيئة التطبيق
 const app = express();
 
-// الاتصال بقاعدة البيانات
-connectDB();
+// 1. الاتصال بقاعدة البيانات
+connectDB().then(() => {
+  console.log('✅ تم الاتصال بقاعدة البيانات بنجاح');
+}).catch(err => {
+  console.error('❌ فشل الاتصال بقاعدة البيانات:', err);
+  process.exit(1);
+});
 
-// Middlewares الأساسية
+// 2. Middlewares الأساسية
 app.use(helmet());
 app.use(cors({
   origin: [
@@ -21,22 +27,31 @@ app.use(cors({
     'https://yacine2007.github.io'
   ],
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
 }));
 
 app.use(express.json({ limit: '10kb' }));
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 app.use(morgan('dev'));
 
-// إنشاء مجلد التحميلات إذا لم يكن موجوداً
+// 3. إنشاء مجلدات التخزين
 const uploadsDir = path.join(__dirname, 'uploads');
-require('fs').mkdirSync(uploadsDir, { recursive: true });
+const logsDir = path.join(__dirname, 'logs');
 
-// Rate Limiting
+[uploadsDir, logsDir].forEach(dir => {
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+    console.log(`📁 تم إنشاء المجلد: ${dir}`);
+  }
+});
+
+// 4. Rate Limiting
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 دقيقة
-  max: 100, // 100 طلب لكل IP
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
   message: {
     success: false,
     message: 'لقد تجاوزت الحد المسموح من الطلبات، يرجى المحاولة لاحقاً'
@@ -44,29 +59,46 @@ const limiter = rateLimit({
 });
 app.use('/api', limiter);
 
-// Routes
-app.use('/api/auth', require('./routes/authRoutes'));
+// 5. Routes
+const authRoutes = require('./routes/authRoutes');
+app.use('/api/auth', authRoutes);
 
-// Serve static files
+// 6. Serve static files
 app.use('/uploads', express.static(uploadsDir));
 
-// Error Handling Middleware
+// 7. Error Handling
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('🔥 خطأ:', err.stack);
+  
+  // تسجيل الخطأ في ملف
+  const errorLog = `${new Date().toISOString()} - ${err.stack}\n`;
+  fs.appendFileSync(path.join(logsDir, 'errors.log'), errorLog);
+
   res.status(500).json({
     success: false,
-    message: 'حدث خطأ غير متوقع في الخادم'
+    message: 'حدث خطأ غير متوقع في الخادم',
+    error: process.env.NODE_ENV === 'development' ? err.message : undefined
   });
 });
 
-// بدء الخادم
+// 8. بدء الخادم
 const PORT = process.env.PORT || 10000;
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 الخادم يعمل على المنفذ ${PORT}`);
   console.log(`🔗 رابط الواجهة الخلفية: ${process.env.BACKEND_URL || `http://localhost:${PORT}`}`);
+  console.log(`⚙️  الوضع: ${process.env.NODE_ENV || 'development'}`);
 });
 
-// معالجة الأخطاء غير الملتقطة
+// 9. معالجة الأخطاء غير الملتقطة
 process.on('unhandledRejection', (err) => {
-  console.error('حدث خطأ غير معالج:', err);
+  console.error('❌ حدث خطأ غير معالج:', err);
+  server.close(() => process.exit(1));
+});
+
+process.on('SIGTERM', () => {
+  console.log('🛑 تم إغلاق الخادم بشكل نظيف');
+  server.close(() => {
+    console.log('✅ تم إغلاق جميع الاتصالات');
+    process.exit(0);
+  });
 });
