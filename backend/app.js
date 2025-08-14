@@ -4,6 +4,7 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const path = require('path');
+const fs = require('fs');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
@@ -11,18 +12,15 @@ const morgan = require('morgan');
 const nodemailer = require('nodemailer');
 const QRCode = require('qrcode');
 const multer = require('multer');
-const fs = require('fs');
 const { v4: uuidv4 } = require('uuid');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-// Improved MongoDB Connection
+// Database Connection
 const connectDB = async () => {
   try {
     await mongoose.connect(process.env.MONGODB_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
       serverSelectionTimeoutMS: 5000,
       socketTimeoutMS: 30000
     });
@@ -33,7 +31,7 @@ const connectDB = async () => {
   }
 };
 
-// Middleware Setup
+// Middleware
 app.use(helmet());
 app.use(cors({
   origin: ['https://yacine2007.github.io', 'http://localhost:3000'],
@@ -46,7 +44,7 @@ app.use(morgan('dev'));
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
-  message: 'Too many requests from this IP, please try again later'
+  message: 'Too many requests, please try again later'
 });
 app.use(limiter);
 
@@ -77,29 +75,71 @@ const upload = multer({
 // Serve static files
 app.use('/uploads', express.static(uploadDir));
 
-// Email Transporter
+// Email Transporter with improved configuration
 const transporter = nodemailer.createTransport({
   service: 'gmail',
   auth: {
     user: process.env.EMAIL_USER,
     pass: process.env.EMAIL_PASS
   },
-  tls: { rejectUnauthorized: false }
+  tls: { rejectUnauthorized: false },
+  pool: true,
+  maxConnections: 1,
+  rateDelta: 20000, // 20 seconds delay between emails
+  rateLimit: 5 // Max 5 emails per rateDelta
 });
 
-// User Model
+// User Model with enhanced validation
 const userSchema = new mongoose.Schema({
-  name: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
-  password: { type: String, select: false },
-  userId: { type: String, unique: true },
+  name: { 
+    type: String, 
+    required: [true, 'Name is required'],
+    trim: true,
+    maxlength: [50, 'Name cannot exceed 50 characters']
+  },
+  email: { 
+    type: String, 
+    required: [true, 'Email is required'],
+    unique: true,
+    lowercase: true,
+    validate: {
+      validator: function(v) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v);
+      },
+      message: props => `${props.value} is not a valid email!`
+    }
+  },
+  password: { 
+    type: String, 
+    required: [true, 'Password is required'],
+    select: false,
+    minlength: [8, 'Password must be at least 8 characters']
+  },
+  userId: { 
+    type: String, 
+    unique: true,
+    index: true
+  },
   profileImage: String,
   verificationCode: String,
   verificationCodeExpires: Date,
-  isVerified: { type: Boolean, default: false },
-  createdAt: { type: Date, default: Date.now }
+  isVerified: { 
+    type: Boolean, 
+    default: false 
+  },
+  lastCodeSentAt: Date,
+  loginAttempts: {
+    type: Number,
+    default: 0
+  },
+  lockUntil: Date,
+  createdAt: { 
+    type: Date, 
+    default: Date.now 
+  }
 });
 
+// Pre-save hooks
 userSchema.pre('save', async function(next) {
   if (this.isModified('password')) {
     this.password = await bcrypt.hash(this.password, 12);
@@ -110,75 +150,483 @@ userSchema.pre('save', async function(next) {
   next();
 });
 
+// Account lock after failed attempts
+userSchema.methods.incrementLoginAttempts = function() {
+  if (this.lockUntil && this.lockUntil > Date.now()) return;
+  
+  this.loginAttempts += 1;
+  
+  if (this.loginAttempts >= 5) {
+    this.lockUntil = Date.now() + 15 * 60 * 1000; // 15 minutes lock
+  }
+  
+  return this.save();
+};
+
+userSchema.methods.resetLoginAttempts = function() {
+  this.loginAttempts = 0;
+  this.lockUntil = undefined;
+  return this.save();
+};
+
 const User = mongoose.model('User', userSchema);
+
+// Helper Functions
+const generateVerificationCode = () => Math.floor(100000 + Math.random() * 900000);
 
 // Routes
 app.get('/', (req, res) => {
   res.json({
     message: 'Secure Auth System API',
     status: 'running',
-    version: '1.0.0'
+    version: '1.0.0',
+    endpoints: {
+      signup: '/api/auth/signup',
+      login: '/api/auth/login',
+      forgotPassword: '/api/auth/forgot-password',
+      verifyCode: '/api/auth/verify-reset-code',
+      resetPassword: '/api/auth/reset-password',
+      generateQR: '/api/auth/generate-qr'
+    }
   });
 });
 
-app.get('/api/health', (req, res) => {
-  res.json({
-    status: 'ok',
-    db: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
-    version: process.version
-  });
-});
-
-// Auth Routes
-app.post('/api/auth/signup', async (req, res) => {
+// Signup with enhanced validation
+app.post('/api/auth/signup', upload.single('profileImage'), async (req, res) => {
   try {
-    const { name, email } = req.body;
+    const { name, email, password } = req.body;
     
-    if (!name || !email) {
-      return res.status(400).json({ success: false, message: 'Name and email are required' });
+    // Validation
+    if (!name || !email || !password) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'All fields are required' 
+      });
+    }
+
+    if (password.length < 8) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Password must be at least 8 characters' 
+      });
     }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
-      return res.status(409).json({ success: false, message: 'Email already exists' });
+      return res.status(409).json({ 
+        success: false,
+        message: 'Email already exists' 
+      });
     }
 
-    const verificationCode = Math.floor(100000 + Math.random() * 900000);
+    // Create user with verification code
+    const verificationCode = generateVerificationCode();
     const user = new User({
       name,
       email,
+      password,
+      profileImage: req.file?.filename,
       verificationCode,
-      verificationCodeExpires: Date.now() + 10 * 60 * 1000 // 10 minutes
+      verificationCodeExpires: Date.now() + 10 * 60 * 1000, // 10 minutes
+      lastCodeSentAt: Date.now()
     });
 
     await user.save();
 
-    // Send verification email
+    // Generate QR Code
+    const qrData = JSON.stringify({
+      userId: user.userId,
+      email: user.email,
+      createdAt: new Date().toISOString()
+    });
+    const qrCode = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: 'H',
+      width: 300,
+      margin: 2
+    });
+
+    // Send welcome email with verification code
     await transporter.sendMail({
-      from: process.env.EMAIL_USER,
+      from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
       to: email,
-      subject: 'Your Verification Code',
-      html: `<p>Your verification code is: <strong>${verificationCode}</strong></p>`
+      subject: 'Welcome to Secure Auth - Verify Your Email',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Welcome ${name}!</h2>
+          <p>Your account has been created successfully.</p>
+          <p>Here are your login details:</p>
+          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0;">
+            <p><strong>User ID:</strong> ${user.userId}</p>
+            <p><strong>Verification Code:</strong> ${verificationCode}</p>
+          </div>
+          <p>Scan this QR code to login in the future:</p>
+          <img src="${qrCode}" alt="QR Code" style="width: 200px; height: 200px; display: block; margin: 20px auto;"/>
+          <p style="font-size: 12px; color: #6b7280;">This code will expire in 10 minutes.</p>
+        </div>
+      `
     });
 
     res.status(201).json({
       success: true,
-      message: 'Verification code sent',
-      email,
-      userId: user.userId
+      message: 'Account created successfully. Verification code sent to your email.',
+      user: {
+        userId: user.userId,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage ? `/uploads/${user.profileImage}` : null
+      },
+      qrCode
     });
+
   } catch (err) {
     console.error('Signup error:', err);
-    res.status(500).json({ success: false, message: 'Server error' });
+    
+    // Delete uploaded file if error occurred
+    if (req.file) {
+      fs.unlink(req.file.path, () => {});
+    }
+    
+    res.status(500).json({ 
+      success: false,
+      message: 'Account creation failed. Please try again.' 
+    });
   }
 });
 
-// Add other routes (login, verify, reset password, etc.) similarly...
+// Login with account lock feature
+app.post('/api/auth/login', async (req, res) => {
+  try {
+    const { userId, password } = req.body;
+    
+    if (!userId || !password) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'User ID and password are required' 
+      });
+    }
 
-// Error Handling
+    const user = await User.findOne({ userId }).select('+password +loginAttempts +lockUntil');
+    
+    if (!user) {
+      return res.status(401).json({ 
+        success: false,
+        message: 'Invalid credentials' 
+      });
+    }
+
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+      const remainingTime = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+      return res.status(403).json({ 
+        success: false,
+        message: `Account temporarily locked. Try again in ${remainingTime} minutes.` 
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+    
+    if (!isMatch) {
+      // Increment failed attempts
+      await user.incrementLoginAttempts();
+      
+      const attemptsLeft = 5 - user.loginAttempts;
+      return res.status(401).json({ 
+        success: false,
+        message: `Invalid credentials. ${attemptsLeft > 0 ? attemptsLeft + ' attempts left' : 'Account locked for 15 minutes'}` 
+      });
+    }
+
+    // Reset login attempts on successful login
+    await user.resetLoginAttempts();
+
+    const token = jwt.sign(
+      { 
+        id: user._id, 
+        userId: user.userId,
+        email: user.email
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: '1h' }
+    );
+
+    res.json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        userId: user.userId,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage ? `/uploads/${user.profileImage}` : null
+      }
+    });
+
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Login failed. Please try again.' 
+    });
+  }
+});
+
+// Forgot Password with rate limiting
+app.post('/api/auth/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Email is required' 
+      });
+    }
+
+    const user = await User.findOne({ email });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'If this email exists, a reset code has been sent' 
+      });
+    }
+
+    // Check if we recently sent a code
+    if (user.lastCodeSentAt && (Date.now() - user.lastCodeSentAt < 30000)) {
+      return res.status(429).json({ 
+        success: false,
+        message: 'Please wait 30 seconds before requesting another code' 
+      });
+    }
+
+    const verificationCode = generateVerificationCode();
+    user.verificationCode = verificationCode;
+    user.verificationCodeExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+    user.lastCodeSentAt = Date.now();
+    await user.save();
+
+    // Send email with reset code
+    await transporter.sendMail({
+      from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Password Reset Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Password Reset Request</h2>
+          <p>We received a request to reset your password.</p>
+          <p>Your verification code is:</p>
+          <div style="background: #f3f4f6; padding: 15px; border-radius: 8px; margin: 20px 0; text-align: center;">
+            <h1 style="margin: 0; letter-spacing: 5px;">${verificationCode}</h1>
+          </div>
+          <p style="font-size: 12px; color: #6b7280;">This code will expire in 10 minutes.</p>
+        </div>
+      `
+    });
+
+    res.json({ 
+      success: true,
+      message: 'If this email exists, a reset code has been sent',
+      email,
+      resendAllowedAfter: Date.now() + 30000 // 30 seconds
+    });
+
+  } catch (err) {
+    console.error('Forgot password error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to process request. Please try again.' 
+    });
+  }
+});
+
+// Verify Reset Code
+app.post('/api/auth/verify-reset-code', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    if (!email || !code) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Email and verification code are required' 
+      });
+    }
+
+    const user = await User.findOne({ 
+      email,
+      verificationCode: code,
+      verificationCodeExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid or expired verification code' 
+      });
+    }
+
+    res.json({ 
+      success: true,
+      message: 'Code verified successfully',
+      email,
+      code
+    });
+
+  } catch (err) {
+    console.error('Verify code error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Verification failed. Please try again.' 
+    });
+  }
+});
+
+// Reset Password
+app.post('/api/auth/reset-password', async (req, res) => {
+  try {
+    const { email, code, newPassword, confirmPassword } = req.body;
+    
+    if (!email || !code || !newPassword || !confirmPassword) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'All fields are required' 
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Passwords do not match' 
+      });
+    }
+
+    if (newPassword.length < 8) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Password must be at least 8 characters' 
+      });
+    }
+
+    const user = await User.findOne({ 
+      email,
+      verificationCode: code,
+      verificationCodeExpires: { $gt: Date.now() }
+    });
+
+    if (!user) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Invalid or expired verification code' 
+      });
+    }
+
+    user.password = newPassword;
+    user.verificationCode = undefined;
+    user.verificationCodeExpires = undefined;
+    user.loginAttempts = 0;
+    user.lockUntil = undefined;
+    await user.save();
+
+    // Send confirmation email
+    await transporter.sendMail({
+      from: `"Secure Auth" <${process.env.EMAIL_USER}>`,
+      to: email,
+      subject: 'Password Changed Successfully',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #2563eb;">Password Updated</h2>
+          <p>Your password has been successfully changed.</p>
+          <p>If you didn't make this change, please contact us immediately.</p>
+        </div>
+      `
+    });
+
+    res.json({ 
+      success: true,
+      message: 'Password reset successfully' 
+    });
+
+  } catch (err) {
+    console.error('Reset password error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Password reset failed. Please try again.' 
+    });
+  }
+});
+
+// Generate QR Code
+app.post('/api/auth/generate-qr', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'User ID is required' 
+      });
+    }
+
+    const user = await User.findOne({ userId });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found' 
+      });
+    }
+
+    const qrData = JSON.stringify({
+      userId: user.userId,
+      email: user.email,
+      createdAt: user.createdAt.toISOString()
+    });
+
+    const qrCode = await QRCode.toDataURL(qrData, {
+      errorCorrectionLevel: 'H',
+      width: 300,
+      margin: 2,
+      color: {
+        dark: '#000000',
+        light: '#ffffff'
+      }
+    });
+
+    res.json({
+      success: true,
+      message: 'QR code generated successfully',
+      qrCode,
+      user: {
+        userId: user.userId,
+        name: user.name,
+        email: user.email,
+        profileImage: user.profileImage ? `/uploads/${user.profileImage}` : null
+      }
+    });
+
+  } catch (err) {
+    console.error('QR generation error:', err);
+    res.status(500).json({ 
+      success: false,
+      message: 'Failed to generate QR code' 
+    });
+  }
+});
+
+// Error Handling Middleware
 app.use((err, req, res, next) => {
   console.error(err.stack);
-  res.status(500).json({ success: false, message: 'Internal Server Error' });
+  
+  if (err instanceof multer.MulterError) {
+    return res.status(400).json({ 
+      success: false,
+      message: err.message 
+    });
+  }
+  
+  res.status(500).json({ 
+    success: false,
+    message: 'Internal Server Error' 
+  });
 });
 
 // Start Server
