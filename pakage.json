@@ -7,7 +7,8 @@
     "start": "node app.js",
     "dev": "nodemon app.js",
     "test": "jest --watchAll --detectOpenHandles",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "prestart": "mkdir -p uploads" // أضف هذا السطر
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -29,8 +30,5 @@
     "jest": "^29.6.1",
     "nodemon": "^3.0.1",
     "supertest": "^6.3.3"
-  },
-    "eject": "react-scripts eject",
-    "deploy": "gh-pages -d build"
   }
 }
