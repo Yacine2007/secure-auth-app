@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const authController = require('../controllers/authController');
-const upload = require('./multerConfig');
-const User = require('../models/User');
+const upload = require('../config/multerConfig'); // تصحيح المسار
+
+router.post('/signup', upload.single('profileImage'), authController.signup);
 
 exports.signup = async (req, res) => {
   try {
