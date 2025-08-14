@@ -2,21 +2,26 @@ const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 
 const userSchema = new mongoose.Schema({
-    userId: { type: String, unique: true, required: true },
-    name: { type: String, required: true },
-    email: { type: String, unique: true, required: true },
-    password: { type: String, required: true },
-    profileImage: { type: String },
-    qrCodeData: { type: String } // تخزين بيانات QR (مثل: ID:PWD)
-});
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  password: { type: String, required: true, select: false },
+  userId: { type: String, unique: true },
+  profileImage: String,
+  verificationCode: String,
+  verificationCodeExpires: Date,
+  isVerified: { type: Boolean, default: false },
+  loginAttempts: { type: Number, default: 0 },
+  lockUntil: Date
+}, { timestamps: true });
 
-// تشفير كلمة المرور قبل الحفظ
 userSchema.pre('save', async function(next) {
-    if (this.isModified('password')) {
-        this.password = await bcrypt.hash(this.password, 10);
-        this.qrCodeData = `ID:${this.userId}|PWD:${this.password}`;
-    }
-    next();
+  if (this.isModified('password')) {
+    this.password = await bcrypt.hash(this.password, 12);
+  }
+  if (this.isNew && !this.userId) {
+    this.userId = `USER-${Math.random().toString(36).substr(2, 8).toUpperCase()}`;
+  }
+  next();
 });
 
 module.exports = mongoose.model('User', userSchema);
