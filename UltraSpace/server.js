@@ -27,13 +27,14 @@ function initializeDataFiles() {
     fs.writeFileSync(DATA_FILE, JSON.stringify({
       messages: [
         {
-          id: "1",
+          id: "welcome-message",
           text: "Welcome to UltraSpace Y! I'm Yacine, how can I help you today?",
           sender: "yacine",
           type: "text",
           reaction: null,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          read: false
         }
       ],
       lastUpdate: new Date().toISOString()
@@ -94,31 +95,54 @@ function saveUsers(data) {
   }
 }
 
-// WebSocket-like polling system
-const activeConnections = new Set();
+// نظام التحديث التلقائي
+let lastUpdateTimestamp = Date.now();
+const updateListeners = new Set();
+
+// إشعار جميع المستمعين بالتحديث
+function notifyUpdate() {
+  lastUpdateTimestamp = Date.now();
+  updateListeners.forEach(listener => {
+    try {
+      listener.res.write(`data: ${JSON.stringify({ type: 'update', timestamp: lastUpdateTimestamp })}\n\n`);
+    } catch (error) {
+      updateListeners.delete(listener);
+    }
+  });
+}
 
 // Routes
 
-// الحصول على جميع الرسائل مع التحديث التلقائي
+// Server-Sent Events للتحديثات المباشرة
+app.get('/api/events', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+    'Access-Control-Allow-Origin': '*',
+  });
+
+  const listener = { res };
+  updateListeners.add(listener);
+
+  req.on('close', () => {
+    updateListeners.delete(listener);
+  });
+
+  // إرسال رسالة ترحيبية
+  res.write(`data: ${JSON.stringify({ type: 'connected', timestamp: Date.now() })}\n\n`);
+});
+
+// الحصول على جميع الرسائل
 app.get('/api/messages', (req, res) => {
   try {
     const data = readData();
-    
-    // Add connection for auto-update
-    const connectionId = uuidv4();
-    activeConnections.add(connectionId);
-    
-    // Remove connection after 30 seconds
-    setTimeout(() => {
-      activeConnections.delete(connectionId);
-    }, 30000);
-    
     res.json({
       success: true,
       messages: data.messages,
       total: data.messages.length,
       lastUpdate: data.lastUpdate,
-      connectionId: connectionId
+      serverTime: new Date().toISOString()
     });
   } catch (error) {
     res.status(500).json({
@@ -148,18 +172,20 @@ app.post('/api/messages', (req, res) => {
       type,
       reaction,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      read: false
     };
 
     data.messages.push(newMessage);
     
     if (saveData(data)) {
-      // Notify all active connections about new message
-      activeConnections.clear(); // Clear old connections to trigger updates
+      // إشعار جميع العملاء بالتحديث
+      notifyUpdate();
       
       res.json({
         success: true,
-        message: newMessage
+        message: newMessage,
+        serverTime: new Date().toISOString()
       });
     } else {
       res.status(500).json({
@@ -175,11 +201,11 @@ app.post('/api/messages', (req, res) => {
   }
 });
 
-// تحديث رسالة
+// تحديث رسالة (للتتفاعلات)
 app.put('/api/messages/:id', (req, res) => {
   try {
     const { id } = req.params;
-    const { reaction } = req.body;
+    const { reaction, read } = req.body;
 
     const data = readData();
     const messageIndex = data.messages.findIndex(msg => msg.id === id);
@@ -191,15 +217,24 @@ app.put('/api/messages/:id', (req, res) => {
       });
     }
 
+    let updated = false;
+
     if (reaction !== undefined) {
       data.messages[messageIndex].reaction = reaction;
+      updated = true;
     }
 
-    if (saveData(data)) {
-      activeConnections.clear(); // Trigger updates
+    if (read !== undefined) {
+      data.messages[messageIndex].read = read;
+      updated = true;
+    }
+
+    if (updated && saveData(data)) {
+      notifyUpdate();
       res.json({
         success: true,
-        message: data.messages[messageIndex]
+        message: data.messages[messageIndex],
+        serverTime: new Date().toISOString()
       });
     } else {
       res.status(500).json({
@@ -232,10 +267,11 @@ app.delete('/api/messages/:id', (req, res) => {
     data.messages.splice(messageIndex, 1);
 
     if (saveData(data)) {
-      activeConnections.clear(); // Trigger updates
+      notifyUpdate();
       res.json({
         success: true,
-        message: 'Message deleted successfully'
+        message: 'Message deleted successfully',
+        serverTime: new Date().toISOString()
       });
     } else {
       res.status(500).json({
@@ -253,10 +289,28 @@ app.delete('/api/messages/:id', (req, res) => {
 
 // التحقق من التحديثات
 app.get('/api/updates', (req, res) => {
-  const hasUpdates = activeConnections.size === 0;
+  const data = readData();
+  const clientTimestamp = req.query.timestamp;
+  
+  if (clientTimestamp && parseInt(clientTimestamp) >= lastUpdateTimestamp) {
+    res.json({
+      hasUpdates: false,
+      timestamp: lastUpdateTimestamp
+    });
+  } else {
+    res.json({
+      hasUpdates: true,
+      timestamp: lastUpdateTimestamp,
+      messageCount: data.messages.length
+    });
+  }
+});
+
+// الحصول على آخر تحديث
+app.get('/api/last-update', (req, res) => {
   res.json({
-    hasUpdates,
-    timestamp: new Date().toISOString()
+    timestamp: lastUpdateTimestamp,
+    serverTime: new Date().toISOString()
   });
 });
 
@@ -266,16 +320,20 @@ app.get('/api/admin/stats', (req, res) => {
     const data = readData();
     const usersData = readUsers();
     
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    
     const stats = {
       totalMessages: data.messages.length,
       totalUsers: usersData.users.length,
       messagesToday: data.messages.filter(msg => {
         const msgDate = new Date(msg.timestamp);
-        const today = new Date();
-        return msgDate.toDateString() === today.toDateString();
+        return msgDate >= todayStart;
       }).length,
+      activeConnections: updateListeners.size,
       lastActivity: data.lastUpdate,
-      activeConnections: activeConnections.size
+      serverUptime: process.uptime(),
+      serverTime: now.toISOString()
     };
 
     res.json({
@@ -294,9 +352,28 @@ app.get('/api/admin/stats', (req, res) => {
 app.get('/api/admin/users', (req, res) => {
   try {
     const usersData = readUsers();
+    
+    // تحديث آخر ظهور للمستخدمين النشطين
+    const data = readData();
+    const activeUsers = new Set(data.messages
+      .filter(msg => msg.sender === 'user')
+      .map(msg => {
+        const userMsg = msg.text.toLowerCase();
+        const user = usersData.users.find(u => userMsg.includes(u.name.toLowerCase()));
+        return user ? user.id : null;
+      })
+      .filter(id => id !== null)
+    );
+
+    const usersWithActivity = usersData.users.map(user => ({
+      ...user,
+      isActive: activeUsers.has(user.id),
+      lastActivity: user.lastSeen
+    }));
+
     res.json({
       success: true,
-      users: usersData.users
+      users: usersWithActivity
     });
   } catch (error) {
     res.status(500).json({
@@ -319,6 +396,20 @@ app.post('/api/users/register', (req, res) => {
     }
 
     const usersData = readUsers();
+    
+    // التحقق من عدم وجود مستخدم بنفس الاسم
+    const existingUser = usersData.users.find(user => 
+      user.name.toLowerCase() === name.toLowerCase()
+    );
+
+    if (existingUser) {
+      return res.json({
+        success: true,
+        user: existingUser,
+        message: 'User already exists'
+      });
+    }
+
     const newUser = {
       id: uuidv4(),
       name,
@@ -348,13 +439,66 @@ app.post('/api/users/register', (req, res) => {
   }
 });
 
+// تحديث حالة المستخدم
+app.put('/api/users/:id/activity', (req, res) => {
+  try {
+    const { id } = req.params;
+    const usersData = readUsers();
+    const userIndex = usersData.users.findIndex(user => user.id === id);
+
+    if (userIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    usersData.users[userIndex].lastSeen = new Date().toISOString();
+
+    if (saveUsers(usersData)) {
+      res.json({
+        success: true,
+        user: usersData.users[userIndex]
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'Failed to update user activity'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: 'Failed to update user activity'
+    });
+  }
+});
+
+// تنظيف الاتصالات القديمة
+setInterval(() => {
+  const now = Date.now();
+  updateListeners.forEach(listener => {
+    // تنظيف تلقائي للاتصالات الميتة
+    if (listener.lastPing && now - listener.lastPing > 30000) {
+      updateListeners.delete(listener);
+    }
+  });
+}, 10000);
+
 // Route للصفحة الرئيسية
 app.get('/', (req, res) => {
   res.json({
-    message: 'UltraSpace Y Server is running! 🚀',
-    version: '2.0.0',
+    message: '🚀 UltraSpace Y Server is running!',
+    version: '3.0.0',
     status: 'active',
-    features: ['real-time-updates', 'reactions', 'admin-dashboard'],
+    features: [
+      'real-time-messaging',
+      'auto-updates',
+      'reactions',
+      'admin-dashboard',
+      'file-sharing',
+      'user-management'
+    ],
     endpoints: {
       messages: {
         GET: '/api/messages',
@@ -362,34 +506,84 @@ app.get('/', (req, res) => {
         PUT: '/api/messages/:id',
         DELETE: '/api/messages/:id'
       },
-      updates: {
-        GET: '/api/updates'
+      realtime: {
+        events: '/api/events',
+        updates: '/api/updates',
+        lastUpdate: '/api/last-update'
       },
       admin: {
         stats: '/api/admin/stats',
         users: '/api/admin/users'
       },
       users: {
-        register: '/api/users/register'
+        register: '/api/users/register',
+        activity: '/api/users/:id/activity'
       }
+    },
+    serverInfo: {
+      uptime: process.uptime(),
+      timestamp: new Date().toISOString(),
+      activeConnections: updateListeners.size
     }
   });
 });
 
 // معالجة الأخطاء
 app.use((err, req, res, next) => {
-  console.error(err.stack);
+  console.error('Server Error:', err.stack);
   res.status(500).json({
     success: false,
-    error: 'Something went wrong!'
+    error: 'Something went wrong!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Route للصفحات غير الموجودة
+app.use('*', (req, res) => {
+  res.status(404).json({
+    success: false,
+    error: 'Endpoint not found',
+    availableEndpoints: {
+      home: '/',
+      messages: '/api/messages',
+      events: '/api/events',
+      admin: '/api/admin/stats'
+    }
   });
 });
 
 // بدء السيرفر
 initializeDataFiles();
 
+// إشعار بدء التشغيل
+console.log('🚀 Starting UltraSpace Y Server...');
+console.log('📁 Initializing data files...');
+
 app.listen(PORT, () => {
-  console.log(`🚀 UltraSpace Y Server is running on port ${PORT}`);
-  console.log(`📱 Access the API at: http://localhost:${PORT}`);
-  console.log(`🔄 Real-time updates enabled`);
+  console.log('✨ UltraSpace Y Server initialized successfully!');
+  console.log(`🌐 Server is running on port ${PORT}`);
+  console.log(`📱 API available at: http://localhost:${PORT}`);
+  console.log(`🔄 Real-time events: http://localhost:${PORT}/api/events`);
+  console.log('📊 Features enabled:');
+  console.log('   ✅ Real-time messaging');
+  console.log('   ✅ Auto-updates');
+  console.log('   ✅ Message reactions');
+  console.log('   ✅ Admin dashboard');
+  console.log('   ✅ User management');
+  console.log('   ✅ File sharing support');
+  console.log('');
+  console.log('💡 Server is ready to handle requests!');
+});
+
+// معالجة إغلاق السيرفر بشكل أنيق
+process.on('SIGTERM', () => {
+  console.log('🛑 Received SIGTERM, shutting down gracefully...');
+  updateListeners.clear();
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🛑 Received SIGINT, shutting down gracefully...');
+  updateListeners.clear();
+  process.exit(0);
 });
