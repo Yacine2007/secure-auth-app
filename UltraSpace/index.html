@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>UltraSpace Y</title>
+    <link rel="icon" type="image/x-icon" href="https://raw.githubusercontent.com/Yacine2007/secure-auth-app/refs/heads/main/UltraSpace/favicon.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root {
@@ -61,6 +62,15 @@
             margin-bottom: 20px;
             font-weight: bold;
             color: var(--white);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
         }
 
         .login-form {
@@ -466,6 +476,46 @@
             cursor: pointer;
         }
 
+        /* Loading and Status */
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 10px;
+            color: var(--gray);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background-color: #4ade80;
+            margin-left: 5px;
+        }
+
+        /* Connection Status */
+        .connection-status {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            padding: 8px 12px;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            z-index: 1000;
+            display: none;
+        }
+
+        .connection-status.connected {
+            background-color: #4ade80;
+            color: white;
+            display: block;
+        }
+
+        .connection-status.disconnected {
+            background-color: #ef4444;
+            color: white;
+            display: block;
+        }
+
         /* Responsive Design */
         @media (max-width: 480px) {
             .container {
@@ -476,10 +526,16 @@
     </style>
 </head>
 <body>
+    <!-- Connection Status -->
+    <div class="connection-status" id="connectionStatus"></div>
+
     <div class="container">
         <!-- Login Screen -->
         <div class="login-screen" id="loginScreen">
-            <div class="logo">UltraSpace Y</div>
+            <div class="logo">
+                <img src="https://raw.githubusercontent.com/Yacine2007/secure-auth-app/refs/heads/main/UltraSpace/favicon.png" alt="UltraSpace Y" class="logo-img">
+                UltraSpace Y
+            </div>
             <div class="login-form">
                 <div class="form-group">
                     <label for="fullName">Full Name</label>
@@ -511,11 +567,17 @@
                     <div class="contact-name">
                         Yacine ben mokrane
                         <span class="verified-badge"><i class="fas fa-check"></i></span>
+                        <span class="status-indicator"></span>
                     </div>
                 </div>
             </div>
             <div class="chat-messages" id="chatMessages">
                 <!-- Messages will be loaded here -->
+            </div>
+            
+            <!-- Loading -->
+            <div class="loading" id="loading">
+                <i class="fas fa-spinner fa-spin"></i> Loading messages...
             </div>
             
             <!-- Image Preview -->
@@ -589,6 +651,9 @@
     </div>
 
     <script>
+        // Server Configuration - Updated with your Render URL
+        const SERVER_URL = 'https://ultraspace.onrender.com';
+        
         // DOM Elements
         const loginScreen = document.getElementById('loginScreen');
         const chatScreen = document.getElementById('chatScreen');
@@ -615,6 +680,8 @@
         const recordingTime = document.getElementById('recordingTime');
         const stopRecording = document.getElementById('stopRecording');
         const cancelRecording = document.getElementById('cancelRecording');
+        const loading = document.getElementById('loading');
+        const connectionStatus = document.getElementById('connectionStatus');
 
         // User data
         let currentUser = null;
@@ -624,6 +691,128 @@
         let recordingSeconds = 0;
         let mediaRecorder = null;
         let audioChunks = [];
+
+        // API Functions
+        async function apiRequest(endpoint, options = {}) {
+            try {
+                const response = await fetch(`${SERVER_URL}${endpoint}`, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                console.error('API request failed:', error);
+                showConnectionStatus(false);
+                // Fallback to localStorage if server is not available
+                throw error;
+            }
+        }
+
+        // Show connection status
+        function showConnectionStatus(connected) {
+            if (connected) {
+                connectionStatus.textContent = 'Connected to Server';
+                connectionStatus.className = 'connection-status connected';
+            } else {
+                connectionStatus.textContent = 'Server Offline - Using Local Storage';
+                connectionStatus.className = 'connection-status disconnected';
+            }
+            
+            setTimeout(() => {
+                connectionStatus.style.display = 'none';
+            }, 5000);
+        }
+
+        // Load messages from server
+        async function loadMessages() {
+            try {
+                loading.style.display = 'block';
+                const data = await apiRequest('/api/messages');
+                displayMessages(data.messages);
+                showConnectionStatus(true);
+            } catch (error) {
+                console.log('Falling back to localStorage');
+                // Fallback to localStorage
+                const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
+                displayMessages(messages);
+            } finally {
+                loading.style.display = 'none';
+            }
+        }
+
+        // Send message to server
+        async function sendMessageToServer(message) {
+            try {
+                await apiRequest('/api/messages', {
+                    method: 'POST',
+                    body: JSON.stringify(message)
+                });
+                showConnectionStatus(true);
+            } catch (error) {
+                console.log('Falling back to localStorage');
+                // Fallback to localStorage
+                const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
+                messages.push(message);
+                localStorage.setItem('ultraspaceY_messages', JSON.stringify(messages));
+            }
+        }
+
+        // Update message on server
+        async function updateMessageOnServer(messageId, updates) {
+            try {
+                await apiRequest(`/api/messages/${messageId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify(updates)
+                });
+                showConnectionStatus(true);
+            } catch (error) {
+                console.log('Falling back to localStorage');
+                // Fallback to localStorage
+                const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
+                const messageIndex = messages.findIndex(msg => msg.id == messageId);
+                if (messageIndex !== -1) {
+                    messages[messageIndex] = { ...messages[messageIndex], ...updates };
+                    localStorage.setItem('ultraspaceY_messages', JSON.stringify(messages));
+                }
+            }
+        }
+
+        // Delete message from server
+        async function deleteMessageFromServer(messageId) {
+            try {
+                await apiRequest(`/api/messages/${messageId}`, {
+                    method: 'DELETE'
+                });
+                showConnectionStatus(true);
+            } catch (error) {
+                console.log('Falling back to localStorage');
+                // Fallback to localStorage
+                const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
+                const filteredMessages = messages.filter(msg => msg.id != messageId);
+                localStorage.setItem('ultraspaceY_messages', JSON.stringify(filteredMessages));
+            }
+        }
+
+        // Register user on server
+        async function registerUserOnServer(userData) {
+            try {
+                await apiRequest('/api/users/register', {
+                    method: 'POST',
+                    body: JSON.stringify(userData)
+                });
+                showConnectionStatus(true);
+            } catch (error) {
+                console.log('User registration failed, continuing locally');
+            }
+        }
 
         // Initialize the app
         function initApp() {
@@ -655,9 +844,8 @@
             loginScreen.style.display = 'flex';
         }
 
-        // Load messages from localStorage
-        function loadMessages() {
-            const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
+        // Display messages in chat
+        function displayMessages(messages) {
             chatMessages.innerHTML = '';
             
             messages.forEach(msg => {
@@ -738,50 +926,25 @@
             selectedMessage = null;
         }
 
-        // Save message to localStorage
-        function saveMessage(text, sender, reaction = null, type = 'text') {
-            const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
-            const time = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-            const id = Date.now();
-            
-            messages.push({
-                id,
-                text,
-                sender,
-                time,
-                reaction,
-                type
-            });
-            
-            localStorage.setItem('ultraspaceY_messages', JSON.stringify(messages));
-            return {time, id};
-        }
-
-        // Update message in localStorage
-        function updateMessage(id, updates) {
-            const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
-            const messageIndex = messages.findIndex(msg => msg.id == id);
-            
-            if (messageIndex !== -1) {
-                messages[messageIndex] = { ...messages[messageIndex], ...updates };
-                localStorage.setItem('ultraspaceY_messages', JSON.stringify(messages));
-                return true;
-            }
-            return false;
-        }
-
         // Send message
-        function sendMessage() {
+        async function sendMessage() {
             const text = messageInput.value.trim();
             if (text === '') return;
             
-            const {time, id} = saveMessage(text, 'user');
-            addMessageToChat(text, 'user', time, null, id);
+            const messageData = {
+                text: text,
+                sender: 'user',
+                type: 'text',
+                reaction: null
+            };
+            
+            addMessageToChat(text, 'user', new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), null, Date.now());
+            await sendMessageToServer(messageData);
             
             messageInput.value = '';
             
             // Simulate Yacine's response after a short delay
-            setTimeout(() => {
+            setTimeout(async () => {
                 const responses = [
                     "Hello! How can I help you?",
                     "Thanks for your message!",
@@ -790,21 +953,35 @@
                     "I'm currently available for a chat."
                 ];
                 const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                const {time: responseTime, id: responseId} = saveMessage(randomResponse, 'yacine');
-                addMessageToChat(randomResponse, 'yacine', responseTime, null, responseId);
+                const responseData = {
+                    text: randomResponse,
+                    sender: 'yacine',
+                    type: 'text',
+                    reaction: null
+                };
+                
+                addMessageToChat(randomResponse, 'yacine', new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), null, Date.now());
+                await sendMessageToServer(responseData);
             }, 1000 + Math.random() * 2000);
         }
 
         // Send image
-        function sendImage(imageUrl) {
-            const {time, id} = saveMessage(imageUrl, 'user', null, 'image');
-            addMessageToChat(imageUrl, 'user', time, null, id, 'image');
+        async function sendImage(imageUrl) {
+            const messageData = {
+                text: imageUrl,
+                sender: 'user',
+                type: 'image',
+                reaction: null
+            };
+            
+            addMessageToChat(imageUrl, 'user', new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), null, Date.now(), 'image');
+            await sendMessageToServer(messageData);
             
             // Hide preview
             imagePreview.classList.remove('active');
             
             // Simulate Yacine's response after a short delay
-            setTimeout(() => {
+            setTimeout(async () => {
                 const responses = [
                     "Nice picture!",
                     "Thanks for sharing!",
@@ -813,18 +990,32 @@
                     "Beautiful picture!"
                 ];
                 const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                const {time: responseTime, id: responseId} = saveMessage(randomResponse, 'yacine');
-                addMessageToChat(randomResponse, 'yacine', responseTime, null, responseId);
+                const responseData = {
+                    text: randomResponse,
+                    sender: 'yacine',
+                    type: 'text',
+                    reaction: null
+                };
+                
+                addMessageToChat(randomResponse, 'yacine', new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), null, Date.now());
+                await sendMessageToServer(responseData);
             }, 1000 + Math.random() * 2000);
         }
 
         // Send voice message
-        function sendVoiceMessage() {
-            const {time, id} = saveMessage("voice_message", 'user', null, 'voice');
-            addMessageToChat("voice_message", 'user', time, null, id, 'voice');
+        async function sendVoiceMessage() {
+            const messageData = {
+                text: "voice_message",
+                sender: 'user',
+                type: 'voice',
+                reaction: null
+            };
+            
+            addMessageToChat("voice_message", 'user', new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), null, Date.now(), 'voice');
+            await sendMessageToServer(messageData);
             
             // Simulate Yacine's response after a short delay
-            setTimeout(() => {
+            setTimeout(async () => {
                 const responses = [
                     "Thanks for the voice message!",
                     "I'll listen to it now.",
@@ -833,33 +1024,27 @@
                     "Listening to your message."
                 ];
                 const randomResponse = responses[Math.floor(Math.random() * responses.length)];
-                const {time: responseTime, id: responseId} = saveMessage(randomResponse, 'yacine');
-                addMessageToChat(randomResponse, 'yacine', responseTime, null, responseId);
+                const responseData = {
+                    text: randomResponse,
+                    sender: 'yacine',
+                    type: 'text',
+                    reaction: null
+                };
+                
+                addMessageToChat(randomResponse, 'yacine', new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), null, Date.now());
+                await sendMessageToServer(responseData);
             }, 1000 + Math.random() * 2000);
         }
 
         // Add reaction to message
-        function addReactionToMessage(reaction) {
+        async function addReactionToMessage(reaction) {
             if (!selectedMessage) return;
             
             const messageId = selectedMessage.dataset.id;
-            const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
-            const messageIndex = messages.findIndex(msg => msg.id == messageId);
+            await updateMessageOnServer(messageId, { reaction });
             
-            if (messageIndex !== -1) {
-                // Toggle reaction - if same reaction, remove it
-                if (messages[messageIndex].reaction === reaction) {
-                    messages[messageIndex].reaction = null;
-                } else {
-                    messages[messageIndex].reaction = reaction;
-                }
-                
-                localStorage.setItem('ultraspaceY_messages', JSON.stringify(messages));
-                
-                // Reload messages to show the reaction
-                loadMessages();
-            }
-            
+            // Reload messages to show the reaction
+            loadMessages();
             hideMessageOptions();
         }
 
@@ -911,15 +1096,12 @@
         }
 
         // Delete message
-        function deleteMessage() {
+        async function deleteMessage() {
             if (!selectedMessage) return;
             
             if (confirm('Are you sure you want to delete this message?')) {
                 const messageId = selectedMessage.dataset.id;
-                const messages = JSON.parse(localStorage.getItem('ultraspaceY_messages')) || [];
-                const filteredMessages = messages.filter(msg => msg.id != messageId);
-                
-                localStorage.setItem('ultraspaceY_messages', JSON.stringify(filteredMessages));
+                await deleteMessageFromServer(messageId);
                 loadMessages();
             }
             
@@ -954,7 +1136,7 @@
         }
 
         // Event Listeners
-        loginBtn.addEventListener('click', () => {
+        loginBtn.addEventListener('click', async () => {
             const fullName = document.getElementById('fullName').value.trim();
             const profilePicFile = profilePicInput.files[0];
             
@@ -974,7 +1156,15 @@
             };
             
             localStorage.setItem('ultraspaceY_user', JSON.stringify(currentUser));
+            
+            // Register user on server
+            await registerUserOnServer({
+                name: fullName,
+                profilePic: profilePicUrl
+            });
+            
             showChatScreen();
+            loadMessages();
         });
 
         backBtn.addEventListener('click', () => {
