@@ -28,7 +28,7 @@ function initializeDataFiles() {
       messages: [
         {
           id: "1",
-          text: "Welcome to UltraSpace Y!",
+          text: "Welcome to UltraSpace Y! I'm Yacine, how can I help you today?",
           sender: "yacine",
           type: "text",
           reaction: null,
@@ -94,17 +94,31 @@ function saveUsers(data) {
   }
 }
 
+// WebSocket-like polling system
+const activeConnections = new Set();
+
 // Routes
 
-// الحصول على جميع الرسائل
+// الحصول على جميع الرسائل مع التحديث التلقائي
 app.get('/api/messages', (req, res) => {
   try {
     const data = readData();
+    
+    // Add connection for auto-update
+    const connectionId = uuidv4();
+    activeConnections.add(connectionId);
+    
+    // Remove connection after 30 seconds
+    setTimeout(() => {
+      activeConnections.delete(connectionId);
+    }, 30000);
+    
     res.json({
       success: true,
       messages: data.messages,
       total: data.messages.length,
-      lastUpdate: data.lastUpdate
+      lastUpdate: data.lastUpdate,
+      connectionId: connectionId
     });
   } catch (error) {
     res.status(500).json({
@@ -140,6 +154,9 @@ app.post('/api/messages', (req, res) => {
     data.messages.push(newMessage);
     
     if (saveData(data)) {
+      // Notify all active connections about new message
+      activeConnections.clear(); // Clear old connections to trigger updates
+      
       res.json({
         success: true,
         message: newMessage
@@ -179,6 +196,7 @@ app.put('/api/messages/:id', (req, res) => {
     }
 
     if (saveData(data)) {
+      activeConnections.clear(); // Trigger updates
       res.json({
         success: true,
         message: data.messages[messageIndex]
@@ -214,6 +232,7 @@ app.delete('/api/messages/:id', (req, res) => {
     data.messages.splice(messageIndex, 1);
 
     if (saveData(data)) {
+      activeConnections.clear(); // Trigger updates
       res.json({
         success: true,
         message: 'Message deleted successfully'
@@ -232,6 +251,15 @@ app.delete('/api/messages/:id', (req, res) => {
   }
 });
 
+// التحقق من التحديثات
+app.get('/api/updates', (req, res) => {
+  const hasUpdates = activeConnections.size === 0;
+  res.json({
+    hasUpdates,
+    timestamp: new Date().toISOString()
+  });
+});
+
 // إحصائيات المدير
 app.get('/api/admin/stats', (req, res) => {
   try {
@@ -246,7 +274,8 @@ app.get('/api/admin/stats', (req, res) => {
         const today = new Date();
         return msgDate.toDateString() === today.toDateString();
       }).length,
-      lastActivity: data.lastUpdate
+      lastActivity: data.lastUpdate,
+      activeConnections: activeConnections.size
     };
 
     res.json({
@@ -323,14 +352,18 @@ app.post('/api/users/register', (req, res) => {
 app.get('/', (req, res) => {
   res.json({
     message: 'UltraSpace Y Server is running! 🚀',
-    version: '1.0.0',
+    version: '2.0.0',
     status: 'active',
+    features: ['real-time-updates', 'reactions', 'admin-dashboard'],
     endpoints: {
       messages: {
         GET: '/api/messages',
         POST: '/api/messages',
         PUT: '/api/messages/:id',
         DELETE: '/api/messages/:id'
+      },
+      updates: {
+        GET: '/api/updates'
       },
       admin: {
         stats: '/api/admin/stats',
@@ -358,4 +391,5 @@ initializeDataFiles();
 app.listen(PORT, () => {
   console.log(`🚀 UltraSpace Y Server is running on port ${PORT}`);
   console.log(`📱 Access the API at: http://localhost:${PORT}`);
+  console.log(`🔄 Real-time updates enabled`);
 });
