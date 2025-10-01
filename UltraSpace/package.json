@@ -1,18 +1,28 @@
 {
-  "name": "ultraspace-y-main",
-  "version": "1.0.0",
-  "description": "UltraSpace Y Main Server",
+  "name": "ultraspace-y-server",
+  "version": "3.0.0",
+  "description": "UltraSpace Y Real-time Chat Server",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js"
+    "start": "node server.js",
+    "dev": "node server.js",
+    "build": "echo 'No build step required for UltraSpace Y'"
   },
   "dependencies": {
     "express": "4.18.2",
     "cors": "2.8.5",
-    "multer": "1.4.5-lts.1",
     "uuid": "9.0.1"
   },
   "engines": {
     "node": ">=14.0.0"
-  }
+  },
+  "keywords": [
+    "chat",
+    "realtime",
+    "messaging",
+    "websocket",
+    "sse"
+  ],
+  "author": "Yacine ben mokrane",
+  "license": "MIT"
 }
