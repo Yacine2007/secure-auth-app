@@ -147,7 +147,7 @@
         .chat-header {
             background-color: var(--dark-blue);
             color: var(--white);
-            padding: 15px;
+            padding: 10px 15px;
             display: flex;
             align-items: center;
             gap: 12px;
@@ -565,8 +565,8 @@
             <button class="reaction-option" data-reaction="thumbs-up">
                 <i class="fas fa-thumbs-up"></i>
             </button>
-            <button class="reaction-option" data-reaction="laugh">
-                <i class="fas fa-laugh"></i>
+            <button class="reaction-option" data-reaction="laugh-beam">
+                <i class="fas fa-laugh-beam"></i>
             </button>
             <button class="reaction-option" data-reaction="surprise">
                 <i class="fas fa-surprise"></i>
@@ -867,11 +867,46 @@
         function copyMessageText() {
             if (!selectedMessage) return;
             
-            const messageText = selectedMessage.querySelector('.message-text').textContent;
-            navigator.clipboard.writeText(messageText).then(() => {
-                alert('Message copied to clipboard!');
-            });
+            // Get message text
+            const messageTextElement = selectedMessage.querySelector('.message-text');
+            if (!messageTextElement) return;
             
+            const messageText = messageTextElement.textContent;
+            
+            // Create a temporary textarea to copy from
+            const textArea = document.createElement('textarea');
+            textArea.value = messageText;
+            document.body.appendChild(textArea);
+            textArea.select();
+            
+            try {
+                const successful = document.execCommand('copy');
+                if (successful) {
+                    // Show a temporary notification
+                    const notification = document.createElement('div');
+                    notification.textContent = 'Message copied to clipboard!';
+                    notification.style.cssText = `
+                        position: fixed;
+                        top: 50%;
+                        left: 50%;
+                        transform: translate(-50%, -50%);
+                        background-color: var(--accent-blue);
+                        color: white;
+                        padding: 10px 20px;
+                        border-radius: 5px;
+                        z-index: 1000;
+                    `;
+                    document.body.appendChild(notification);
+                    
+                    setTimeout(() => {
+                        document.body.removeChild(notification);
+                    }, 2000);
+                }
+            } catch (err) {
+                console.error('Failed to copy text: ', err);
+            }
+            
+            document.body.removeChild(textArea);
             hideMessageOptions();
         }
 
