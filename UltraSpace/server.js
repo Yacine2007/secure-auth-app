@@ -1,6 +1,5 @@
 const express = require('express');
 const cors = require('cors');
-const multer = require('multer');
 const { v4: uuidv4 } = require('uuid');
 const fs = require('fs');
 const path = require('path');
@@ -12,27 +11,6 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
-
-// تخزين الملفات
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadDir = 'uploads/';
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    cb(null, Date.now() + '-' + file.originalname);
-  }
-});
-
-const upload = multer({ 
-  storage: storage,
-  limits: {
-    fileSize: 10 * 1024 * 1024
-  }
-});
 
 // ملف تخزين البيانات
 const DATA_FILE = path.join(__dirname, 'data', 'chats.json');
@@ -47,7 +25,17 @@ if (!fs.existsSync(path.dirname(DATA_FILE))) {
 function initializeDataFiles() {
   if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, JSON.stringify({
-      messages: [],
+      messages: [
+        {
+          id: "1",
+          text: "Welcome to UltraSpace Y!",
+          sender: "yacine",
+          type: "text",
+          reaction: null,
+          time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+          timestamp: new Date().toISOString()
+        }
+      ],
       lastUpdate: new Date().toISOString()
     }, null, 2));
   }
@@ -244,33 +232,6 @@ app.delete('/api/messages/:id', (req, res) => {
   }
 });
 
-// رفع ملفات
-app.post('/api/upload', upload.single('file'), (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        error: 'No file uploaded'
-      });
-    }
-
-    const fileUrl = `/uploads/${req.file.filename}`;
-    
-    res.json({
-      success: true,
-      fileUrl: fileUrl,
-      filename: req.file.filename,
-      originalName: req.file.originalname,
-      size: req.file.size
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: 'File upload failed'
-    });
-  }
-});
-
 // إحصائيات المدير
 app.get('/api/admin/stats', (req, res) => {
   try {
@@ -358,23 +319,18 @@ app.post('/api/users/register', (req, res) => {
   }
 });
 
-// خدمة الملفات المرفوعة
-app.use('/uploads', express.static('uploads'));
-
 // Route للصفحة الرئيسية
 app.get('/', (req, res) => {
   res.json({
-    message: 'UltraSpace Y Server is running!',
+    message: 'UltraSpace Y Server is running! 🚀',
     version: '1.0.0',
+    status: 'active',
     endpoints: {
       messages: {
         GET: '/api/messages',
         POST: '/api/messages',
         PUT: '/api/messages/:id',
         DELETE: '/api/messages/:id'
-      },
-      upload: {
-        POST: '/api/upload'
       },
       admin: {
         stats: '/api/admin/stats',
@@ -400,6 +356,6 @@ app.use((err, req, res, next) => {
 initializeDataFiles();
 
 app.listen(PORT, () => {
-  console.log(`UltraSpace Y Server is running on port ${PORT}`);
-  console.log(`Access the API at: http://localhost:${PORT}`);
+  console.log(`🚀 UltraSpace Y Server is running on port ${PORT}`);
+  console.log(`📱 Access the API at: http://localhost:${PORT}`);
 });
