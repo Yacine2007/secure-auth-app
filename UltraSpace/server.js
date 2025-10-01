@@ -30,7 +30,7 @@ const storage = multer.diskStorage({
 const upload = multer({ 
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024 // 10MB limit
+    fileSize: 10 * 1024 * 1024
   }
 });
 
@@ -43,7 +43,7 @@ if (!fs.existsSync(path.dirname(DATA_FILE))) {
   fs.mkdirSync(path.dirname(DATA_FILE), { recursive: true });
 }
 
-// تهيئة ملفات البيانات إذا لم تكن موجودة
+// تهيئة ملفات البيانات
 function initializeDataFiles() {
   if (!fs.existsSync(DATA_FILE)) {
     fs.writeFileSync(DATA_FILE, JSON.stringify({
@@ -60,7 +60,7 @@ function initializeDataFiles() {
   }
 }
 
-// قراءة البيانات من الملف
+// قراءة البيانات
 function readData() {
   try {
     const data = fs.readFileSync(DATA_FILE, 'utf8');
@@ -71,7 +71,7 @@ function readData() {
   }
 }
 
-// حفظ البيانات في الملف
+// حفظ البيانات
 function saveData(data) {
   try {
     data.lastUpdate = new Date().toISOString();
@@ -170,7 +170,7 @@ app.post('/api/messages', (req, res) => {
   }
 });
 
-// تحديث رسالة (للتتفاعلات)
+// تحديث رسالة
 app.put('/api/messages/:id', (req, res) => {
   try {
     const { id } = req.params;
@@ -186,7 +186,6 @@ app.put('/api/messages/:id', (req, res) => {
       });
     }
 
-    // تحديث التفاعل
     if (reaction !== undefined) {
       data.messages[messageIndex].reaction = reaction;
     }
@@ -245,7 +244,7 @@ app.delete('/api/messages/:id', (req, res) => {
   }
 });
 
-// رفع ملفات (صور وتسجيلات)
+// رفع ملفات
 app.post('/api/upload', upload.single('file'), (req, res) => {
   try {
     if (!req.file) {
@@ -272,7 +271,7 @@ app.post('/api/upload', upload.single('file'), (req, res) => {
   }
 });
 
-// لوحة تحكم Yacine - الحصول على إحصائيات
+// إحصائيات المدير
 app.get('/api/admin/stats', (req, res) => {
   try {
     const data = readData();
@@ -301,7 +300,7 @@ app.get('/api/admin/stats', (req, res) => {
   }
 });
 
-// لوحة تحكم Yacine - الحصول على جميع المستخدمين
+// الحصول على جميع المستخدمين
 app.get('/api/admin/users', (req, res) => {
   try {
     const usersData = readUsers();
