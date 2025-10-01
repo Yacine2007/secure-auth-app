@@ -18,11 +18,9 @@
             --text-muted: #667781;
             --border: #303d45;
             --online: #0084ff;
-            --typing: #0084ff;
             --message-sent: #005c4b;
             --message-received: #202c33;
             --hover: #2a3942;
-            --active: #005c4b;
         }
 
         * {
@@ -30,6 +28,7 @@
             padding: 0;
             box-sizing: border-box;
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            -webkit-tap-highlight-color: transparent;
         }
 
         body {
@@ -37,12 +36,8 @@
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
-        }
-
-        .app {
-            display: flex;
-            height: 100vh;
-            background: var(--bg-primary);
+            position: fixed;
+            width: 100%;
         }
 
         /* Login Screen */
@@ -63,7 +58,7 @@
 
         .login-container {
             background: var(--bg-secondary);
-            padding: 40px;
+            padding: 40px 30px;
             border-radius: 12px;
             box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
             width: 100%;
@@ -108,12 +103,12 @@
 
         .form-control {
             width: 100%;
-            padding: 12px 16px;
+            padding: 16px;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: 8px;
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 16px;
             transition: all 0.2s;
         }
 
@@ -132,7 +127,7 @@
 
         .file-input-label {
             display: block;
-            padding: 12px 16px;
+            padding: 16px;
             background: var(--bg-tertiary);
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -140,6 +135,7 @@
             text-align: center;
             cursor: pointer;
             transition: all 0.2s;
+            font-size: 16px;
         }
 
         .file-input-label:hover {
@@ -159,7 +155,7 @@
 
         .login-btn {
             width: 100%;
-            padding: 14px;
+            padding: 16px;
             background: var(--primary);
             border: none;
             border-radius: 8px;
@@ -182,16 +178,20 @@
             height: 100vh;
             flex-direction: column;
             background: var(--bg-primary);
+            position: fixed;
+            top: 0;
+            left: 0;
         }
 
         /* Chat Header */
         .chat-header {
             background: var(--bg-tertiary);
-            padding: 12px 20px;
+            padding: 16px 20px;
             display: flex;
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
+            min-height: 70px;
         }
 
         .chat-user {
@@ -206,6 +206,7 @@
             border-radius: 50%;
             overflow: hidden;
             position: relative;
+            flex-shrink: 0;
         }
 
         .avatar img {
@@ -245,11 +246,12 @@
             background: none;
             border: none;
             color: var(--text-secondary);
-            font-size: 18px;
+            font-size: 20px;
             cursor: pointer;
             padding: 8px;
             border-radius: 50%;
             transition: all 0.2s;
+            flex-shrink: 0;
         }
 
         .icon-btn:hover {
@@ -269,23 +271,11 @@
         }
 
         .message {
-            max-width: 70%;
-            padding: 8px 12px;
+            max-width: 80%;
+            padding: 12px 16px;
             border-radius: 8px;
             position: relative;
             word-wrap: break-word;
-            animation: messageSlide 0.2s ease-out;
-        }
-
-        @keyframes messageSlide {
-            from {
-                opacity: 0;
-                transform: translateY(10px);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0);
-            }
         }
 
         .message.received {
@@ -301,7 +291,7 @@
         }
 
         .message-text {
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1.4;
         }
 
@@ -332,15 +322,18 @@
         /* Input Container */
         .input-container {
             background: var(--bg-tertiary);
-            padding: 12px 20px;
+            padding: 16px 20px;
             display: flex;
-            align-items: center;
+            align-items: flex-end;
             gap: 12px;
+            border-top: 1px solid var(--border);
+            min-height: 80px;
         }
 
         .input-actions {
             display: flex;
             gap: 8px;
+            align-items: flex-end;
         }
 
         .message-input {
@@ -348,13 +341,14 @@
             background: var(--bg-secondary);
             border: none;
             border-radius: 20px;
-            padding: 12px 20px;
+            padding: 16px 20px;
             color: var(--text-primary);
-            font-size: 14px;
+            font-size: 16px;
             resize: none;
-            max-height: 100px;
+            max-height: 120px;
             outline: none;
             line-height: 1.4;
+            min-height: 50px;
         }
 
         .message-input::placeholder {
@@ -365,14 +359,16 @@
             background: var(--primary);
             border: none;
             border-radius: 50%;
-            width: 40px;
-            height: 40px;
+            width: 48px;
+            height: 48px;
             color: white;
             cursor: pointer;
             transition: background 0.2s;
             display: flex;
             align-items: center;
             justify-content: center;
+            flex-shrink: 0;
+            font-size: 18px;
         }
 
         .send-button:hover {
@@ -384,14 +380,102 @@
             cursor: not-allowed;
         }
 
+        /* Message Options Menu */
+        .message-options {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--bg-tertiary);
+            border-top-left-radius: 15px;
+            border-top-right-radius: 15px;
+            padding: 20px;
+            transform: translateY(100%);
+            transition: transform 0.3s ease;
+            z-index: 1000;
+            box-shadow: 0 -2px 20px rgba(0, 0, 0, 0.3);
+        }
+
+        .message-options.active {
+            transform: translateY(0);
+        }
+
+        .reactions-bar {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 20px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .reaction-option {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            padding: 8px;
+            color: var(--text-primary);
+        }
+
+        .reaction-option:hover {
+            transform: scale(1.2);
+        }
+
+        .action-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .action-btn {
+            background: none;
+            border: none;
+            color: var(--text-primary);
+            padding: 16px;
+            text-align: left;
+            cursor: pointer;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            transition: background-color 0.2s;
+            font-size: 16px;
+        }
+
+        .action-btn:hover {
+            background: var(--hover);
+        }
+
+        .action-btn i {
+            width: 24px;
+            text-align: center;
+            font-size: 18px;
+        }
+
+        .overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+            display: none;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
         /* Connection Status */
         .connection-status {
             position: fixed;
             top: 10px;
             right: 10px;
-            padding: 8px 16px;
+            padding: 12px 16px;
             border-radius: 20px;
-            font-size: 12px;
+            font-size: 14px;
             z-index: 1000;
             background: var(--online);
             color: white;
@@ -400,6 +484,53 @@
 
         .connection-status.offline {
             background: #ef4444;
+        }
+
+        /* Mobile Optimizations */
+        @media (max-width: 768px) {
+            .login-container {
+                margin: 10px;
+                padding: 30px 20px;
+                max-width: none;
+            }
+
+            .message {
+                max-width: 90%;
+            }
+
+            .chat-header {
+                padding: 12px 16px;
+                min-height: 60px;
+            }
+
+            .input-container {
+                padding: 12px 16px;
+                min-height: 70px;
+            }
+
+            .message-input {
+                padding: 12px 16px;
+                font-size: 16px;
+                min-height: 44px;
+            }
+
+            .send-button {
+                width: 44px;
+                height: 44px;
+            }
+
+            .icon-btn {
+                font-size: 18px;
+                padding: 6px;
+            }
+
+            .messages-container {
+                padding: 16px;
+            }
+
+            .message-text {
+                font-size: 16px;
+            }
         }
 
         /* Scrollbar */
@@ -420,16 +551,11 @@
             background: var(--text-muted);
         }
 
-        /* Responsive */
-        @media (max-width: 768px) {
-            .login-container {
-                margin: 20px;
-                padding: 30px 20px;
-            }
-
-            .message {
-                max-width: 85%;
-            }
+        /* Hide number input spinners */
+        input[type="number"]::-webkit-outer-spin-button,
+        input[type="number"]::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
         }
     </style>
 </head>
@@ -437,6 +563,41 @@
     <!-- Connection Status -->
     <div class="connection-status" id="connectionStatus">
         <i class="fas fa-wifi"></i> Connected
+    </div>
+
+    <!-- Overlay for Message Options -->
+    <div class="overlay" id="overlay"></div>
+
+    <!-- Message Options Menu -->
+    <div class="message-options" id="messageOptions">
+        <div class="reactions-bar">
+            <button class="reaction-option" data-reaction="heart">
+                <i class="fas fa-heart"></i>
+            </button>
+            <button class="reaction-option" data-reaction="thumbs-up">
+                <i class="fas fa-thumbs-up"></i>
+            </button>
+            <button class="reaction-option" data-reaction="laugh-beam">
+                <i class="fas fa-laugh-beam"></i>
+            </button>
+            <button class="reaction-option" data-reaction="surprise">
+                <i class="fas fa-surprise"></i>
+            </button>
+            <button class="reaction-option" data-reaction="sad-tear">
+                <i class="fas fa-sad-tear"></i>
+            </button>
+            <button class="reaction-option" data-reaction="angry">
+                <i class="fas fa-angry"></i>
+            </button>
+        </div>
+        <div class="action-options">
+            <button class="action-btn" id="copyMessageBtn">
+                <i class="far fa-copy"></i> Copy Message
+            </button>
+            <button class="action-btn" id="deleteMessageBtn">
+                <i class="far fa-trash-alt"></i> Delete Message
+            </button>
+        </div>
     </div>
 
     <!-- Login Screen -->
@@ -483,9 +644,6 @@
                 <button class="icon-btn" id="backBtn" title="Back to login">
                     <i class="fas fa-arrow-left"></i>
                 </button>
-                <button class="icon-btn" id="infoBtn" title="Profile info">
-                    <i class="fas fa-info-circle"></i>
-                </button>
             </div>
         </div>
 
@@ -497,9 +655,6 @@
             <div class="input-actions">
                 <button class="icon-btn" id="attachmentBtn" title="Attach file">
                     <i class="fas fa-paperclip"></i>
-                </button>
-                <button class="icon-btn" id="emojiBtn" title="Emoji">
-                    <i class="far fa-smile"></i>
                 </button>
             </div>
             <textarea class="message-input" id="messageInput" placeholder="Type a message..." rows="1"></textarea>
@@ -525,16 +680,26 @@
         const fileInputLabel = document.getElementById('fileInputLabel');
         const profilePicInput = document.getElementById('profilePic');
         const attachmentBtn = document.getElementById('attachmentBtn');
-        const imageInput = document.createElement('input');
-        imageInput.type = 'file';
-        imageInput.accept = 'image/*';
-        imageInput.style.display = 'none';
+        const overlay = document.getElementById('overlay');
+        const messageOptions = document.getElementById('messageOptions');
+        const copyMessageBtn = document.getElementById('copyMessageBtn');
+        const deleteMessageBtn = document.getElementById('deleteMessageBtn');
+        const reactionOptions = document.querySelectorAll('.reaction-option');
 
         // State
         let currentUser = null;
         let allMessages = [];
         let messageCheckInterval = null;
         let lastMessageCount = 0;
+        let selectedMessage = null;
+        let longPressTimer = null;
+
+        // Create hidden file input for attachments
+        const imageInput = document.createElement('input');
+        imageInput.type = 'file';
+        imageInput.accept = 'image/*';
+        imageInput.style.display = 'none';
+        document.body.appendChild(imageInput);
 
         // API Functions
         async function apiRequest(endpoint, options = {}) {
@@ -579,13 +744,14 @@
             try {
                 const data = await apiRequest('/api/messages');
                 allMessages = data.messages;
-                displayMessages();
-                showConnectionStatus(true);
                 
-                // Check for new messages
+                // Only update if messages changed
                 if (allMessages.length !== lastMessageCount) {
                     lastMessageCount = allMessages.length;
+                    displayMessages();
                 }
+                
+                showConnectionStatus(true);
             } catch (error) {
                 console.error('Failed to load messages:', error);
             }
@@ -594,7 +760,7 @@
         // Check for new messages
         async function checkForUpdates() {
             try {
-                const response = await fetch(`${SERVER_URL}/api/updates`);
+                const response = await fetch(`${SERVER_URL}/api/updates?timestamp=${Date.now()}`);
                 const data = await response.json();
                 
                 if (data.hasUpdates) {
@@ -607,6 +773,9 @@
 
         // Display messages
         function displayMessages() {
+            const currentScroll = messagesContainer.scrollTop;
+            const isAtBottom = messagesContainer.scrollHeight - messagesContainer.clientHeight <= currentScroll + 10;
+
             messagesContainer.innerHTML = allMessages.map(msg => {
                 const isUser = msg.sender === 'user';
                 const messageClass = isUser ? 'sent' : 'received';
@@ -629,7 +798,7 @@
                     `<div class="message-reaction"><i class="fas fa-${msg.reaction}"></i></div>` : '';
                 
                 return `
-                    <div class="message ${messageClass}">
+                    <div class="message ${messageClass}" data-message-id="${msg.id}">
                         <div class="message-text">${content}</div>
                         <div class="message-time">${msg.time}</div>
                         ${reaction}
@@ -637,8 +806,47 @@
                 `;
             }).join('');
             
-            // Scroll to bottom
-            messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            // Add event listeners for long press
+            document.querySelectorAll('.message').forEach(message => {
+                addMessageLongPress(message);
+            });
+            
+            // Maintain scroll position
+            if (isAtBottom) {
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            }
+        }
+
+        // Add long press event to message
+        function addMessageLongPress(messageElement) {
+            messageElement.addEventListener('touchstart', startLongPress);
+            messageElement.addEventListener('touchend', cancelLongPress);
+            messageElement.addEventListener('touchcancel', cancelLongPress);
+            messageElement.addEventListener('mousedown', startLongPress);
+            messageElement.addEventListener('mouseup', cancelLongPress);
+            messageElement.addEventListener('mouseleave', cancelLongPress);
+        }
+
+        function startLongPress(e) {
+            selectedMessage = e.currentTarget;
+            longPressTimer = setTimeout(() => {
+                showMessageOptions();
+            }, 500);
+        }
+
+        function cancelLongPress() {
+            clearTimeout(longPressTimer);
+        }
+
+        function showMessageOptions() {
+            messageOptions.classList.add('active');
+            overlay.classList.add('active');
+        }
+
+        function hideMessageOptions() {
+            messageOptions.classList.remove('active');
+            overlay.classList.remove('active');
+            selectedMessage = null;
         }
 
         // Send message
@@ -664,8 +872,7 @@
                     body: JSON.stringify(messageData)
                 });
 
-                // Reload messages to show the new message
-                await loadMessages();
+                // Messages will be updated automatically
                 showConnectionStatus(true);
 
             } catch (error) {
@@ -688,7 +895,6 @@
                     body: JSON.stringify(messageData)
                 });
 
-                await loadMessages();
                 showConnectionStatus(true);
 
             } catch (error) {
@@ -696,15 +902,83 @@
             }
         }
 
+        // Add reaction to message
+        async function addReactionToMessage(reaction) {
+            if (!selectedMessage) return;
+            
+            const messageId = selectedMessage.dataset.messageId;
+            try {
+                await apiRequest(`/api/messages/${messageId}`, {
+                    method: 'PUT',
+                    body: JSON.stringify({ reaction })
+                });
+                
+                hideMessageOptions();
+            } catch (error) {
+                console.error('Failed to add reaction:', error);
+            }
+        }
+
+        // Copy message text
+        function copyMessageText() {
+            if (!selectedMessage) return;
+            
+            const messageText = selectedMessage.querySelector('.message-text').textContent;
+            navigator.clipboard.writeText(messageText).then(() => {
+                // Show brief notification
+                const notification = document.createElement('div');
+                notification.textContent = 'Message copied!';
+                notification.style.cssText = `
+                    position: fixed;
+                    top: 50%;
+                    left: 50%;
+                    transform: translate(-50%, -50%);
+                    background: var(--primary);
+                    color: white;
+                    padding: 12px 20px;
+                    border-radius: 8px;
+                    z-index: 1000;
+                    font-size: 14px;
+                `;
+                document.body.appendChild(notification);
+                
+                setTimeout(() => {
+                    document.body.removeChild(notification);
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy text: ', err);
+            });
+            
+            hideMessageOptions();
+        }
+
+        // Delete message
+        async function deleteMessage() {
+            if (!selectedMessage) return;
+            
+            if (confirm('Are you sure you want to delete this message?')) {
+                const messageId = selectedMessage.dataset.messageId;
+                try {
+                    await apiRequest(`/api/messages/${messageId}`, {
+                        method: 'DELETE'
+                    });
+                    
+                    hideMessageOptions();
+                } catch (error) {
+                    console.error('Failed to delete message:', error);
+                }
+            }
+        }
+
         // Auto-resize textarea
         function autoResizeTextarea() {
             messageInput.style.height = 'auto';
-            messageInput.style.height = Math.min(messageInput.scrollHeight, 100) + 'px';
+            messageInput.style.height = Math.min(messageInput.scrollHeight, 120) + 'px';
         }
 
         // Start auto-refresh
         function startAutoRefresh() {
-            messageCheckInterval = setInterval(checkForUpdates, 2000); // Check for updates every 2 seconds
+            messageCheckInterval = setInterval(checkForUpdates, 2000);
         }
 
         // Event Listeners
@@ -782,10 +1056,24 @@
             }
         });
 
+        // Message options event listeners
+        overlay.addEventListener('click', hideMessageOptions);
+        
+        reactionOptions.forEach(option => {
+            option.addEventListener('click', () => {
+                addReactionToMessage(option.dataset.reaction);
+            });
+        });
+        
+        copyMessageBtn.addEventListener('click', copyMessageText);
+        deleteMessageBtn.addEventListener('click', deleteMessage);
+
         // Show chat screen
         function showChatScreen() {
             loginScreen.style.display = 'none';
             chatScreen.style.display = 'flex';
+            // Focus on message input
+            setTimeout(() => messageInput.focus(), 100);
         }
 
         // Show login screen
