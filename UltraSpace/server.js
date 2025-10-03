@@ -34,7 +34,9 @@ function initializeDataFiles() {
           reaction: null,
           time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           timestamp: new Date().toISOString(),
-          read: false
+          read: false,
+          userId: "yacine", // إضافة userId
+          recipient: null   // إضافة recipient
         }
       ],
       lastUpdate: new Date().toISOString()
@@ -152,10 +154,10 @@ app.get('/api/messages', (req, res) => {
   }
 });
 
-// إرسال رسالة جديدة
+// إرسال رسالة جديدة - تم التعديل هنا
 app.post('/api/messages', (req, res) => {
   try {
-    const { text, sender, type = 'text', reaction = null } = req.body;
+    const { text, sender, type = 'text', reaction = null, userId, recipient } = req.body;
     
     if (!text || !sender) {
       return res.status(400).json({
@@ -173,7 +175,9 @@ app.post('/api/messages', (req, res) => {
       reaction,
       time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       timestamp: new Date().toISOString(),
-      read: false
+      read: false,
+      userId: userId || sender, // إضافة userId
+      recipient: recipient || null // إضافة recipient
     };
 
     data.messages.push(newMessage);
@@ -357,12 +361,8 @@ app.get('/api/admin/users', (req, res) => {
     const data = readData();
     const activeUsers = new Set(data.messages
       .filter(msg => msg.sender === 'user')
-      .map(msg => {
-        const userMsg = msg.text.toLowerCase();
-        const user = usersData.users.find(u => userMsg.includes(u.name.toLowerCase()));
-        return user ? user.id : null;
-      })
-      .filter(id => id !== null)
+      .map(msg => msg.userId) // استخدام userId بدلاً من الاسم
+      .filter(id => id !== null && id !== 'yacine')
     );
 
     const usersWithActivity = usersData.users.map(user => ({
@@ -489,15 +489,16 @@ setInterval(() => {
 app.get('/', (req, res) => {
   res.json({
     message: '🚀 UltraSpace Y Server is running!',
-    version: '3.0.0',
+    version: '3.1.0', // تحديث الإصدار
     status: 'active',
     features: [
       'real-time-messaging',
-      'auto-updates',
+      'auto-updates', 
       'reactions',
       'admin-dashboard',
       'file-sharing',
-      'user-management'
+      'user-management',
+      'user-message-linking' // إضافة ميزة جديدة
     ],
     endpoints: {
       messages: {
@@ -571,6 +572,7 @@ app.listen(PORT, () => {
   console.log('   ✅ Admin dashboard');
   console.log('   ✅ User management');
   console.log('   ✅ File sharing support');
+  console.log('   ✅ User-message linking (NEW)'); // إضافة الميزة الجديدة
   console.log('');
   console.log('💡 Server is ready to handle requests!');
 });
