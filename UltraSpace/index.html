@@ -37,8 +37,8 @@
             color: var(--text-primary);
             height: 100vh;
             overflow: hidden;
-            position: fixed;
             width: 100%;
+            position: fixed;
         }
 
         /* Login Screen */
@@ -192,7 +192,7 @@
             align-items: center;
             justify-content: space-between;
             border-bottom: 1px solid var(--border);
-            min-height: 60px;
+            height: 60px;
             flex-shrink: 0;
         }
 
@@ -321,22 +321,24 @@
             left: 8px;
         }
 
-        /* Input Container - تم التعديل هنا */
+        /* Input Container - تم إصلاح التخطيط هنا */
         .input-container {
             background: var(--bg-tertiary);
             padding: 10px 12px;
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             gap: 8px;
             border-top: 1px solid var(--border);
-            min-height: 70px;
+            height: 70px;
             flex-shrink: 0;
+            position: relative;
+            z-index: 10;
         }
 
         .input-actions {
             display: flex;
             gap: 6px;
-            align-items: flex-end;
+            align-items: center;
         }
 
         .message-input {
@@ -502,7 +504,7 @@
             align-self: center;
         }
 
-        /* Mobile Optimizations - تم تحسينها */
+        /* Mobile Optimizations */
         @media (max-width: 768px) {
             .login-container {
                 margin: 10px;
@@ -516,12 +518,12 @@
 
             .chat-header {
                 padding: 10px 12px;
-                min-height: 60px;
+                height: 60px;
             }
 
             .input-container {
                 padding: 10px 12px;
-                min-height: 70px;
+                height: 70px;
             }
 
             .message-input {
@@ -564,7 +566,7 @@
             }
         }
 
-        /* Extra small devices - تم تحسينها */
+        /* Extra small devices */
         @media (max-width: 480px) {
             .login-container {
                 padding: 25px 15px;
@@ -593,6 +595,7 @@
             
             .chat-header {
                 padding: 8px 10px;
+                height: 56px;
             }
             
             .avatar {
@@ -615,6 +618,7 @@
             
             .input-container {
                 padding: 8px 10px;
+                height: 64px;
             }
             
             .message-input {
@@ -673,6 +677,24 @@
             input, textarea {
                 font-size: 16px !important;
             }
+        }
+        
+        /* Ensure chat screen layout works correctly */
+        .chat-screen {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            flex-direction: column;
+        }
+        
+        /* Make sure input container is always visible */
+        .input-container {
+            display: flex !important;
+            visibility: visible !important;
+            opacity: 1 !important;
         }
     </style>
 </head>
