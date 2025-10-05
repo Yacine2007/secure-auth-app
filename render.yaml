@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: by-pro-accounts-login
+    env: node
+    plan: free
+    buildCommand: cd /opt/render/project/src && npm install
+    startCommand: cd /opt/render/project/src && node server.js
+    envVars:
+      - key: NODE_VERSION
+        value: 18.0.0
