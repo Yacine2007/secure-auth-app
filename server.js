@@ -8,32 +8,32 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 console.log('🚀 Starting B.Y PRO Accounts Login Server...');
-console.log('📁 Current directory:', __dirname);
-console.log('📄 Files in directory:');
-require('fs').readdirSync(__dirname).forEach(file => {
-  console.log('   -', file);
-});
 
-// Middleware
-app.use(cors());
+// Middleware مع إعدادات CORS محسنة
+app.use(cors({
+  origin: ['https://b-y-pro-acounts-login.onrender.com', 'http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
+}));
+
 app.use(express.json());
 app.use(express.static(__dirname));
 
+// middleware لتسجيل جميع الطلبات
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url}`);
+  next();
+});
+
 console.log('✅ Middleware initialized');
 
-// التحقق من متغيرات البيئة
-console.log('🔍 Checking environment variables...');
-console.log('PORT:', process.env.PORT);
-console.log('GOOGLE_PROJECT_ID:', process.env.GOOGLE_PROJECT_ID ? 'Set' : 'Not Set');
-console.log('GOOGLE_PRIVATE_KEY_ID:', process.env.GOOGLE_PRIVATE_KEY_ID ? 'Set' : 'Not Set');
-console.log('GOOGLE_CLIENT_EMAIL:', process.env.GOOGLE_CLIENT_EMAIL ? 'Set' : 'Not Set');
-
-// بيانات حساب الخدمة - مع fallback للبيانات الثابتة إذا لم تكن متغيرات البيئة متاحة
+// بيانات حساب الخدمة - باستخدام البيانات الثابتة المؤكدة
 const serviceAccount = {
   type: "service_account",
-  project_id: process.env.GOOGLE_PROJECT_ID || "database-accounts-469323",
-  private_key_id: process.env.GOOGLE_PRIVATE_KEY_ID || "fae1257403e165cb23ebe2b9c1b3ad65f9f2ceb9",
-  private_key: process.env.GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n') || `-----BEGIN PRIVATE KEY-----
+  project_id: "database-accounts-469323",
+  private_key_id: "fae1257403e165cb23ebe2b9c1b3ad65f9f2ceb9",
+  private_key: `-----BEGIN PRIVATE KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCv21dq6NdpJml3
 MzaF1+Q618iqtL6SQFglh7wKmwgQBjEqOX3mrlGfeZ7GdEx/JE8NGIuldx79Cgxn
 x6r2H4EuVOLFeG9yheJTYDlkIwrXfcZcQmqixoOsdjKYCPdmyU21zsPWp+9kHKfD
@@ -61,12 +61,12 @@ XDDBd0H/36h/k1KN46/bM5K6JctZxZAm/MQiOgLs41fnSuj8NLkplywz3X9maVxe
 6YCzxJQ/rxUCyOjTjxBAMEy+YBTTD0NKiUzWoZP2TPCLPHDm2dhkPQWfSVXL7BpV
 M3qhrxZapGK4rnHRMLd9zBY=
 -----END PRIVATE KEY-----`,
-  client_email: process.env.GOOGLE_CLIENT_EMAIL || "admin-319@database-accounts-469323.iam.gserviceaccount.com",
-  client_id: process.env.GOOGLE_CLIENT_ID || "112725223865398470283",
+  client_email: "admin-319@database-accounts-469323.iam.gserviceaccount.com",
+  client_id: "112725223865398470283",
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
   token_uri: "https://oauth2.googleapis.com/token",
   auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-  client_x509_cert_url: process.env.GOOGLE_CLIENT_CERT_URL || "https://www.googleapis.com/robot/v1/metadata/x509/admin-319%40database-accounts-469323.iam.gserviceaccount.com",
+  client_x509_cert_url: "https://www.googleapis.com/robot/v1/metadata/x509/admin-319%40database-accounts-469323.iam.gserviceaccount.com",
   universe_domain: "googleapis.com"
 };
 
@@ -75,15 +75,10 @@ const FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
 
 console.log('🔐 Google Drive configuration loaded');
 
-// تهيئة خدمة Google Drive مع معالجة أفضل للأخطاء
+// تهيئة خدمة Google Drive
 function initializeDriveService() {
   try {
     console.log('🔄 Initializing Google Drive service...');
-    
-    // التحقق من وجود المفتاح الخاص
-    if (!serviceAccount.private_key) {
-      throw new Error("Private key is missing");
-    }
     
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
@@ -95,14 +90,13 @@ function initializeDriveService() {
     return drive;
   } catch (error) {
     console.error('❌ Failed to initialize Google Drive service:', error.message);
-    console.error('Error details:', error);
     return null;
   }
 }
 
 const driveService = initializeDriveService();
 
-// قراءة CSV من Google Drive وتحويله إلى مصفوفة كائنات
+// قراءة CSV من Google Drive
 async function readCSVFromDrive(fileId) {
   if (!driveService) {
     throw new Error("Drive service not available");
@@ -114,27 +108,13 @@ async function readCSVFromDrive(fileId) {
     const response = await driveService.files.get({
       fileId: fileId,
       alt: 'media'
-    }, { responseType: 'stream' });
-
-    return new Promise((resolve, reject) => {
-      let data = '';
-      
-      response.data
-        .on('data', chunk => data += chunk)
-        .on('end', () => {
-          console.log(`✅ Successfully read CSV data`);
-          // تحويل CSV إلى مصفوفة كائنات
-          const accounts = parseCSVToAccounts(data);
-          resolve(accounts);
-        })
-        .on('error', (error) => {
-          console.error('❌ Error reading CSV stream:', error);
-          reject(error);
-        });
     });
+
+    const data = response.data;
+    console.log(`✅ Successfully read CSV data`);
+    return data;
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
-    console.error('Error details:', error);
     throw error;
   }
 }
@@ -143,31 +123,20 @@ async function readCSVFromDrive(fileId) {
 function parseCSVToAccounts(csvData) {
   try {
     const lines = csvData.split('\n').filter(line => line.trim() !== '');
-    if (lines.length === 0) {
-      console.log('⚠️ CSV file is empty');
-      return [];
-    }
+    if (lines.length === 0) return [];
 
-    // استخراج العناوين من السطر الأول
     const headers = lines[0].split(',').map(header => header.trim());
-    console.log('📋 CSV Headers:', headers);
-    
     const accounts = [];
+    
     for (let i = 1; i < lines.length; i++) {
       const values = lines[i].split(',').map(value => value.trim());
-      
-      // التأكد من تطابق عدد الأعمدة
-      if (values.length !== headers.length) {
-        console.warn(`⚠️ Row ${i} has incorrect number of columns: ${values.length} instead of ${headers.length}`);
-        continue;
+      if (values.length === headers.length) {
+        const account = {};
+        headers.forEach((header, index) => {
+          account[header] = values[index] || '';
+        });
+        accounts.push(account);
       }
-      
-      const account = {};
-      headers.forEach((header, index) => {
-        account[header] = values[index] || '';
-      });
-      
-      accounts.push(account);
     }
     
     console.log(`📊 Parsed ${accounts.length} accounts from CSV`);
@@ -183,23 +152,13 @@ async function verifyAccountCredentials(id, password) {
   try {
     console.log(`🔐 Verifying credentials for ID: ${id}`);
     
-    const accounts = await readCSVFromDrive(FILE_ID);
-    
-    if (accounts.length === 0) {
-      console.log('⚠️ No accounts found in database');
-      return {
-        success: false,
-        error: "No accounts found in database"
-      };
-    }
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
     
     // البحث عن الحساب المطابق
-    const account = accounts.find(acc => {
-      const idMatch = acc.id === id;
-      const passwordMatch = acc.ps === password;
-      console.log(`🔍 Checking account: ${acc.id}, ID match: ${idMatch}, Password match: ${passwordMatch}`);
-      return idMatch && passwordMatch;
-    });
+    const account = accounts.find(acc => 
+      acc.id && acc.ps && acc.id.toString() === id.toString() && acc.ps === password
+    );
     
     if (account) {
       console.log(`✅ Login successful for ID: ${id}`);
@@ -241,25 +200,25 @@ app.get('/style.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'style.css'));
 });
 
+// نقطة النهاية الرئيسية للتحقق من الحساب
 app.get('/api/verify-account', async (req, res) => {
-  const { id, password } = req.query;
-  
-  console.log(`🔐 Login attempt - ID: ${id}`);
-  
-  if (!id || !password) {
-    return res.json({ 
-      success: false, 
-      error: "ID and password are required" 
-    });
-  }
-
   try {
-    // التحقق الفعلي من بيانات الدخول مقابل قاعدة البيانات
+    const { id, password } = req.query;
+    
+    console.log(`🔐 Login attempt - ID: ${id}`);
+    
+    if (!id || !password) {
+      return res.json({ 
+        success: false, 
+        error: "ID and password are required" 
+      });
+    }
+
     const result = await verifyAccountCredentials(id, password);
     res.json(result);
     
   } catch (error) {
-    console.error('❌ Server error:', error.message);
+    console.error('❌ Server error in verify-account:', error.message);
     res.json({ 
       success: false, 
       error: "Server error: " + error.message 
@@ -292,14 +251,15 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Route للتحقق من البيانات (للتطوير)
+// Route للتحقق من البيانات
 app.get('/api/debug/accounts', async (req, res) => {
   try {
-    const accounts = await readCSVFromDrive(FILE_ID);
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
     res.json({
       success: true,
       count: accounts.length,
-      accounts: accounts.slice(0, 5) // إرجاع أول 5 حسابات فقط
+      accounts: accounts.slice(0, 5)
     });
   } catch (error) {
     res.json({
@@ -309,7 +269,16 @@ app.get('/api/debug/accounts', async (req, res) => {
   }
 });
 
-// معالجة الأخطاء
+// معالجة الأخطاء 404
+app.use('*', (req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    error: `Route ${req.originalUrl} not found`
+  });
+});
+
+// معالجة أخطاء الخادم
 app.use((err, req, res, next) => {
   console.error('❌ Unhandled error:', err);
   res.status(500).json({
