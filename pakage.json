@@ -1,7 +1,8 @@
+
 {
-  "name": "secure-auth-app",
+  "name": "by-pro-accounts-login",
   "version": "1.0.0",
-  "description": "B.Y PRO Accounts Login System",
+  "description": "B.Y PRO Accounts Login System with Google Drive Integration",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -15,5 +16,13 @@
   },
   "engines": {
     "node": ">=14.0.0"
-  }
+  },
+  "keywords": [
+    "login",
+    "authentication",
+    "google-drive",
+    "accounts"
+  ],
+  "author": "B.Y PRO",
+  "license": "MIT"
 }
