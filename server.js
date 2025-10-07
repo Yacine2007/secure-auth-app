@@ -62,7 +62,7 @@ function initializeDriveService() {
 
 const driveService = initializeDriveService();
 
-// قراءة CSV من Google Drive
+// قراءة CSV من Google Drive وتحويله إلى مصفوفة كائنات
 async function readCSVFromDrive(fileId) {
   if (!driveService) {
     throw new Error("Drive service not available");
@@ -83,13 +83,82 @@ async function readCSVFromDrive(fileId) {
         .on('data', chunk => data += chunk)
         .on('end', () => {
           console.log(`✅ Successfully read CSV data`);
-          resolve(data);
+          // تحويل CSV إلى مصفوفة كائنات
+          const accounts = parseCSVToAccounts(data);
+          resolve(accounts);
         })
         .on('error', reject);
     });
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
     throw error;
+  }
+}
+
+// تحويل بيانات CSV إلى مصفوفة حسابات
+function parseCSVToAccounts(csvData) {
+  try {
+    const lines = csvData.split('\n').filter(line => line.trim() !== '');
+    if (lines.length === 0) return [];
+
+    // استخراج العناوين من السطر الأول
+    const headers = lines[0].split(',').map(header => header.trim());
+    
+    const accounts = [];
+    for (let i = 1; i < lines.length; i++) {
+      const values = lines[i].split(',').map(value => value.trim());
+      const account = {};
+      
+      headers.forEach((header, index) => {
+        account[header] = values[index] || '';
+      });
+      
+      accounts.push(account);
+    }
+    
+    console.log(`📊 Parsed ${accounts.length} accounts from CSV`);
+    return accounts;
+  } catch (error) {
+    console.error('❌ Error parsing CSV:', error.message);
+    return [];
+  }
+}
+
+// التحقق من صحة الحساب
+async function verifyAccountCredentials(id, password) {
+  try {
+    console.log(`🔐 Verifying credentials for ID: ${id}`);
+    
+    const accounts = await readCSVFromDrive(FILE_ID);
+    
+    // البحث عن الحساب المطابق
+    const account = accounts.find(acc => 
+      acc.id === id && acc.ps === password
+    );
+    
+    if (account) {
+      console.log(`✅ Login successful for ID: ${id}`);
+      return {
+        success: true,
+        account: {
+          id: account.id,
+          name: account.name || `User ${account.id}`,
+          email: account.email || `${account.id}@bypro.com`
+        }
+      };
+    } else {
+      console.log(`❌ Login failed for ID: ${id} - Invalid credentials`);
+      return {
+        success: false,
+        error: "Invalid ID or password"
+      };
+    }
+  } catch (error) {
+    console.error('❌ Error verifying account:', error.message);
+    return {
+      success: false,
+      error: "Server error: " + error.message
+    };
   }
 }
 
@@ -120,20 +189,9 @@ app.get('/api/verify-account', async (req, res) => {
   }
 
   try {
-    // محاكاة النجاح للاختبار الأولي
-    // سيتم تفعيل Google Drive لاحقاً
-    console.log('🔄 Verifying credentials...');
-    
-    // مؤقتاً: قبول أي بيانات للاختبار
-    res.json({ 
-      success: true, 
-      message: "Login successful",
-      account: {
-        id: id,
-        name: "User " + id,
-        email: id + "@bypro.com"
-      }
-    });
+    // التحقق الفعلي من بيانات الدخول مقابل قاعدة البيانات
+    const result = await verifyAccountCredentials(id, password);
+    res.json(result);
     
   } catch (error) {
     console.error('❌ Server error:', error.message);
