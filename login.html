@@ -6,7 +6,7 @@
     <title>B.Y PRO Accounts - Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* نفس الأنماط السابقة... */
+        /* نفس الأنماط السابقة - محفوظة */
         :root {
             --primary-color: #3498db;
             --primary-dark: #2980b9;
@@ -549,7 +549,16 @@
             <!-- Server Status -->
             <div style="text-align: center; margin-top: 20px;">
                 <small style="color: var(--text-muted);" id="serverStatus">
-                    <i class="fas fa-circle" style="color: var(--success-color);"></i> Server Connected
+                    <i class="fas fa-circle" style="color: var(--success-color);"></i> Checking server...
+                </small>
+            </div>
+
+            <!-- Test Accounts Info -->
+            <div style="text-align: center; margin-top: 15px; padding: 10px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
+                <small style="color: var(--text-muted);">
+                    <strong>Test Accounts:</strong><br>
+                    ID: <code>1</code> | Password: <code>ABC123!?/</code><br>
+                    ID: <code>2</code> | Password: <code>ABC123!?/</code>
                 </small>
             </div>
         </div>
@@ -578,15 +587,14 @@
         const connectionText = document.getElementById('connectionText');
         const serverStatus = document.getElementById('serverStatus');
 
-        // Server Configuration - استخدام النطاق الحالي
+        // Server Configuration - استخدام النطاق الحالي مباشرة
         const API_BASE = window.location.origin;
+        console.log('🌐 Detected API Base:', API_BASE);
 
         // Variables
         let currentStream = null;
         let currentMethod = 'qr';
-        let isOnline = true;
-
-        console.log('🌐 API Base URL:', API_BASE);
+        let isOnline = false;
 
         // Check if user is already logged in
         function checkLoginStatus() {
@@ -807,7 +815,7 @@
             }
         }
 
-        // Verify login credentials
+        // Verify login credentials - الإصدار المحسّن
         async function verifyLogin(id, password) {
             if (!id || !password) {
                 showStatus('ID and password are required', 'error');
@@ -817,18 +825,20 @@
             loginBtn.disabled = true;
             loginBtn.innerHTML = '<div class="loading-spinner"></div> Verifying...';
 
-            const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
-            console.log('🔐 Making request to:', url);
-
             try {
+                const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
+                console.log('🔐 Making request to:', url);
+
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                    }
+                        'Content-Type': 'application/json'
+                    },
+                    mode: 'cors'
                 });
 
-                console.log('📥 Response status:', response.status);
+                console.log('📥 Response status:', response.status, response.statusText);
 
                 if (!response.ok) {
                     throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
@@ -918,29 +928,45 @@
             e.target.value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
         });
 
+        // Test server connection بشكل أفضل
+        async function testServerConnection() {
+            try {
+                console.log('🔄 Testing server connection...');
+                const response = await fetch(`${API_BASE}/api/health`);
+                console.log('📡 Health check response:', response.status);
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Server health:', data);
+                    updateConnectionStatus(true);
+                    return true;
+                } else {
+                    throw new Error(`HTTP ${response.status}`);
+                }
+            } catch (error) {
+                console.error('❌ Server connection test failed:', error);
+                updateConnectionStatus(false);
+                return false;
+            }
+        }
+
         // Initialize
-        document.addEventListener('DOMContentLoaded', () => {
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Initializing login page...');
             checkLoginStatus();
-            testServerConnection();
+            
+            // اختبار الاتصال فور التحميل
+            const connected = await testServerConnection();
+            if (connected) {
+                console.log('✅ Server is ready for login');
+            } else {
+                console.log('❌ Server connection failed');
+            }
             
             if (currentMethod === 'qr') {
                 startCamera();
             }
         });
-
-        // Test server connection
-        async function testServerConnection() {
-            try {
-                const response = await fetch(`${API_BASE}/api/health`);
-                if (response.ok) {
-                    updateConnectionStatus(true);
-                } else {
-                    updateConnectionStatus(false);
-                }
-            } catch (error) {
-                updateConnectionStatus(false);
-            }
-        }
 
         // Stop camera when page is hidden
         document.addEventListener('visibilitychange', () => {
@@ -955,6 +981,12 @@
         window.addEventListener('beforeunload', () => {
             stopCamera();
         });
+
+        // إضافة وظيفة لاختبار الاتصال يدوياً
+        window.testConnection = async function() {
+            console.log('🧪 Manual connection test...');
+            await testServerConnection();
+        };
     </script>
 </body>
 </html>
