@@ -640,7 +640,7 @@
         // Variables
         let currentStep = 1;
         let verificationSent = false;
-        let generatedCode = '123456'; // رمز ثابت
+        let generatedCode = '';
         let countdownInterval;
         let countdownTime = 60;
         let userData = {
@@ -698,7 +698,7 @@
             }, 1000);
         }
 
-        // Send verification code
+        // Send verification code - UPDATED FOR REAL EMAIL
         async function sendVerificationCode() {
             try {
                 // التحقق من صحة البريد الإلكتروني
@@ -717,12 +717,30 @@
 
                 showStatus('Sending verification code...', 'success');
                 
-                // محاكاة إرسال الرمز
-                setTimeout(() => {
-                    showStatus(`Verification code sent to ${emailValue}: 123456`, 'success');
+                // توليد رمز عشوائي
+                generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+                
+                // إرسال الرمز إلى السيرفر لإرساله بالبريد
+                const response = await fetch(`${API_BASE}/api/send-verification-email`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        email: emailValue,
+                        code: generatedCode
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(`Verification code sent to ${emailValue}`, 'success');
                     verificationSent = true;
                     startCountdown();
-                }, 1000);
+                } else {
+                    showStatus('Failed to send verification code: ' + result.error, 'error');
+                }
                 
             } catch (error) {
                 console.error('Error sending verification:', error);
@@ -863,16 +881,21 @@
             }
         }
 
-        // Generate QR Code
+        // Generate QR Code - FIXED VERSION
         function generateQRCode(text) {
             try {
-                // تنظيف canvas أولاً
-                const ctx = qrCodeCanvas.getContext('2d');
-                ctx.clearRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
+                // تأكد من أن الـ canvas له أبعاد صحيحة
+                qrCodeCanvas.width = 200;
+                qrCodeCanvas.height = 200;
                 
+                // تنظيف الـ canvas
+                const ctx = qrCodeCanvas.getContext('2d');
+                ctx.fillStyle = '#FFFFFF';
+                ctx.fillRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
+                
+                // إنشاء QR Code
                 QRCode.toCanvas(qrCodeCanvas, text, {
                     width: 200,
-                    height: 200,
                     margin: 1,
                     color: {
                         dark: '#000000',
@@ -1060,7 +1083,14 @@
             // Test server connection
             fetch(`${API_BASE}/api/health`)
                 .then(response => response.json())
-                .then(data => console.log('✅ Server status:', data))
+                .then(data => {
+                    console.log('✅ Server status:', data);
+                    if (data.smtp_status === 'connected') {
+                        console.log('📧 Email service is ready');
+                    } else {
+                        console.warn('⚠️ Email service may not work properly');
+                    }
+                })
                 .catch(error => console.error('❌ Server connection failed:', error));
         });
     </script>
