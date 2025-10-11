@@ -821,9 +821,20 @@
             }
         }
 
-        // Upload image to GitHub (محاكاة)
-        async function uploadImageToGitHub(accountId, imageData) {
+        // Upload image to GitHub using server endpoint
+        async function uploadImageToGitHub(accountId, imageFile) {
             try {
+                showStatus('Uploading profile picture...', 'success');
+                
+                // تحويل الصورة إلى base64
+                const imageData = await new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(imageFile);
+                });
+
+                // إرسال الصورة إلى السيرفر
                 const response = await fetch(`${API_BASE}/api/upload-image`, {
                     method: 'POST',
                     headers: {
@@ -838,30 +849,47 @@
                 if (!response.ok) throw new Error('Upload failed');
                 
                 const result = await response.json();
-                return result.success ? result.imageUrl : '';
+                if (result.success) {
+                    showStatus('Profile picture uploaded successfully', 'success');
+                    return result.imageUrl;
+                } else {
+                    throw new Error(result.error || 'Upload failed');
+                }
             } catch (error) {
                 console.error('Error uploading image:', error);
-                // محاكاة الرابط
+                showStatus('Failed to upload image, using default', 'warning');
+                // رابط افتراضي في حالة الفشل
                 return `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
             }
         }
 
         // Generate QR Code
         function generateQRCode(text) {
-            QRCode.toCanvas(qrCodeCanvas, text, {
-                width: 200,
-                height: 200,
-                margin: 1,
-                color: {
-                    dark: '#000000',
-                    light: '#FFFFFF'
-                }
-            }, function (error) {
-                if (error) {
-                    console.error('QR Code error:', error);
-                    showStatus('Error generating QR code', 'error');
-                }
-            });
+            try {
+                // تنظيف canvas أولاً
+                const ctx = qrCodeCanvas.getContext('2d');
+                ctx.clearRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
+                
+                QRCode.toCanvas(qrCodeCanvas, text, {
+                    width: 200,
+                    height: 200,
+                    margin: 1,
+                    color: {
+                        dark: '#000000',
+                        light: '#FFFFFF'
+                    }
+                }, function (error) {
+                    if (error) {
+                        console.error('QR Code error:', error);
+                        showStatus('Error generating QR code', 'error');
+                    } else {
+                        console.log('✅ QR Code generated successfully');
+                    }
+                });
+            } catch (error) {
+                console.error('QR Code generation failed:', error);
+                showStatus('Error generating QR code', 'error');
+            }
         }
 
         // Download QR Code
@@ -899,20 +927,10 @@
                 // رفع الصورة إذا تم اختيارها
                 let imageUrl = '';
                 if (profileImage.files[0]) {
-                    showStatus('Uploading profile picture...', 'success');
-                    try {
-                        const reader = new FileReader();
-                        imageUrl = await new Promise((resolve) => {
-                            reader.onload = (e) => {
-                                // محاكاة رفع الصورة - نعيد رابط افتراضي
-                                resolve(`https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`);
-                            };
-                            reader.readAsDataURL(profileImage.files[0]);
-                        });
-                    } catch (imageError) {
-                        console.error('Image upload failed, using default:', imageError);
-                        imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`;
-                    }
+                    imageUrl = await uploadImageToGitHub(userData.id, profileImage.files[0]);
+                } else {
+                    // صورة افتراضية
+                    imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/default.png`;
                 }
 
                 userData.image = imageUrl;
