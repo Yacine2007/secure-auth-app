@@ -2,6 +2,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -30,6 +31,66 @@ app.use((req, res, next) => {
 
 console.log('✅ Middleware initialized');
 
+// ==================== GMAIL SMTP CONFIGURATION ====================
+console.log('📧 Setting up Gmail SMTP...');
+
+const emailTransporter = nodemailer.createTransport({
+  service: 'gmail',
+  auth: {
+    user: 'byprosprt2007@gmail.com',
+    pass: 'ikuc kama ejbf vibz' // App Password من Gmail
+  }
+});
+
+// دالة للتحقق من اتصال SMTP
+async function verifySMTPConnection() {
+  try {
+    await emailTransporter.verify();
+    console.log('✅ SMTP connection verified successfully');
+    return true;
+  } catch (error) {
+    console.error('❌ SMTP connection failed:', error.message);
+    return false;
+  }
+}
+
+// دالة إرسال الإيميل
+async function sendVerificationEmail(toEmail, verificationCode) {
+  try {
+    const mailOptions = {
+      from: 'byprosprt2007@gmail.com',
+      to: toEmail,
+      subject: 'B.Y PRO Accounts - Verification Code',
+      html: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+          <h2 style="color: #3498db; text-align: center;">B.Y PRO Accounts</h2>
+          <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
+            <h3 style="color: #2c3e50;">Verification Code</h3>
+            <p>Your verification code for B.Y PRO Accounts is:</p>
+            <div style="background: #3498db; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 5px; margin: 20px 0;">
+              ${verificationCode}
+            </div>
+            <p style="color: #7f8c8d; font-size: 14px;">
+              This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
+            </p>
+          </div>
+          <p style="text-align: center; color: #95a5a6; margin-top: 20px;">
+            B.Y PRO Accounts Team
+          </p>
+        </div>
+      `
+    };
+
+    const result = await emailTransporter.sendMail(mailOptions);
+    console.log('✅ Email sent successfully to:', toEmail);
+    return true;
+  } catch (error) {
+    console.error('❌ Email sending failed:', error);
+    return false;
+  }
+}
+
+// ==================== GOOGLE DRIVE CONFIGURATION ====================
 // بيانات حساب الخدمة
 const serviceAccount = {
   type: "service_account",
@@ -446,27 +507,44 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
-// إرسال رمز التحقق (محاكاة)
-app.post('/api/send-verification', async (req, res) => {
+// إرسال رمز التحقق الحقيقي عبر الإيميل
+app.post('/api/send-verification-email', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { email, code } = req.body;
     
     console.log(`📧 Sending verification code to: ${email}`);
     
-    if (!email) {
+    if (!email || !code) {
       return res.json({
         success: false,
-        error: "Email is required"
+        error: "Email and code are required"
       });
     }
 
-    // محاكاة إرسال البريد - نعيد نجاح فقط
-    res.json({
-      success: true,
-      message: "Verification code sent successfully"
-    });
+    // التحقق من صيغة الإيميل
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.json({
+        success: false,
+        error: "Invalid email format"
+      });
+    }
+
+    const sent = await sendVerificationEmail(email, code);
+    
+    if (sent) {
+      res.json({
+        success: true,
+        message: "Verification code sent successfully"
+      });
+    } else {
+      res.json({
+        success: false,
+        error: "Failed to send verification email"
+      });
+    }
   } catch (error) {
-    console.error('❌ Error sending verification:', error.message);
+    console.error('❌ Error sending verification email:', error.message);
     res.json({
       success: false,
       error: "Server error: " + error.message
@@ -478,15 +556,25 @@ app.post('/api/send-verification', async (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     let driveStatus = 'disconnected';
+    let smtpStatus = 'disconnected';
+    
     if (driveService) {
-      await driveService.files.get({ fileId: FILE_ID, fields: 'id' });
-      driveStatus = 'connected';
+      try {
+        await driveService.files.get({ fileId: FILE_ID, fields: 'id' });
+        driveStatus = 'connected';
+      } catch (error) {
+        driveStatus = 'error';
+      }
     }
+    
+    // التحقق من اتصال SMTP
+    smtpStatus = await verifySMTPConnection() ? 'connected' : 'error';
     
     res.json({ 
       status: 'ok',
       service: 'B.Y PRO Accounts Login',
       drive_status: driveStatus,
+      smtp_status: smtpStatus,
       timestamp: new Date().toISOString(),
       message: 'Server is running successfully!'
     });
@@ -495,8 +583,9 @@ app.get('/api/health', async (req, res) => {
       status: 'error',
       service: 'B.Y PRO Accounts Login',
       drive_status: 'error',
+      smtp_status: 'error',
       timestamp: new Date().toISOString(),
-      message: 'Drive service error: ' + error.message
+      message: 'Server error: ' + error.message
     });
   }
 });
@@ -528,5 +617,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🌐 Access your app:');
   console.log(`   Local: http://localhost:${PORT}`);
   console.log(`   Network: http://0.0.0.0:${PORT}`);
+  console.log('📧 Gmail SMTP: Configured');
   console.log('🎉 =================================\n');
+  
+  // التحقق من اتصال SMTP عند بدء التشغيل
+  verifySMTPConnection();
 });
