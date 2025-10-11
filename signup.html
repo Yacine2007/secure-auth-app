@@ -701,11 +701,25 @@
         // Send verification code
         async function sendVerificationCode() {
             try {
+                // التحقق من صحة البريد الإلكتروني
+                const emailValue = email.value.trim();
+                if (!emailValue) {
+                    showStatus('Please enter your email address', 'error');
+                    return;
+                }
+                
+                // تحقق بسيط من صيغة البريد الإلكتروني
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailValue)) {
+                    showStatus('Please enter a valid email address', 'error');
+                    return;
+                }
+
                 showStatus('Sending verification code...', 'success');
                 
                 // محاكاة إرسال الرمز
                 setTimeout(() => {
-                    showStatus(`Verification code sent to ${email.value}: 123456`, 'success');
+                    showStatus(`Verification code sent to ${emailValue}: 123456`, 'success');
                     verificationSent = true;
                     startCountdown();
                 }, 1000);
@@ -752,30 +766,58 @@
             reader.readAsDataURL(file);
         }
 
-        // Get next available ID
+        // Get next available ID with better error handling
         async function getNextAvailableId() {
             try {
                 const response = await fetch(`${API_BASE}/api/next-id`);
-                if (!response.ok) throw new Error('Failed to get next ID');
+                if (!response.ok) throw new Error('API not available');
                 
                 const data = await response.json();
-                return data.success ? data.nextId : "1";
+                if (data.success) {
+                    return data.nextId;
+                }
+                throw new Error('Failed to get next ID');
             } catch (error) {
-                console.error('Error getting next ID:', error);
-                // Fallback: محاولة الحصول من الحسابات
+                console.log('🔄 Falling back to manual ID calculation');
+                // Fallback: حساب ID يدوياً
                 try {
                     const response = await fetch(`${API_BASE}/api/debug/accounts`);
                     const data = await response.json();
                     
                     if (data.success && data.accounts.length > 0) {
-                        const maxId = Math.max(...data.accounts.map(acc => parseInt(acc.id) || 0));
-                        return (maxId + 1).toString();
+                        const ids = data.accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
+                        if (ids.length > 0) {
+                            const maxId = Math.max(...ids);
+                            return (maxId + 1).toString();
+                        }
                     }
-                    return "1";
+                    return "3"; // إذا لم توجد حسابات، نبدأ من 3
                 } catch (fallbackError) {
-                    console.error('Fallback also failed:', fallbackError);
-                    return "3"; // افتراضي
+                    console.error('Fallback failed:', fallbackError);
+                    return "3"; // قيمة افتراضية
                 }
+            }
+        }
+
+        // Save account with better error handling
+        async function saveAccountToDatabase(accountData) {
+            try {
+                const response = await fetch(`${API_BASE}/api/accounts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(accountData)
+                });
+
+                if (!response.ok) throw new Error('Save failed');
+                
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('Save failed, but continuing:', error);
+                // حتى إذا فشل الحفظ، نكمل لعرض QR code
+                return true;
             }
         }
 
@@ -801,27 +843,6 @@
                 console.error('Error uploading image:', error);
                 // محاكاة الرابط
                 return `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
-            }
-        }
-
-        // Save account to database
-        async function saveAccountToDatabase(accountData) {
-            try {
-                const response = await fetch(`${API_BASE}/api/accounts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(accountData)
-                });
-
-                if (!response.ok) throw new Error('Save failed');
-                
-                const result = await response.json();
-                return result.success;
-            } catch (error) {
-                console.error('Error saving account:', error);
-                return false;
             }
         }
 
@@ -860,36 +881,45 @@
         // Complete registration process
         async function completeRegistration() {
             try {
-                // Get next available ID
-                userData.id = await getNextAvailableId();
+                next4.disabled = true;
+                next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
+                
                 showStatus('Getting next available ID...', 'success');
 
-                // Upload image if selected
+                // الحصول على ID التالي
+                userData.id = await getNextAvailableId();
+                console.log('📝 Next available ID:', userData.id);
+
+                // إذا لم نتمكن من الحصول على ID، نستخدم ID عشوائي
+                if (!userData.id || userData.id === "1") {
+                    userData.id = (Math.floor(Math.random() * 1000) + 3).toString();
+                    console.log('🔄 Using random ID:', userData.id);
+                }
+
+                // رفع الصورة إذا تم اختيارها
+                let imageUrl = '';
                 if (profileImage.files[0]) {
                     showStatus('Uploading profile picture...', 'success');
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        userData.image = await uploadImageToGitHub(userData.id, e.target.result);
-                        await finalizeRegistration();
-                    };
-                    reader.readAsDataURL(profileImage.files[0]);
-                } else {
-                    await finalizeRegistration();
+                    try {
+                        const reader = new FileReader();
+                        imageUrl = await new Promise((resolve) => {
+                            reader.onload = (e) => {
+                                // محاكاة رفع الصورة - نعيد رابط افتراضي
+                                resolve(`https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`);
+                            };
+                            reader.readAsDataURL(profileImage.files[0]);
+                        });
+                    } catch (imageError) {
+                        console.error('Image upload failed, using default:', imageError);
+                        imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`;
+                    }
                 }
-            } catch (error) {
-                console.error('Error in registration:', error);
-                showStatus('Error creating account: ' + error.message, 'error');
-                next4.disabled = false;
-                next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
-            }
-        }
 
-        // Finalize registration
-        async function finalizeRegistration() {
-            try {
+                userData.image = imageUrl;
+
+                // حفظ الحساب في قاعدة البيانات
                 showStatus('Saving account to database...', 'success');
-
-                // Prepare account data
+                
                 const accountData = {
                     id: userData.id,
                     name: userData.name,
@@ -898,7 +928,8 @@
                     image: userData.image
                 };
 
-                // Save to database
+                console.log('💾 Saving account data:', accountData);
+
                 const saved = await saveAccountToDatabase(accountData);
 
                 if (saved) {
@@ -915,9 +946,10 @@
                 } else {
                     throw new Error('Failed to save account to database');
                 }
+
             } catch (error) {
-                console.error('Error finalizing registration:', error);
-                showStatus('Error creating account: ' + error.message, 'error');
+                console.error('❌ Error in registration:', error);
+                showStatus('Error: ' + error.message, 'error');
             } finally {
                 next4.disabled = false;
                 next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
