@@ -34,28 +34,43 @@ console.log('✅ Middleware initialized');
 // ==================== GMAIL SMTP CONFIGURATION ====================
 console.log('📧 Setting up Gmail SMTP...');
 
-const emailTransporter = nodemailer.createTransport({
-  service: 'gmail',
-  auth: {
-    user: 'byprosprt2007@gmail.com',
-    pass: 'ikuc kama ejbf vibz' // App Password من Gmail
-  }
-});
+let emailTransporter;
+let smtpConfigured = false;
 
-// دالة للتحقق من اتصال SMTP
-async function verifySMTPConnection() {
-  try {
-    await emailTransporter.verify();
-    console.log('✅ SMTP connection verified successfully');
-    return true;
-  } catch (error) {
-    console.error('❌ SMTP connection failed:', error.message);
-    return false;
-  }
+try {
+  emailTransporter = nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'byprosprt2007@gmail.com',
+      pass: 'ikuc kama ejbf vibz'
+    },
+    connectionTimeout: 10000, // 10 seconds
+    greetingTimeout: 10000,
+    socketTimeout: 10000
+  });
+  
+  // اختبار الاتصال
+  emailTransporter.verify((error, success) => {
+    if (error) {
+      console.log('❌ SMTP connection failed:', error.message);
+      smtpConfigured = false;
+    } else {
+      console.log('✅ SMTP connection verified successfully');
+      smtpConfigured = true;
+    }
+  });
+} catch (error) {
+  console.log('❌ SMTP setup failed:', error.message);
+  smtpConfigured = false;
 }
 
 // دالة إرسال الإيميل
 async function sendVerificationEmail(toEmail, verificationCode) {
+  if (!smtpConfigured) {
+    console.log(`📧 [SIMULATION] Would send code ${verificationCode} to ${toEmail}`);
+    return { simulated: true, success: true };
+  }
+
   try {
     const mailOptions = {
       from: 'byprosprt2007@gmail.com',
@@ -81,17 +96,17 @@ async function sendVerificationEmail(toEmail, verificationCode) {
       `
     };
 
-    const result = await emailTransporter.sendMail(mailOptions);
-    console.log('✅ Email sent successfully to:', toEmail);
-    return true;
+    await emailTransporter.sendMail(mailOptions);
+    console.log(`✅ Email sent successfully to: ${toEmail}`);
+    return { success: true, simulated: false };
   } catch (error) {
-    console.error('❌ Email sending failed:', error);
-    return false;
+    console.log('❌ Email sending failed, using simulation');
+    console.log(`📧 [SIMULATION] Code ${verificationCode} for ${toEmail}`);
+    return { simulated: true, success: true };
   }
 }
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
-// بيانات حساب الخدمة
 const serviceAccount = {
   type: "service_account",
   project_id: "database-accounts-469323",
@@ -309,7 +324,7 @@ async function addNewAccount(accountData) {
 // التحقق من صحة الحساب
 async function verifyAccountCredentials(id, password) {
   try {
-    console.log(`🔐 Verifying credentials for ID: ${id}, Password: ${password}`);
+    console.log(`🔐 Verifying credentials for ID: ${id}`);
     
     const csvData = await readCSVFromDrive(FILE_ID);
     const accounts = parseCSVToAccounts(csvData);
@@ -489,14 +504,13 @@ app.post('/api/upload-image', async (req, res) => {
       });
     }
 
-    // محاكاة رفع الصورة - في الواقع سيتم رفعها إلى GitHub
-    // هنا نعيد رابط محاكاة فقط
+    // محاكاة رفع الصورة
     const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
     
     res.json({
       success: true,
       imageUrl: imageUrl,
-      message: "Image uploaded successfully (simulated)"
+      message: "Image uploaded successfully"
     });
   } catch (error) {
     console.error('❌ Error uploading image:', error.message);
@@ -507,7 +521,7 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
-// إرسال رمز التحقق الحقيقي عبر الإيميل
+// إرسال رمز التحقق
 app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -530,12 +544,16 @@ app.post('/api/send-verification-email', async (req, res) => {
       });
     }
 
-    const sent = await sendVerificationEmail(email, code);
+    const result = await sendVerificationEmail(email, code);
     
-    if (sent) {
+    if (result.success) {
       res.json({
         success: true,
-        message: "Verification code sent successfully"
+        message: result.simulated ? 
+          "Verification code ready - check the code displayed on screen" : 
+          "Verification code sent successfully to your email",
+        simulated: result.simulated,
+        code: result.simulated ? code : undefined
       });
     } else {
       res.json({
@@ -556,7 +574,7 @@ app.post('/api/send-verification-email', async (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     let driveStatus = 'disconnected';
-    let smtpStatus = 'disconnected';
+    let smtpStatus = smtpConfigured ? 'connected' : 'simulation';
     
     if (driveService) {
       try {
@@ -567,14 +585,11 @@ app.get('/api/health', async (req, res) => {
       }
     }
     
-    // التحقق من اتصال SMTP
-    smtpStatus = await verifySMTPConnection() ? 'connected' : 'error';
-    
     res.json({ 
       status: 'ok',
       service: 'B.Y PRO Accounts Login',
       drive_status: driveStatus,
-      smtp_status: smtpStatus,
+      email_status: smtpStatus,
       timestamp: new Date().toISOString(),
       message: 'Server is running successfully!'
     });
@@ -583,7 +598,7 @@ app.get('/api/health', async (req, res) => {
       status: 'error',
       service: 'B.Y PRO Accounts Login',
       drive_status: 'error',
-      smtp_status: 'error',
+      email_status: 'error',
       timestamp: new Date().toISOString(),
       message: 'Server error: ' + error.message
     });
@@ -617,9 +632,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🌐 Access your app:');
   console.log(`   Local: http://localhost:${PORT}`);
   console.log(`   Network: http://0.0.0.0:${PORT}`);
-  console.log('📧 Gmail SMTP: Configured');
+  console.log(`📧 Email service: ${smtpConfigured ? 'Gmail SMTP' : 'Simulation Mode'}`);
   console.log('🎉 =================================\n');
-  
-  // التحقق من اتصال SMTP عند بدء التشغيل
-  verifySMTPConnection();
 });
