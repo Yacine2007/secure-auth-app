@@ -2,7 +2,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
-const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 require('dotenv').config();
 
 const app = express();
@@ -10,7 +10,7 @@ const PORT = process.env.PORT || 3000;
 
 console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
-// Middleware مع إعدادات CORS محسنة للغاية
+// Middleware
 app.use(cors({
   origin: '*',
   credentials: true,
@@ -31,50 +31,20 @@ app.use((req, res, next) => {
 
 console.log('✅ Middleware initialized');
 
-// ==================== GMAIL SMTP CONFIGURATION ====================
-console.log('📧 Setting up Gmail SMTP...');
+// ==================== RESEND EMAIL SERVICE ====================
+console.log('📧 Setting up Resend email service...');
 
-let emailTransporter;
-let smtpConfigured = false;
-
-try {
-  emailTransporter = nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'byprosprt2007@gmail.com',
-      pass: 'ikuc kama ejbf vibz'
-    },
-    connectionTimeout: 10000, // 10 seconds
-    greetingTimeout: 10000,
-    socketTimeout: 10000
-  });
-  
-  // اختبار الاتصال
-  emailTransporter.verify((error, success) => {
-    if (error) {
-      console.log('❌ SMTP connection failed:', error.message);
-      smtpConfigured = false;
-    } else {
-      console.log('✅ SMTP connection verified successfully');
-      smtpConfigured = true;
-    }
-  });
-} catch (error) {
-  console.log('❌ SMTP setup failed:', error.message);
-  smtpConfigured = false;
-}
+const resend = new Resend('re_LV11ABfb_4WaAUuiyXpLqkyDchKmo6KEn');
 
 // دالة إرسال الإيميل
 async function sendVerificationEmail(toEmail, verificationCode) {
-  if (!smtpConfigured) {
-    console.log(`📧 [SIMULATION] Would send code ${verificationCode} to ${toEmail}`);
-    return { simulated: true, success: true };
-  }
-
   try {
-    const mailOptions = {
-      from: 'byprosprt2007@gmail.com',
-      to: toEmail,
+    console.log(`📧 Attempting to send email to: ${toEmail}`);
+    console.log(`📧 Verification code: ${verificationCode}`);
+    
+    const { data, error } = await resend.emails.send({
+      from: 'B.Y PRO Accounts <onboarding@resend.dev>',
+      to: [toEmail],
       subject: 'B.Y PRO Accounts - Verification Code',
       html: `
         <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
@@ -94,15 +64,18 @@ async function sendVerificationEmail(toEmail, verificationCode) {
           </p>
         </div>
       `
-    };
+    });
 
-    await emailTransporter.sendMail(mailOptions);
-    console.log(`✅ Email sent successfully to: ${toEmail}`);
-    return { success: true, simulated: false };
+    if (error) {
+      console.error('❌ Resend error:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('✅ Email sent successfully via Resend');
+    return { success: true, data: data };
   } catch (error) {
-    console.log('❌ Email sending failed, using simulation');
-    console.log(`📧 [SIMULATION] Code ${verificationCode} for ${toEmail}`);
-    return { simulated: true, success: true };
+    console.error('❌ Email sending failed:', error);
+    return { success: false, error: error.message };
   }
 }
 
@@ -490,7 +463,7 @@ app.post('/api/accounts', async (req, res) => {
   }
 });
 
-// رفع الصورة (محاكاة)
+// رفع الصورة
 app.post('/api/upload-image', async (req, res) => {
   try {
     const { accountId, imageData } = req.body;
@@ -504,7 +477,6 @@ app.post('/api/upload-image', async (req, res) => {
       });
     }
 
-    // محاكاة رفع الصورة
     const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
     
     res.json({
@@ -521,7 +493,7 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
-// إرسال رمز التحقق
+// إرسال رمز التحقق عبر Resend
 app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -549,16 +521,12 @@ app.post('/api/send-verification-email', async (req, res) => {
     if (result.success) {
       res.json({
         success: true,
-        message: result.simulated ? 
-          "Verification code ready - check the code displayed on screen" : 
-          "Verification code sent successfully to your email",
-        simulated: result.simulated,
-        code: result.simulated ? code : undefined
+        message: "Verification code sent successfully to your email"
       });
     } else {
       res.json({
         success: false,
-        error: "Failed to send verification email"
+        error: "Failed to send verification email: " + result.error
       });
     }
   } catch (error) {
@@ -574,7 +542,6 @@ app.post('/api/send-verification-email', async (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     let driveStatus = 'disconnected';
-    let smtpStatus = smtpConfigured ? 'connected' : 'simulation';
     
     if (driveService) {
       try {
@@ -589,7 +556,7 @@ app.get('/api/health', async (req, res) => {
       status: 'ok',
       service: 'B.Y PRO Accounts Login',
       drive_status: driveStatus,
-      email_status: smtpStatus,
+      email_service: 'Resend',
       timestamp: new Date().toISOString(),
       message: 'Server is running successfully!'
     });
@@ -598,7 +565,7 @@ app.get('/api/health', async (req, res) => {
       status: 'error',
       service: 'B.Y PRO Accounts Login',
       drive_status: 'error',
-      email_status: 'error',
+      email_service: 'error',
       timestamp: new Date().toISOString(),
       message: 'Server error: ' + error.message
     });
@@ -632,6 +599,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🌐 Access your app:');
   console.log(`   Local: http://localhost:${PORT}`);
   console.log(`   Network: http://0.0.0.0:${PORT}`);
-  console.log(`📧 Email service: ${smtpConfigured ? 'Gmail SMTP' : 'Simulation Mode'}`);
+  console.log('📧 Email service: Resend');
   console.log('🎉 =================================\n');
 });
