@@ -1,10 +1,7 @@
-[file name]: server.js
-[file content begin]
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
-const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -14,22 +11,20 @@ console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
 // Middleware مع إعدادات CORS محسنة للغاية
 app.use(cors({
-  origin: '*', // السماح لجميع النطاقات للتجربة
+  origin: '*',
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin']
 }));
 
-// معالجة طلبات OPTIONS مسبقاً
 app.options('*', cors());
-
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(__dirname));
 
 // middleware لتسجيل جميع الطلبات
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url} - Origin: ${req.get('Origin') || 'No Origin'}`);
+  console.log(`📥 ${req.method} ${req.url}`);
   next();
 });
 
@@ -142,6 +137,7 @@ async function writeCSVToDrive(fileId, accounts) {
       ...accounts.map(account => headers.map(header => account[header] || '').join(','))
     ].join('\n');
 
+    // إنشاء media للرفع
     const media = {
       mimeType: 'text/csv',
       body: csvContent
@@ -207,7 +203,12 @@ async function getNextAvailableId() {
       return "1";
     }
     
-    const maxId = Math.max(...accounts.map(acc => parseInt(acc.id) || 0));
+    const ids = accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
+    if (ids.length === 0) {
+      return "1";
+    }
+    
+    const maxId = Math.max(...ids);
     return (maxId + 1).toString();
   } catch (error) {
     console.error('❌ Error getting next ID:', error.message);
@@ -215,8 +216,8 @@ async function getNextAvailableId() {
   }
 }
 
-// حفظ الحسابات إلى قاعدة البيانات
-async function saveAccounts(accounts) {
+// حفظ جميع الحسابات
+async function saveAllAccounts(accounts) {
   try {
     await writeCSVToDrive(FILE_ID, accounts);
     return true;
@@ -230,13 +231,13 @@ async function saveAccounts(accounts) {
 async function addNewAccount(accountData) {
   try {
     const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
+    let accounts = parseCSVToAccounts(csvData);
     
     // إضافة الحساب الجديد
     accounts.push(accountData);
     
     // حفظ جميع الحسابات
-    const saved = await saveAccounts(accounts);
+    const saved = await saveAllAccounts(accounts);
     return saved;
   } catch (error) {
     console.error('❌ Error adding new account:', error.message);
@@ -258,7 +259,6 @@ async function verifyAccountCredentials(id, password) {
     const account = accounts.find(acc => {
       const idMatch = acc.id && acc.id.toString() === id.toString();
       const passwordMatch = acc.ps && acc.ps === password;
-      console.log(`🔍 Checking: ${acc.id} - ID match: ${idMatch}, Password match: ${passwordMatch}`);
       return idMatch && passwordMatch;
     });
     
@@ -288,9 +288,10 @@ async function verifyAccountCredentials(id, password) {
   }
 }
 
-// Routes الأساسية
+// ==================== ROUTES ====================
+
+// الصفحات الرئيسية
 app.get('/', (req, res) => {
-  console.log('🌐 Serving login page');
   res.sendFile(path.join(__dirname, 'login.html'));
 });
 
@@ -306,12 +307,14 @@ app.get('/style.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'style.css'));
 });
 
-// نقطة النهاية الرئيسية للتحقق من الحساب
+// API Routes
+
+// التحقق من الحساب
 app.get('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.query;
     
-    console.log(`🔐 Login attempt - ID: ${id}, Password: ${password}`);
+    console.log(`🔐 Login attempt - ID: ${id}`);
     
     if (!id || !password) {
       return res.json({ 
@@ -411,15 +414,22 @@ app.post('/api/accounts', async (req, res) => {
   }
 });
 
-// رفع الصورة (محاكاة - ستعود بنفس الرابط)
+// رفع الصورة (محاكاة)
 app.post('/api/upload-image', async (req, res) => {
   try {
     const { accountId, imageData } = req.body;
     
     console.log(`🖼️ Uploading image for account: ${accountId}`);
     
-    // في الواقع، هنا سيتم رفع الصورة إلى GitHub
-    // لكن حالياً سنعيد رابط محاكاة
+    if (!accountId) {
+      return res.json({
+        success: false,
+        error: "Account ID is required"
+      });
+    }
+
+    // محاكاة رفع الصورة - في الواقع سيتم رفعها إلى GitHub
+    // هنا نعيد رابط محاكاة فقط
     const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
     
     res.json({
@@ -443,14 +453,17 @@ app.post('/api/send-verification', async (req, res) => {
     
     console.log(`📧 Sending verification code to: ${email}`);
     
-    // في الواقع، هنا سيتم إرسال البريد الإلكتروني
-    // لكن حالياً سنعيد رمز ثابت للتجربة
-    const verificationCode = "123456";
-    
+    if (!email) {
+      return res.json({
+        success: false,
+        error: "Email is required"
+      });
+    }
+
+    // محاكاة إرسال البريد - نعيد نجاح فقط
     res.json({
       success: true,
-      message: "Verification code sent successfully",
-      code: verificationCode // فقط للتجربة، في الواقع لا نرسل الرمز في الresponse
+      message: "Verification code sent successfully"
     });
   } catch (error) {
     console.error('❌ Error sending verification:', error.message);
@@ -517,4 +530,3 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   Network: http://0.0.0.0:${PORT}`);
   console.log('🎉 =================================\n');
 });
-[file content end]
