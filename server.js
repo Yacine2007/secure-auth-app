@@ -1,5 +1,3 @@
-[file name]: server.js
-[file content begin]
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
@@ -333,4 +331,4 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   Network: http://0.0.0.0:${PORT}`);
   console.log('🎉 =================================\n');
 });
-[file content end]
+
