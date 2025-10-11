@@ -415,6 +415,7 @@
             border-radius: var(--border-radius);
             margin: 10px 0;
             border: 2px solid var(--primary-color);
+            text-align: center;
         }
 
         .code-display .code {
@@ -541,13 +542,9 @@
                     Resend code in <span id="countdown">60</span>s
                 </button>
                 
-                <!-- Display for verification codes -->
+                <!-- Display for manual code entry -->
                 <div id="codeDisplay" class="code-display" style="display: none;">
-                    <p><i class="fas fa-info-circle"></i> Your verification code:</p>
-                    <div class="code" id="displayedCode"></div>
-                    <button class="copy-code-btn" onclick="copyToClipboard(generatedCode)">
-                        <i class="fas fa-copy"></i> Copy Code
-                    </button>
+                    <p><i class="fas fa-info-circle"></i> Enter the verification code sent to your email</p>
                     <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
                         ⏰ Code expires in <strong>10 minutes</strong>
                     </p>
@@ -652,7 +649,6 @@
         const progressSteps = document.querySelectorAll('.progress-step');
         const statusMessage = document.getElementById('statusMessage');
         const codeDisplay = document.getElementById('codeDisplay');
-        const displayedCode = document.getElementById('displayedCode');
 
         // Form Elements
         const fullName = document.getElementById('fullName');
@@ -711,38 +707,6 @@
             setTimeout(() => {
                 statusMessage.style.display = 'none';
             }, 5000);
-        }
-
-        // Copy to clipboard function
-        function copyToClipboard(text) {
-            if (navigator.clipboard && navigator.clipboard.writeText) {
-                navigator.clipboard.writeText(text).then(function() {
-                    showStatus('Verification code copied to clipboard!', 'success');
-                }).catch(function() {
-                    fallbackCopy(text);
-                });
-            } else {
-                fallbackCopy(text);
-            }
-        }
-
-        function fallbackCopy(text) {
-            var textArea = document.createElement("textarea");
-            textArea.value = text;
-            textArea.style.position = "fixed";
-            textArea.style.opacity = "0";
-            document.body.appendChild(textArea);
-            textArea.focus();
-            textArea.select();
-            
-            try {
-                var successful = document.execCommand('copy');
-                showStatus('Verification code copied to clipboard!', 'success');
-            } catch (err) {
-                showStatus('Failed to copy code. Please copy manually.', 'warning');
-            }
-            
-            document.body.removeChild(textArea);
         }
 
         // Navigate to step
@@ -818,30 +782,21 @@
                             showStatus(`Verification code sent to ${emailValue}`, 'success');
                             verificationSent = true;
                             startCountdown();
-                            codeDisplay.style.display = 'none'; // Hide code display when email is sent
+                            codeDisplay.style.display = 'block';
                         })
                         .catch(function(error) {
                             console.error('❌ EmailJS error:', error);
-                            // Fallback: show code directly if email fails
-                            displayedCode.textContent = generatedCode;
-                            codeDisplay.style.display = 'block';
-                            showStatus('Email service unavailable - Use the code displayed above', 'warning');
-                            verificationSent = true;
-                            startCountdown();
+                            showStatus('Failed to send verification code. Please try again.', 'error');
+                            verificationSent = false;
                         });
                 } else {
-                    // Fallback if EmailJS not loaded
-                    throw new Error('EmailJS not loaded');
+                    showStatus('Email service not available. Please try again later.', 'error');
                 }
                 
             } catch (error) {
                 console.error('Error sending verification:', error);
-                // Fallback: show code directly
-                displayedCode.textContent = generatedCode;
-                codeDisplay.style.display = 'block';
-                showStatus('Using fallback mode - Enter the code displayed above', 'warning');
-                verificationSent = true;
-                startCountdown();
+                showStatus('Failed to send verification code. Please try again.', 'error');
+                verificationSent = false;
             }
         }
 
