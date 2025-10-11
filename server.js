@@ -1,7 +1,10 @@
+[file name]: server.js
+[file content begin]
 const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -11,11 +14,7 @@ console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
 // Middleware مع إعدادات CORS محسنة للغاية
 app.use(cors({
-  origin: [
-    'https://yacine2007.github.io',
-    'https://b-y-pro-acounts-login.onrender.com',
-    'http://localhost:3000'
-  ],
+  origin: '*', // السماح لجميع النطاقات للتجربة
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin']
@@ -127,6 +126,41 @@ async function readCSVFromDrive(fileId) {
   }
 }
 
+// كتابة CSV إلى Google Drive
+async function writeCSVToDrive(fileId, accounts) {
+  if (!driveService) {
+    throw new Error("Drive service not available");
+  }
+
+  try {
+    console.log(`📝 Writing ${accounts.length} accounts to Drive...`);
+    
+    // تحويل المصفوفة إلى CSV
+    const headers = ['id', 'ps', 'email', 'name', 'image'];
+    const csvContent = [
+      headers.join(','),
+      ...accounts.map(account => headers.map(header => account[header] || '').join(','))
+    ].join('\n');
+
+    const media = {
+      mimeType: 'text/csv',
+      body: csvContent
+    };
+
+    const response = await driveService.files.update({
+      fileId: fileId,
+      media: media,
+      fields: 'id'
+    });
+
+    console.log(`✅ Successfully wrote ${accounts.length} accounts to Drive`);
+    return response.data;
+  } catch (error) {
+    console.error('❌ Error writing CSV to Drive:', error.message);
+    throw error;
+  }
+}
+
 // تحويل بيانات CSV إلى مصفوفة حسابات
 function parseCSVToAccounts(csvData) {
   try {
@@ -163,6 +197,53 @@ function parseCSVToAccounts(csvData) {
   }
 }
 
+// الحصول على التالي ID المتاح
+async function getNextAvailableId() {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    
+    if (accounts.length === 0) {
+      return "1";
+    }
+    
+    const maxId = Math.max(...accounts.map(acc => parseInt(acc.id) || 0));
+    return (maxId + 1).toString();
+  } catch (error) {
+    console.error('❌ Error getting next ID:', error.message);
+    return "1";
+  }
+}
+
+// حفظ الحسابات إلى قاعدة البيانات
+async function saveAccounts(accounts) {
+  try {
+    await writeCSVToDrive(FILE_ID, accounts);
+    return true;
+  } catch (error) {
+    console.error('❌ Error saving accounts:', error.message);
+    return false;
+  }
+}
+
+// إضافة حساب جديد
+async function addNewAccount(accountData) {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    
+    // إضافة الحساب الجديد
+    accounts.push(accountData);
+    
+    // حفظ جميع الحسابات
+    const saved = await saveAccounts(accounts);
+    return saved;
+  } catch (error) {
+    console.error('❌ Error adding new account:', error.message);
+    return false;
+  }
+}
+
 // التحقق من صحة الحساب
 async function verifyAccountCredentials(id, password) {
   try {
@@ -193,7 +274,6 @@ async function verifyAccountCredentials(id, password) {
       };
     } else {
       console.log(`❌ Login failed for ID: ${id} - Invalid credentials`);
-      console.log(`📝 Available accounts:`, accounts.map(acc => ({ id: acc.id, hasPassword: !!acc.ps })));
       return {
         success: false,
         error: "Invalid ID or password"
@@ -208,7 +288,7 @@ async function verifyAccountCredentials(id, password) {
   }
 }
 
-// Routes
+// Routes الأساسية
 app.get('/', (req, res) => {
   console.log('🌐 Serving login page');
   res.sendFile(path.join(__dirname, 'login.html'));
@@ -216,6 +296,10 @@ app.get('/', (req, res) => {
 
 app.get('/login.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.get('/signup.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'signup.html'));
 });
 
 app.get('/style.css', (req, res) => {
@@ -248,6 +332,136 @@ app.get('/api/verify-account', async (req, res) => {
   }
 });
 
+// الحصول على جميع الحسابات
+app.get('/api/debug/accounts', async (req, res) => {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    res.json({
+      success: true,
+      count: accounts.length,
+      accounts: accounts
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// الحصول على التالي ID المتاح
+app.get('/api/next-id', async (req, res) => {
+  try {
+    const nextId = await getNextAvailableId();
+    res.json({
+      success: true,
+      nextId: nextId
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// إضافة حساب جديد
+app.post('/api/accounts', async (req, res) => {
+  try {
+    const { id, name, email, password, image } = req.body;
+    
+    console.log(`➕ Adding new account: ${id} - ${name} - ${email}`);
+    
+    if (!id || !name || !email || !password) {
+      return res.json({
+        success: false,
+        error: "All fields are required"
+      });
+    }
+
+    const accountData = {
+      id: id,
+      ps: password,
+      email: email,
+      name: name,
+      image: image || ''
+    };
+
+    const saved = await addNewAccount(accountData);
+    
+    if (saved) {
+      res.json({
+        success: true,
+        message: "Account created successfully",
+        account: accountData
+      });
+    } else {
+      res.json({
+        success: false,
+        error: "Failed to save account to database"
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error creating account:', error.message);
+    res.json({
+      success: false,
+      error: "Server error: " + error.message
+    });
+  }
+});
+
+// رفع الصورة (محاكاة - ستعود بنفس الرابط)
+app.post('/api/upload-image', async (req, res) => {
+  try {
+    const { accountId, imageData } = req.body;
+    
+    console.log(`🖼️ Uploading image for account: ${accountId}`);
+    
+    // في الواقع، هنا سيتم رفع الصورة إلى GitHub
+    // لكن حالياً سنعيد رابط محاكاة
+    const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
+    
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      message: "Image uploaded successfully (simulated)"
+    });
+  } catch (error) {
+    console.error('❌ Error uploading image:', error.message);
+    res.json({
+      success: false,
+      error: "Server error: " + error.message
+    });
+  }
+});
+
+// إرسال رمز التحقق (محاكاة)
+app.post('/api/send-verification', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    console.log(`📧 Sending verification code to: ${email}`);
+    
+    // في الواقع، هنا سيتم إرسال البريد الإلكتروني
+    // لكن حالياً سنعيد رمز ثابت للتجربة
+    const verificationCode = "123456";
+    
+    res.json({
+      success: true,
+      message: "Verification code sent successfully",
+      code: verificationCode // فقط للتجربة، في الواقع لا نرسل الرمز في الresponse
+    });
+  } catch (error) {
+    console.error('❌ Error sending verification:', error.message);
+    res.json({
+      success: false,
+      error: "Server error: " + error.message
+    });
+  }
+});
+
+// فحص صحة الخادم
 app.get('/api/health', async (req, res) => {
   try {
     let driveStatus = 'disconnected';
@@ -270,24 +484,6 @@ app.get('/api/health', async (req, res) => {
       drive_status: 'error',
       timestamp: new Date().toISOString(),
       message: 'Drive service error: ' + error.message
-    });
-  }
-});
-
-// Route للتحقق من البيانات
-app.get('/api/debug/accounts', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    res.json({
-      success: true,
-      count: accounts.length,
-      accounts: accounts
-    });
-  } catch (error) {
-    res.json({
-      success: false,
-      error: error.message
     });
   }
 });
@@ -321,3 +517,4 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   Network: http://0.0.0.0:${PORT}`);
   console.log('🎉 =================================\n');
 });
+[file content end]
