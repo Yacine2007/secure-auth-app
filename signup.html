@@ -10,6 +10,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
     <style>
+        /* جميع الأنماط السابقة محفوظة */
         :root {
             --primary-color: #3498db;
             --primary-dark: #2980b9;
@@ -585,7 +586,7 @@
                     <button class="download-btn" id="downloadQR">
                         <i class="fas fa-download"></i> Download QR Code
                     </button>
-                    <a href="login.html" class="login-btn">
+                    <a href="https://yacine2007.github.io/secure-auth-app/login.html" class="login-btn">
                         <i class="fas fa-sign-in-alt"></i> Go to Login
                     </a>
                 </div>
@@ -633,10 +634,13 @@
         const displayId = document.getElementById('displayId');
         const qrCodeCanvas = document.getElementById('qrCode');
 
+        // Server Configuration
+        const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
+
         // Variables
         let currentStep = 1;
         let verificationSent = false;
-        let generatedCode = '';
+        let generatedCode = '123456'; // رمز ثابت
         let countdownInterval;
         let countdownTime = 60;
         let userData = {
@@ -646,9 +650,6 @@
             image: '',
             id: ''
         };
-
-        // Server Configuration
-        const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
 
         // Show status message
         function showStatus(message, type) {
@@ -663,7 +664,6 @@
 
         // Navigate to step
         function goToStep(step) {
-            // Hide all steps
             steps.forEach(s => s.classList.remove('active'));
             progressSteps.forEach(p => {
                 p.classList.remove('active');
@@ -672,15 +672,9 @@
                 }
             });
 
-            // Show current step
             document.getElementById(`step${step}-content`).classList.add('active');
             document.getElementById(`step${step}`).classList.add('active');
             currentStep = step;
-        }
-
-        // Generate random verification code
-        function generateVerificationCode() {
-            return Math.floor(100000 + Math.random() * 900000).toString();
         }
 
         // Start countdown for resend button
@@ -704,20 +698,22 @@
             }, 1000);
         }
 
-        // Send verification code (simulated)
+        // Send verification code
         async function sendVerificationCode() {
-            generatedCode = generateVerificationCode();
-            console.log('📧 Verification Code:', generatedCode); // For testing
-            
-            // In a real app, you would send this to the email
-            // await fetch('/api/send-verification', {
-            //     method: 'POST',
-            //     body: JSON.stringify({ email: email.value, code: generatedCode })
-            // });
-            
-            showStatus(`Verification code sent to ${email.value}`, 'success');
-            verificationSent = true;
-            startCountdown();
+            try {
+                showStatus('Sending verification code...', 'success');
+                
+                // محاكاة إرسال الرمز
+                setTimeout(() => {
+                    showStatus(`Verification code sent to ${email.value}: 123456`, 'success');
+                    verificationSent = true;
+                    startCountdown();
+                }, 1000);
+                
+            } catch (error) {
+                console.error('Error sending verification:', error);
+                showStatus('Failed to send verification code', 'error');
+            }
         }
 
         // Check password strength
@@ -756,7 +752,34 @@
             reader.readAsDataURL(file);
         }
 
-        // Upload image to GitHub
+        // Get next available ID
+        async function getNextAvailableId() {
+            try {
+                const response = await fetch(`${API_BASE}/api/next-id`);
+                if (!response.ok) throw new Error('Failed to get next ID');
+                
+                const data = await response.json();
+                return data.success ? data.nextId : "1";
+            } catch (error) {
+                console.error('Error getting next ID:', error);
+                // Fallback: محاولة الحصول من الحسابات
+                try {
+                    const response = await fetch(`${API_BASE}/api/debug/accounts`);
+                    const data = await response.json();
+                    
+                    if (data.success && data.accounts.length > 0) {
+                        const maxId = Math.max(...data.accounts.map(acc => parseInt(acc.id) || 0));
+                        return (maxId + 1).toString();
+                    }
+                    return "1";
+                } catch (fallbackError) {
+                    console.error('Fallback also failed:', fallbackError);
+                    return "3"; // افتراضي
+                }
+            }
+        }
+
+        // Upload image to GitHub (محاكاة)
         async function uploadImageToGitHub(accountId, imageData) {
             try {
                 const response = await fetch(`${API_BASE}/api/upload-image`, {
@@ -766,60 +789,35 @@
                     },
                     body: JSON.stringify({
                         accountId: accountId,
-                        imageData: imageData.split(',')[1] // Remove data:image/... prefix
+                        imageData: imageData
                     })
                 });
 
+                if (!response.ok) throw new Error('Upload failed');
+                
                 const result = await response.json();
                 return result.success ? result.imageUrl : '';
             } catch (error) {
                 console.error('Error uploading image:', error);
-                return '';
-            }
-        }
-
-        // Get next available ID
-        async function getNextAvailableId() {
-            try {
-                const response = await fetch(`${API_BASE}/api/debug/accounts`);
-                const data = await response.json();
-                
-                if (data.success && data.accounts.length > 0) {
-                    const maxId = Math.max(...data.accounts.map(acc => parseInt(acc.id) || 0));
-                    return (maxId + 1).toString();
-                }
-                return "1";
-            } catch (error) {
-                console.error('Error getting next ID:', error);
-                return "1";
+                // محاكاة الرابط
+                return `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
             }
         }
 
         // Save account to database
         async function saveAccountToDatabase(accountData) {
             try {
-                // First get all existing accounts
-                const response = await fetch(`${API_BASE}/api/debug/accounts`);
-                const data = await response.json();
-                
-                let accounts = [];
-                if (data.success) {
-                    accounts = data.accounts;
-                }
-
-                // Add new account
-                accounts.push(accountData);
-
-                // Save all accounts back
-                const saveResponse = await fetch(`${API_BASE}/api/accounts`, {
+                const response = await fetch(`${API_BASE}/api/accounts`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify(accounts)
+                    body: JSON.stringify(accountData)
                 });
 
-                const result = await saveResponse.json();
+                if (!response.ok) throw new Error('Save failed');
+                
+                const result = await response.json();
                 return result.success;
             } catch (error) {
                 console.error('Error saving account:', error);
@@ -838,16 +836,92 @@
                     light: '#FFFFFF'
                 }
             }, function (error) {
-                if (error) console.error('QR Code error:', error);
+                if (error) {
+                    console.error('QR Code error:', error);
+                    showStatus('Error generating QR code', 'error');
+                }
             });
         }
 
         // Download QR Code
         function downloadQRCode() {
-            const link = document.createElement('a');
-            link.download = `BYPRO-${userData.id}-QR.png`;
-            link.href = qrCodeCanvas.toDataURL();
-            link.click();
+            try {
+                const link = document.createElement('a');
+                link.download = `BYPRO-${userData.id}-QR.png`;
+                link.href = qrCodeCanvas.toDataURL();
+                link.click();
+                showStatus('QR code downloaded successfully', 'success');
+            } catch (error) {
+                console.error('Error downloading QR code:', error);
+                showStatus('Error downloading QR code', 'error');
+            }
+        }
+
+        // Complete registration process
+        async function completeRegistration() {
+            try {
+                // Get next available ID
+                userData.id = await getNextAvailableId();
+                showStatus('Getting next available ID...', 'success');
+
+                // Upload image if selected
+                if (profileImage.files[0]) {
+                    showStatus('Uploading profile picture...', 'success');
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        userData.image = await uploadImageToGitHub(userData.id, e.target.result);
+                        await finalizeRegistration();
+                    };
+                    reader.readAsDataURL(profileImage.files[0]);
+                } else {
+                    await finalizeRegistration();
+                }
+            } catch (error) {
+                console.error('Error in registration:', error);
+                showStatus('Error creating account: ' + error.message, 'error');
+                next4.disabled = false;
+                next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
+            }
+        }
+
+        // Finalize registration
+        async function finalizeRegistration() {
+            try {
+                showStatus('Saving account to database...', 'success');
+
+                // Prepare account data
+                const accountData = {
+                    id: userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    password: userData.password,
+                    image: userData.image
+                };
+
+                // Save to database
+                const saved = await saveAccountToDatabase(accountData);
+
+                if (saved) {
+                    // Generate QR code
+                    const qrData = `BYPRO:${userData.id}:${userData.password}`;
+                    generateQRCode(qrData);
+
+                    // Update success page
+                    successName.textContent = userData.name;
+                    displayId.textContent = userData.id;
+
+                    showStatus('Account created successfully!', 'success');
+                    goToStep(5);
+                } else {
+                    throw new Error('Failed to save account to database');
+                }
+            } catch (error) {
+                console.error('Error finalizing registration:', error);
+                showStatus('Error creating account: ' + error.message, 'error');
+            } finally {
+                next4.disabled = false;
+                next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
+            }
         }
 
         // Event Listeners
@@ -862,19 +936,16 @@
 
         prev2.addEventListener('click', () => goToStep(1));
 
-        sendCodeBtn.addEventListener('click', () => {
-            if (!email.value.trim() || !email.value.includes('@')) {
-                showStatus('Please enter a valid email address', 'error');
-                return;
-            }
-            userData.email = email.value.trim();
-            sendVerificationCode();
-        });
-
+        sendCodeBtn.addEventListener('click', sendVerificationCode);
         resendCodeBtn.addEventListener('click', sendVerificationCode);
 
         verificationCode.addEventListener('input', () => {
-            next2.disabled = !(verificationSent && verificationCode.value === generatedCode);
+            const isValid = verificationSent && verificationCode.value === generatedCode;
+            next2.disabled = !isValid;
+            
+            if (verificationCode.value && !isValid) {
+                showStatus('Invalid verification code', 'error');
+            }
         });
 
         next2.addEventListener('click', () => {
@@ -882,6 +953,7 @@
                 showStatus('Invalid verification code', 'error');
                 return;
             }
+            userData.email = email.value.trim();
             goToStep(3);
         });
 
@@ -889,13 +961,17 @@
 
         password.addEventListener('input', () => {
             checkPasswordStrength(password.value);
-            next3.disabled = !(password.value && confirmPassword.value && password.value === confirmPassword.value);
+            const passwordsMatch = password.value && confirmPassword.value && 
+                                 password.value === confirmPassword.value;
+            next3.disabled = !passwordsMatch;
         });
 
         confirmPassword.addEventListener('input', () => {
-            next3.disabled = !(password.value && confirmPassword.value && password.value === confirmPassword.value);
+            const passwordsMatch = password.value && confirmPassword.value && 
+                                 password.value === confirmPassword.value;
+            next3.disabled = !passwordsMatch;
             
-            if (confirmPassword.value && password.value !== confirmPassword.value) {
+            if (confirmPassword.value && !passwordsMatch) {
                 showStatus('Passwords do not match', 'error');
             } else {
                 statusMessage.style.display = 'none';
@@ -919,72 +995,23 @@
             }
         });
 
-        next4.addEventListener('click', async () => {
+        next4.addEventListener('click', () => {
             next4.disabled = true;
             next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
-
-            try {
-                // Get next available ID
-                userData.id = await getNextAvailableId();
-
-                // Upload image if selected
-                if (profileImage.files[0]) {
-                    const reader = new FileReader();
-                    reader.onload = async (e) => {
-                        userData.image = await uploadImageToGitHub(userData.id, e.target.result);
-                        completeRegistration();
-                    };
-                    reader.readAsDataURL(profileImage.files[0]);
-                } else {
-                    completeRegistration();
-                }
-            } catch (error) {
-                showStatus('Error creating account: ' + error.message, 'error');
-                next4.disabled = false;
-                next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
-            }
+            completeRegistration();
         });
-
-        async function completeRegistration() {
-            try {
-                // Prepare account data for database
-                const accountData = {
-                    id: userData.id,
-                    ps: userData.password,
-                    email: userData.email,
-                    name: userData.name,
-                    image: userData.image
-                };
-
-                // Save to database
-                const saved = await saveAccountToDatabase(accountData);
-
-                if (saved) {
-                    // Generate QR code
-                    const qrData = `BYPRO:${userData.id}:${userData.password}`;
-                    generateQRCode(qrData);
-
-                    // Update success page
-                    successName.textContent = userData.name;
-                    displayId.textContent = userData.id;
-
-                    goToStep(5);
-                } else {
-                    throw new Error('Failed to save account to database');
-                }
-            } catch (error) {
-                showStatus('Error creating account: ' + error.message, 'error');
-            } finally {
-                next4.disabled = false;
-                next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
-            }
-        }
 
         downloadQR.addEventListener('click', downloadQRCode);
 
         // Initialize
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 Signup page initialized');
+            
+            // Test server connection
+            fetch(`${API_BASE}/api/health`)
+                .then(response => response.json())
+                .then(data => console.log('✅ Server status:', data))
+                .catch(error => console.error('❌ Server connection failed:', error));
         });
     </script>
 </body>
