@@ -1,1 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>B.Y PRO Accounts - Sign UP</title>
+    <link rel="icon" type="image/png" href="https://bypro.kesug.com/B.Y%20PRO.png">
+    <link rel="shortcut icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
+    <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --bg-color: #000000;
+            --card-bg: #111111;
+            --text-color: #ffffff;
+            --text-muted: #bdc3c7;
+            --border-color: #2c3e50;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --success-color: #2ecc71;
+            --border-radius: 12px;
+        }
 
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #000000 0%, #1a1a2e 50%, #16213e 100%);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            line-height: 1.6;
+        }
+
+        .signup-container {
+            background-color: var(--card-bg);
+            padding: 40px 30px;
+            border-radius: var(--border-radius);
+            width: 100%;
+            max-width: 500px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo h1 {
+            color: var(--primary-color);
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .logo p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .progress-bar {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 30px;
+            position: relative;
+        }
+
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: var(--border-color);
+            transform: translateY(-50%);
+            z-index: 1;
+        }
+
+        .progress-step {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            background: var(--border-color);
+            color: var(--text-muted);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            position: relative;
+            z-index: 2;
+            transition: all 0.3s ease;
+        }
+
+        .progress-step.active {
+            background: var(--primary-color);
+            color: white;
+            transform: scale(1.1);
+        }
+
+        .progress-step.completed {
+            background: var(--success-color);
+            color: white;
+        }
+
+        .step {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+
+        .step.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 14px 16px;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            background-color: rgba(0, 0, 0, 0.3);
+            color: var(--text-color);
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+
+        .verification-code {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .verification-code input {
+            flex: 1;
+            text-align: center;
+            font-size: 1.2rem;
+            letter-spacing: 8px;
+            font-weight: bold;
+        }
+
+        .resend-btn {
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 8px 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+        }
+
+        .resend-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .resend-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .file-upload {
+            margin: 20px 0;
+        }
+
+        .file-input {
+            display: none;
+        }
+
+        .file-label {
+            display: block;
+            padding: 14px 20px;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border-radius: var(--border-radius);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            border: 2px solid transparent;
+        }
+
+        .file-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .image-preview {
+            width: 150px;
+            height: 150px;
+            border-radius: 50%;
+            margin: 20px auto;
+            border: 3px solid var(--border-color);
+            overflow: hidden;
+            background: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .image-preview img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .image-preview i {
+            font-size: 3rem;
+            color: var(--text-muted);
+        }
+
+        .btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
+        }
+
+        .btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            color: var(--text-muted);
+            border: 2px solid var(--border-color);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border-color);
+            color: white;
+        }
+
+        .status-message {
+            padding: 12px 16px;
+            margin: 15px 0;
+            border-radius: var(--border-radius);
+            text-align: center;
+            display: none;
+            animation: slideIn 0.3s ease;
+            font-weight: 500;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .status-success {
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.2));
+            color: var(--success-color);
+            border: 2px solid var(--success-color);
+        }
+
+        .status-error {
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.2));
+            color: var(--danger-color);
+            border: 2px solid var(--danger-color);
+        }
+
+        .status-warning {
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.2), rgba(211, 84, 0, 0.2));
+            color: var(--warning-color);
+            border: 2px solid var(--warning-color);
+        }
+
+        .success-section {
+            text-align: center;
+            padding: 20px 0;
+        }
+
+        .qr-container {
+            margin: 30px auto;
+            padding: 20px;
+            background: white;
+            border-radius: var(--border-radius);
+            display: inline-block;
+        }
+
+        #qrCode {
+            width: 200px;
+            height: 200px;
+        }
+
+        .download-btn {
+            background: linear-gradient(135deg, var(--success-color), #27ae60);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            margin: 10px;
+        }
+
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
+        }
+
+        .login-btn {
+            background: transparent;
+            color: var(--primary-color);
+            border: 2px solid var(--primary-color);
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            margin: 10px;
+        }
+
+        .login-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .loading-spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .password-strength {
+            margin-top: 8px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+
+        .strength-bar {
+            height: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .strength-weak { background: var(--danger-color); width: 25%; }
+        .strength-medium { background: var(--warning-color); width: 50%; }
+        .strength-strong { background: var(--success-color); width: 75%; }
+        .strength-very-strong { background: var(--success-color); width: 100%; }
+
+        /* تحسينات للتجاوب */
+        @media (max-width: 768px) {
+            .signup-container {
+                padding: 30px 20px;
+                margin: 10px;
+                max-width: 100%;
+            }
+
+            .logo h1 {
+                font-size: 1.8rem;
+            }
+
+            .verification-code {
+                flex-direction: column;
+            }
+
+            .image-preview {
+                width: 120px;
+                height: 120px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 10px;
+            }
+
+            .signup-container {
+                padding: 25px 15px;
+            }
+
+            .logo h1 {
+                font-size: 1.6rem;
+            }
+
+            .logo p {
+                font-size: 0.9rem;
+            }
+
+            .form-group input {
+                padding: 12px 14px;
+                font-size: 0.9rem;
+            }
+
+            .btn {
+                padding: 14px;
+                font-size: 0.9rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="signup-container">
+        <div class="logo">
+            <h1><i class="fas fa-user-plus"></i> B.Y PRO Accounts</h1>
+            <p>Create Your Account</p>
+        </div>
+
+        <!-- Progress Bar -->
+        <div class="progress-bar">
+            <div class="progress-step active" id="step1">1</div>
+            <div class="progress-step" id="step2">2</div>
+            <div class="progress-step" id="step3">3</div>
+            <div class="progress-step" id="step4">4</div>
+            <div class="progress-step" id="step5">5</div>
+        </div>
+
+        <!-- Status Message -->
+        <div id="statusMessage" class="status-message"></div>
+
+        <!-- Step 1: Full Name -->
+        <div class="step active" id="step1-content">
+            <div class="form-group">
+                <label for="fullName"><i class="fas fa-user"></i> Full Name</label>
+                <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name">
+            </div>
+            <button class="btn" id="next1">
+                Next <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Step 2: Email Verification -->
+        <div class="step" id="step2-content">
+            <div class="form-group">
+                <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                <input type="email" id="email" placeholder="Enter your email address" autocomplete="email">
+            </div>
+            <div class="form-group">
+                <label for="verificationCode"><i class="fas fa-shield-alt"></i> Verification Code</label>
+                <div class="verification-code">
+                    <input type="text" id="verificationCode" placeholder="000000" maxlength="6">
+                    <button class="resend-btn" id="sendCodeBtn">
+                        <i class="fas fa-paper-plane"></i> Send Code
+                    </button>
+                </div>
+                <button class="resend-btn" id="resendCodeBtn" disabled style="width: 100%;">
+                    Resend code in <span id="countdown">60</span>s
+                </button>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" id="prev2">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button class="btn" id="next2" disabled>
+                    Verify & Next <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 3: Password -->
+        <div class="step" id="step3-content">
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> Password</label>
+                <input type="password" id="password" placeholder="Create a strong password" autocomplete="new-password">
+                <div class="password-strength">
+                    <div class="strength-bar" id="passwordStrength"></div>
+                </div>
+            </div>
+            <div class="form-group">
+                <label for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
+                <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" id="prev3">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button class="btn" id="next3" disabled>
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 4: Profile Picture -->
+        <div class="step" id="step4-content">
+            <div class="form-group">
+                <label>Profile Picture</label>
+                <div class="image-preview" id="imagePreview">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="file-upload">
+                    <input type="file" id="profileImage" class="file-input" accept="image/*">
+                    <label for="profileImage" class="file-label">
+                        <i class="fas fa-upload"></i> Choose Profile Picture
+                    </label>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" id="prev4">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button class="btn" id="next4">
+                    Next <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Step 5: Success & QR Code -->
+        <div class="step" id="step5-content">
+            <div class="success-section">
+                <div class="status-success" style="display: block;">
+                    <i class="fas fa-check-circle"></i> Account Created Successfully!
+                </div>
+                
+                <h3 style="margin: 20px 0 10px 0;">Welcome to B.Y PRO, <span id="successName"></span>!</h3>
+                <p style="color: var(--text-muted); margin-bottom: 30px;">
+                    Your account has been created successfully. Here's your QR code for login:
+                </p>
+
+                <div class="qr-container">
+                    <canvas id="qrCode"></canvas>
+                </div>
+
+                <div style="margin: 20px 0;">
+                    <button class="download-btn" id="downloadQR">
+                        <i class="fas fa-download"></i> Download QR Code
+                    </button>
+                    <a href="login.html" class="login-btn">
+                        <i class="fas fa-sign-in-alt"></i> Go to Login
+                    </a>
+                </div>
+
+                <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
+                    <p style="font-size: 0.9rem; color: var(--text-muted);">
+                        <strong>Save your credentials:</strong><br>
+                        ID: <span id="displayId" style="color: var(--primary-color); font-weight: bold;"></span><br>
+                        Keep your password secure and save this QR code for quick login.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const steps = document.querySelectorAll('.step');
+        const progressSteps = document.querySelectorAll('.progress-step');
+        const statusMessage = document.getElementById('statusMessage');
+
+        // Form Elements
+        const fullName = document.getElementById('fullName');
+        const email = document.getElementById('email');
+        const verificationCode = document.getElementById('verificationCode');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        const profileImage = document.getElementById('profileImage');
+        const imagePreview = document.getElementById('imagePreview');
+
+        // Buttons
+        const next1 = document.getElementById('next1');
+        const prev2 = document.getElementById('prev2');
+        const next2 = document.getElementById('next2');
+        const prev3 = document.getElementById('prev3');
+        const next3 = document.getElementById('next3');
+        const prev4 = document.getElementById('prev4');
+        const next4 = document.getElementById('next4');
+        const sendCodeBtn = document.getElementById('sendCodeBtn');
+        const resendCodeBtn = document.getElementById('resendCodeBtn');
+        const downloadQR = document.getElementById('downloadQR');
+
+        // Success Elements
+        const successName = document.getElementById('successName');
+        const displayId = document.getElementById('displayId');
+        const qrCodeCanvas = document.getElementById('qrCode');
+
+        // Variables
+        let currentStep = 1;
+        let verificationSent = false;
+        let generatedCode = '';
+        let countdownInterval;
+        let countdownTime = 60;
+        let userData = {
+            name: '',
+            email: '',
+            password: '',
+            image: '',
+            id: ''
+        };
+
+        // Server Configuration
+        const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
+
+        // Show status message
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Navigate to step
+        function goToStep(step) {
+            // Hide all steps
+            steps.forEach(s => s.classList.remove('active'));
+            progressSteps.forEach(p => {
+                p.classList.remove('active');
+                if (parseInt(p.textContent) < step) {
+                    p.classList.add('completed');
+                }
+            });
+
+            // Show current step
+            document.getElementById(`step${step}-content`).classList.add('active');
+            document.getElementById(`step${step}`).classList.add('active');
+            currentStep = step;
+        }
+
+        // Generate random verification code
+        function generateVerificationCode() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Start countdown for resend button
+        function startCountdown() {
+            countdownTime = 60;
+            resendCodeBtn.disabled = true;
+            sendCodeBtn.disabled = true;
+            
+            countdownInterval = setInterval(() => {
+                countdownTime--;
+                document.getElementById('countdown').textContent = countdownTime;
+                
+                if (countdownTime <= 0) {
+                    clearInterval(countdownInterval);
+                    resendCodeBtn.disabled = false;
+                    sendCodeBtn.disabled = false;
+                    resendCodeBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                } else {
+                    resendCodeBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
+                }
+            }, 1000);
+        }
+
+        // Send verification code (simulated)
+        async function sendVerificationCode() {
+            generatedCode = generateVerificationCode();
+            console.log('📧 Verification Code:', generatedCode); // For testing
+            
+            // In a real app, you would send this to the email
+            // await fetch('/api/send-verification', {
+            //     method: 'POST',
+            //     body: JSON.stringify({ email: email.value, code: generatedCode })
+            // });
+            
+            showStatus(`Verification code sent to ${email.value}`, 'success');
+            verificationSent = true;
+            startCountdown();
+        }
+
+        // Check password strength
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            const strengthBar = document.getElementById('passwordStrength');
+            
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]+/)) strength++;
+            if (password.match(/[A-Z]+/)) strength++;
+            if (password.match(/[0-9]+/)) strength++;
+            if (password.match(/[$@#&!]+/)) strength++;
+            
+            strengthBar.className = 'strength-bar';
+            if (strength <= 2) {
+                strengthBar.classList.add('strength-weak');
+                return 'weak';
+            } else if (strength === 3) {
+                strengthBar.classList.add('strength-medium');
+                return 'medium';
+            } else if (strength === 4) {
+                strengthBar.classList.add('strength-strong');
+                return 'strong';
+            } else {
+                strengthBar.classList.add('strength-very-strong');
+                return 'very-strong';
+            }
+        }
+
+        // Preview image
+        function previewImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // Upload image to GitHub
+        async function uploadImageToGitHub(accountId, imageData) {
+            try {
+                const response = await fetch(`${API_BASE}/api/upload-image`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        accountId: accountId,
+                        imageData: imageData.split(',')[1] // Remove data:image/... prefix
+                    })
+                });
+
+                const result = await response.json();
+                return result.success ? result.imageUrl : '';
+            } catch (error) {
+                console.error('Error uploading image:', error);
+                return '';
+            }
+        }
+
+        // Get next available ID
+        async function getNextAvailableId() {
+            try {
+                const response = await fetch(`${API_BASE}/api/debug/accounts`);
+                const data = await response.json();
+                
+                if (data.success && data.accounts.length > 0) {
+                    const maxId = Math.max(...data.accounts.map(acc => parseInt(acc.id) || 0));
+                    return (maxId + 1).toString();
+                }
+                return "1";
+            } catch (error) {
+                console.error('Error getting next ID:', error);
+                return "1";
+            }
+        }
+
+        // Save account to database
+        async function saveAccountToDatabase(accountData) {
+            try {
+                // First get all existing accounts
+                const response = await fetch(`${API_BASE}/api/debug/accounts`);
+                const data = await response.json();
+                
+                let accounts = [];
+                if (data.success) {
+                    accounts = data.accounts;
+                }
+
+                // Add new account
+                accounts.push(accountData);
+
+                // Save all accounts back
+                const saveResponse = await fetch(`${API_BASE}/api/accounts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(accounts)
+                });
+
+                const result = await saveResponse.json();
+                return result.success;
+            } catch (error) {
+                console.error('Error saving account:', error);
+                return false;
+            }
+        }
+
+        // Generate QR Code
+        function generateQRCode(text) {
+            QRCode.toCanvas(qrCodeCanvas, text, {
+                width: 200,
+                height: 200,
+                margin: 1,
+                color: {
+                    dark: '#000000',
+                    light: '#FFFFFF'
+                }
+            }, function (error) {
+                if (error) console.error('QR Code error:', error);
+            });
+        }
+
+        // Download QR Code
+        function downloadQRCode() {
+            const link = document.createElement('a');
+            link.download = `BYPRO-${userData.id}-QR.png`;
+            link.href = qrCodeCanvas.toDataURL();
+            link.click();
+        }
+
+        // Event Listeners
+        next1.addEventListener('click', () => {
+            if (!fullName.value.trim()) {
+                showStatus('Please enter your full name', 'error');
+                return;
+            }
+            userData.name = fullName.value.trim();
+            goToStep(2);
+        });
+
+        prev2.addEventListener('click', () => goToStep(1));
+
+        sendCodeBtn.addEventListener('click', () => {
+            if (!email.value.trim() || !email.value.includes('@')) {
+                showStatus('Please enter a valid email address', 'error');
+                return;
+            }
+            userData.email = email.value.trim();
+            sendVerificationCode();
+        });
+
+        resendCodeBtn.addEventListener('click', sendVerificationCode);
+
+        verificationCode.addEventListener('input', () => {
+            next2.disabled = !(verificationSent && verificationCode.value === generatedCode);
+        });
+
+        next2.addEventListener('click', () => {
+            if (verificationCode.value !== generatedCode) {
+                showStatus('Invalid verification code', 'error');
+                return;
+            }
+            goToStep(3);
+        });
+
+        prev3.addEventListener('click', () => goToStep(2));
+
+        password.addEventListener('input', () => {
+            checkPasswordStrength(password.value);
+            next3.disabled = !(password.value && confirmPassword.value && password.value === confirmPassword.value);
+        });
+
+        confirmPassword.addEventListener('input', () => {
+            next3.disabled = !(password.value && confirmPassword.value && password.value === confirmPassword.value);
+            
+            if (confirmPassword.value && password.value !== confirmPassword.value) {
+                showStatus('Passwords do not match', 'error');
+            } else {
+                statusMessage.style.display = 'none';
+            }
+        });
+
+        next3.addEventListener('click', () => {
+            if (password.value !== confirmPassword.value) {
+                showStatus('Passwords do not match', 'error');
+                return;
+            }
+            userData.password = password.value;
+            goToStep(4);
+        });
+
+        prev4.addEventListener('click', () => goToStep(3));
+
+        profileImage.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                previewImage(e.target.files[0]);
+            }
+        });
+
+        next4.addEventListener('click', async () => {
+            next4.disabled = true;
+            next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
+
+            try {
+                // Get next available ID
+                userData.id = await getNextAvailableId();
+
+                // Upload image if selected
+                if (profileImage.files[0]) {
+                    const reader = new FileReader();
+                    reader.onload = async (e) => {
+                        userData.image = await uploadImageToGitHub(userData.id, e.target.result);
+                        completeRegistration();
+                    };
+                    reader.readAsDataURL(profileImage.files[0]);
+                } else {
+                    completeRegistration();
+                }
+            } catch (error) {
+                showStatus('Error creating account: ' + error.message, 'error');
+                next4.disabled = false;
+                next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
+            }
+        });
+
+        async function completeRegistration() {
+            try {
+                // Prepare account data for database
+                const accountData = {
+                    id: userData.id,
+                    ps: userData.password,
+                    email: userData.email,
+                    name: userData.name,
+                    image: userData.image
+                };
+
+                // Save to database
+                const saved = await saveAccountToDatabase(accountData);
+
+                if (saved) {
+                    // Generate QR code
+                    const qrData = `BYPRO:${userData.id}:${userData.password}`;
+                    generateQRCode(qrData);
+
+                    // Update success page
+                    successName.textContent = userData.name;
+                    displayId.textContent = userData.id;
+
+                    goToStep(5);
+                } else {
+                    throw new Error('Failed to save account to database');
+                }
+            } catch (error) {
+                showStatus('Error creating account: ' + error.message, 'error');
+            } finally {
+                next4.disabled = false;
+                next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
+            }
+        }
+
+        downloadQR.addEventListener('click', downloadQRCode);
+
+        // Initialize
+        document.addEventListener('DOMContentLoaded', () => {
+            console.log('🚀 Signup page initialized');
+        });
+    </script>
+</body>
+</html>
