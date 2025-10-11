@@ -426,6 +426,23 @@
             margin: 10px 0;
         }
 
+        .copy-code-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 15px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        .copy-code-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
         @media (max-width: 768px) {
             .signup-container {
                 padding: 30px 20px;
@@ -524,12 +541,15 @@
                     Resend code in <span id="countdown">60</span>s
                 </button>
                 
-                <!-- Display for simulated codes -->
+                <!-- Display for verification codes -->
                 <div id="codeDisplay" class="code-display" style="display: none;">
                     <p><i class="fas fa-info-circle"></i> Your verification code:</p>
                     <div class="code" id="displayedCode"></div>
-                    <p style="font-size: 0.8rem; color: var(--text-muted);">
-                        Enter this code in the field above
+                    <button class="copy-code-btn" onclick="copyToClipboard(generatedCode)">
+                        <i class="fas fa-copy"></i> Copy Code
+                    </button>
+                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
+                        ⏰ Code expires in <strong>10 minutes</strong>
                     </p>
                 </div>
             </div>
@@ -610,7 +630,7 @@
                     <button class="download-btn" id="downloadQR">
                         <i class="fas fa-download"></i> Download QR Code
                     </button>
-                    <a href="https://yacine2007.github.io/secure-auth-app/login.html" class="login-btn">
+                    <a href="login.html" class="login-btn">
                         <i class="fas fa-sign-in-alt"></i> Go to Login
                     </a>
                 </div>
@@ -663,6 +683,11 @@
         // Server Configuration
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
 
+        // EmailJS Configuration
+        const EMAILJS_SERVICE_ID = 'byprologin25';
+        const EMAILJS_TEMPLATE_ID = 'template_cy4m3t3';
+        const EMAILJS_PUBLIC_KEY = 'fOoOuDhvNk-ds47Vk';
+
         // Variables
         let currentStep = 1;
         let verificationSent = false;
@@ -686,6 +711,38 @@
             setTimeout(() => {
                 statusMessage.style.display = 'none';
             }, 5000);
+        }
+
+        // Copy to clipboard function
+        function copyToClipboard(text) {
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(function() {
+                    showStatus('Verification code copied to clipboard!', 'success');
+                }).catch(function() {
+                    fallbackCopy(text);
+                });
+            } else {
+                fallbackCopy(text);
+            }
+        }
+
+        function fallbackCopy(text) {
+            var textArea = document.createElement("textarea");
+            textArea.value = text;
+            textArea.style.position = "fixed";
+            textArea.style.opacity = "0";
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+                var successful = document.execCommand('copy');
+                showStatus('Verification code copied to clipboard!', 'success');
+            } catch (err) {
+                showStatus('Failed to copy code. Please copy manually.', 'warning');
+            }
+            
+            document.body.removeChild(textArea);
         }
 
         // Navigate to step
@@ -724,7 +781,7 @@
             }, 1000);
         }
 
-        // Send verification code
+        // Send verification code using EmailJS
         async function sendVerificationCode() {
             try {
                 const emailValue = email.value.trim();
@@ -741,39 +798,48 @@
 
                 showStatus('Sending verification code...', 'success');
                 
-                // توليد رمز عشوائي
+                // Generate random code
                 generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
                 
-                const response = await fetch(`${API_BASE}/api/send-verification-email`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify({email: emailValue, code: generatedCode})
-                });
+                // Prepare email data
+                const templateParams = {
+                    to_email: emailValue,
+                    code: generatedCode,
+                    timestamp: new Date().toLocaleString(),
+                    expiry_time: new Date(Date.now() + 10 * 60 * 1000).toLocaleString(),
+                    current_year: new Date().getFullYear()
+                };
 
-                const result = await response.json();
-                
-                if (result.success) {
-                    if (result.simulated) {
-                        // عرض الرمز للمستخدم مباشرة
-                        displayedCode.textContent = generatedCode;
-                        codeDisplay.style.display = 'block';
-                        showStatus('Verification code generated - Enter the code displayed above', 'success');
-                    } else {
-                        codeDisplay.style.display = 'none';
-                        showStatus(`Verification code sent to ${emailValue}`, 'success');
-                    }
-                    verificationSent = true;
-                    startCountdown();
+                // Send using EmailJS
+                if (typeof emailjs !== 'undefined') {
+                    emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, templateParams, EMAILJS_PUBLIC_KEY)
+                        .then(function(response) {
+                            console.log('✅ Email sent successfully:', response);
+                            showStatus(`Verification code sent to ${emailValue}`, 'success');
+                            verificationSent = true;
+                            startCountdown();
+                            codeDisplay.style.display = 'none'; // Hide code display when email is sent
+                        })
+                        .catch(function(error) {
+                            console.error('❌ EmailJS error:', error);
+                            // Fallback: show code directly if email fails
+                            displayedCode.textContent = generatedCode;
+                            codeDisplay.style.display = 'block';
+                            showStatus('Email service unavailable - Use the code displayed above', 'warning');
+                            verificationSent = true;
+                            startCountdown();
+                        });
                 } else {
-                    showStatus('Failed to send verification code: ' + result.error, 'error');
+                    // Fallback if EmailJS not loaded
+                    throw new Error('EmailJS not loaded');
                 }
                 
             } catch (error) {
                 console.error('Error sending verification:', error);
-                // إذا فشل الإرسال، اعرض الرمز مباشرة
+                // Fallback: show code directly
                 displayedCode.textContent = generatedCode;
                 codeDisplay.style.display = 'block';
-                showStatus('Using simulation mode - Enter the code displayed above', 'warning');
+                showStatus('Using fallback mode - Enter the code displayed above', 'warning');
                 verificationSent = true;
                 startCountdown();
             }
@@ -991,12 +1057,11 @@
                     showStatus('Account created successfully!', 'success');
                     goToStep(5);
                 } else {
-                    throw new Error('Failed to save account to database');
+                    throw new Error('Failed to save account');
                 }
-
             } catch (error) {
-                console.error('❌ Error in registration:', error);
-                showStatus('Error: ' + error.message, 'error');
+                console.error('❌ Registration error:', error);
+                showStatus('Registration failed. Please try again.', 'error');
             } finally {
                 next4.disabled = false;
                 next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
@@ -1019,19 +1084,22 @@
         resendCodeBtn.addEventListener('click', sendVerificationCode);
 
         verificationCode.addEventListener('input', () => {
-            const isValid = verificationSent && verificationCode.value === generatedCode;
-            next2.disabled = !isValid;
-            
-            if (verificationCode.value && !isValid) {
-                showStatus('Invalid verification code', 'error');
-            }
+            const code = verificationCode.value.trim();
+            next2.disabled = !(verificationSent && code === generatedCode);
         });
 
         next2.addEventListener('click', () => {
-            if (verificationCode.value !== generatedCode) {
+            if (!verificationSent) {
+                showStatus('Please send verification code first', 'error');
+                return;
+            }
+
+            const code = verificationCode.value.trim();
+            if (code !== generatedCode) {
                 showStatus('Invalid verification code', 'error');
                 return;
             }
+
             userData.email = email.value.trim();
             goToStep(3);
         });
@@ -1040,28 +1108,35 @@
 
         password.addEventListener('input', () => {
             checkPasswordStrength(password.value);
-            const passwordsMatch = password.value && confirmPassword.value && 
-                                 password.value === confirmPassword.value;
-            next3.disabled = !passwordsMatch;
+            
+            const isPasswordValid = password.value.length >= 6;
+            const isConfirmValid = confirmPassword.value === password.value;
+            next3.disabled = !(isPasswordValid && isConfirmValid);
         });
 
         confirmPassword.addEventListener('input', () => {
-            const passwordsMatch = password.value && confirmPassword.value && 
-                                 password.value === confirmPassword.value;
-            next3.disabled = !passwordsMatch;
+            const isPasswordValid = password.value.length >= 6;
+            const isConfirmValid = confirmPassword.value === password.value;
+            next3.disabled = !(isPasswordValid && isConfirmValid);
             
-            if (confirmPassword.value && !passwordsMatch) {
+            if (confirmPassword.value && password.value !== confirmPassword.value) {
                 showStatus('Passwords do not match', 'error');
-            } else {
-                statusMessage.style.display = 'none';
+            } else if (confirmPassword.value && password.value === confirmPassword.value) {
+                showStatus('Passwords match', 'success');
             }
         });
 
         next3.addEventListener('click', () => {
+            if (password.value.length < 6) {
+                showStatus('Password must be at least 6 characters', 'error');
+                return;
+            }
+
             if (password.value !== confirmPassword.value) {
                 showStatus('Passwords do not match', 'error');
                 return;
             }
+
             userData.password = password.value;
             goToStep(4);
         });
@@ -1074,28 +1149,22 @@
             }
         });
 
-        next4.addEventListener('click', () => {
-            next4.disabled = true;
-            next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
-            completeRegistration();
-        });
+        next4.addEventListener('click', completeRegistration);
 
         downloadQR.addEventListener('click', downloadQRCode);
 
-        // Initialize
+        // Initialize EmailJS
+        if (typeof emailjs !== 'undefined') {
+            emailjs.init(EMAILJS_PUBLIC_KEY);
+        }
+
+        // Form validation on page load
         document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 Signup page initialized');
-            
-            fetch(`${API_BASE}/api/health`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log('✅ Server status:', data);
-                    if (data.email_status === 'simulation') {
-                        console.log('📧 Email service: Simulation Mode');
-                    }
-                })
-                .catch(error => console.error('❌ Server connection failed:', error));
+            fullName.focus();
         });
     </script>
+
+    <!-- Load EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
 </body>
 </html>
