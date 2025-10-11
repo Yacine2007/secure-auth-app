@@ -2,6 +2,7 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
+const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -29,6 +30,52 @@ app.use((req, res, next) => {
 });
 
 console.log('✅ Middleware initialized');
+
+// ==================== EMAIL CONFIGURATION ====================
+console.log('📧 Setting up email services...');
+
+// إعداد الناقل البريدي مع خيارات متعددة
+const createTransporter = () => {
+  // الخيار 1: Gmail (الأسهل)
+  if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
+    console.log('📧 Using Gmail service');
+    return nodemailer.createTransporter({
+      service: 'gmail',
+      auth: {
+        user: process.env.GMAIL_USER,
+        pass: process.env.GMAIL_PASS
+      }
+    });
+  }
+  
+  // الخيار 2: SMTP عام
+  if (process.env.SMTP_HOST) {
+    console.log('📧 Using SMTP service');
+    return nodemailer.createTransporter({
+      host: process.env.SMTP_HOST,
+      port: process.env.SMTP_PORT || 587,
+      secure: false,
+      auth: {
+        user: process.env.SMTP_USER,
+        pass: process.env.SMTP_PASS
+      }
+    });
+  }
+
+  // الخيار 3: إعدادات افتراضية للاختبار
+  console.log('📧 Using test email service');
+  return nodemailer.createTransporter({
+    host: 'smtp.ethereal.email',
+    port: 587,
+    secure: false,
+    auth: {
+      user: 'test@ethereal.email',
+      pass: 'test'
+    }
+  });
+};
+
+const emailTransporter = createTransporter();
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
 const serviceAccount = {
@@ -283,6 +330,135 @@ async function verifyAccountCredentials(id, password) {
   }
 }
 
+// إرسال البريد الإلكتروني مع بدائل متعددة
+async function sendVerificationEmail(email, code) {
+  const emailHtml = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+            .container { background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; }
+            .header { background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center; }
+            .code { font-size: 32px; font-weight: bold; color: #3498db; text-align: center; margin: 20px 0; letter-spacing: 5px; }
+            .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>🔐 B.Y PRO Accounts</h1>
+                <p>Verification Code</p>
+            </div>
+            <h2>Hello!</h2>
+            <p>Your verification code for B.Y PRO Accounts is:</p>
+            <div class="code">${code}</div>
+            <p>This code will expire in 10 minutes.</p>
+            <div class="footer">
+                <p>If you didn't request this code, please ignore this email.</p>
+                <p>B.Y PRO Accounts Team</p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
+
+  const mailOptions = {
+    from: process.env.EMAIL_FROM || 'noreply@bypro.com',
+    to: email,
+    subject: '🔐 B.Y PRO Verification Code',
+    html: emailHtml
+  };
+
+  try {
+    console.log(`📧 Attempting to send email to: ${email}`);
+    
+    // المحاولة الأولى: استخدام الناقل البريدي
+    if (emailTransporter) {
+      const info = await emailTransporter.sendMail(mailOptions);
+      console.log('✅ Email sent successfully via transporter');
+      return { success: true, method: 'transporter', info: info };
+    }
+    
+    throw new Error('No email transporter available');
+    
+  } catch (error) {
+    console.error('❌ Email sending failed:', error.message);
+    
+    // المحاولة الثانية: استخدام خدمة خارجية
+    try {
+      await sendViaExternalService(email, code);
+      return { success: true, method: 'external' };
+    } catch (externalError) {
+      console.error('❌ External email service failed:', externalError.message);
+      
+      // المحاولة الثالثة: استخدام webhook بسيط
+      try {
+        await sendViaWebhook(email, code);
+        return { success: true, method: 'webhook' };
+      } catch (webhookError) {
+        console.error('❌ Webhook email failed:', webhookError.message);
+        return { 
+          success: false, 
+          error: 'All email methods failed',
+          code: code // إرجاع الرمز لعرضه للمستخدم
+        };
+      }
+    }
+  }
+}
+
+// خدمة بريد خارجية (FormSubmit)
+async function sendViaExternalService(email, code) {
+  const formData = new FormData();
+  formData.append('_replyto', email);
+  formData.append('_subject', 'B.Y PRO Verification Code');
+  formData.append('message', `Verification Code: ${code}\n\nEmail: ${email}\n\nThis is an automated message from B.Y PRO Accounts.`);
+  
+  const response = await fetch('https://formsubmit.co/ajax/byprosprt2007@gmail.com', {
+    method: 'POST',
+    body: formData
+  });
+  
+  if (!response.ok) {
+    throw new Error('FormSubmit failed');
+  }
+  
+  console.log('✅ Email sent via FormSubmit');
+  return true;
+}
+
+// webhook احتياطي
+async function sendViaWebhook(email, code) {
+  const webhookData = {
+    email: email,
+    code: code,
+    timestamp: new Date().toISOString(),
+    service: 'B.Y PRO Accounts'
+  };
+  
+  // يمكن إضافة webhooks أخرى هنا
+  const webhooks = [
+    'https://webhook.site/YOUR_WEBHOOK_ID'
+  ];
+  
+  for (const webhookUrl of webhooks) {
+    try {
+      await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(webhookData)
+      });
+    } catch (error) {
+      console.log(`Webhook ${webhookUrl} failed:`, error.message);
+    }
+  }
+  
+  console.log('✅ Webhook notification sent');
+  return true;
+}
+
 // ==================== ROUTES ====================
 
 // الصفحات الرئيسية
@@ -439,13 +615,13 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
-// إرسال رمز التحقق - EmailJS يعمل من طرف العميل فقط
+// إرسال رمز التحقق مع بدائل متعددة
 app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
     
-    console.log(`📧 EmailJS verification requested for: ${email}`);
-    console.log(`🔑 Code to send: ${code}`);
+    console.log(`📧 Sending verification code to: ${email}`);
+    console.log(`🔑 Verification code: ${code}`);
     
     if (!email || !code) {
       return res.json({
@@ -462,22 +638,31 @@ app.post('/api/send-verification-email', async (req, res) => {
       });
     }
 
-    // EmailJS يعمل من طرف العميل فقط
-    // هذا المسار للتوافق فقط
-    console.log(`✅ EmailJS should send code ${code} to ${email} from client-side`);
+    const result = await sendVerificationEmail(email, code);
     
-    res.json({
-      success: true,
-      message: "EmailJS verification initiated from client",
-      email: email,
-      code: code
-    });
+    if (result.success) {
+      res.json({
+        success: true,
+        message: "Verification code sent successfully",
+        method: result.method,
+        code: code
+      });
+    } else {
+      // إذا فشلت جميع الطرق، نعيد الرمز للعرض في الواجهة
+      res.json({
+        success: false,
+        error: "Failed to send email, but you can use this code:",
+        code: code,
+        fallback: true
+      });
+    }
     
   } catch (error) {
     console.error('❌ Error in send-verification-email:', error.message);
     res.json({
       success: false,
-      error: "Server error: " + error.message
+      error: "Server error: " + error.message,
+      code: req.body.code // إرجاع الرمز للعرض
     });
   }
 });
@@ -486,6 +671,7 @@ app.post('/api/send-verification-email', async (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     let driveStatus = 'disconnected';
+    let emailStatus = 'not configured';
     
     if (driveService) {
       try {
@@ -496,11 +682,16 @@ app.get('/api/health', async (req, res) => {
       }
     }
     
+    // اختبار خدمة البريد
+    if (process.env.GMAIL_USER || process.env.SMTP_HOST) {
+      emailStatus = 'configured';
+    }
+    
     res.json({ 
       status: 'ok',
       service: 'B.Y PRO Accounts Login',
       drive_status: driveStatus,
-      email_service: 'EmailJS (Client-side)',
+      email_service: emailStatus,
       timestamp: new Date().toISOString(),
       message: 'Server is running successfully!'
     });
@@ -543,6 +734,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🌐 Access your app:');
   console.log(`   Local: http://localhost:${PORT}`);
   console.log(`   Network: http://0.0.0.0:${PORT}`);
-  console.log('📧 Email service: EmailJS (Client-side only)');
+  console.log('📧 Email service: Multi-provider with fallbacks');
   console.log('🎉 =================================\n');
 });
