@@ -11,7 +11,11 @@ console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
 // Middleware مع إعدادات CORS محسنة للغاية
 app.use(cors({
-  origin: true, // السماح لجميع النطاقات
+  origin: [
+    'https://yacine2007.github.io',
+    'https://b-y-pro-acounts-login.onrender.com',
+    'http://localhost:3000'
+  ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin']
@@ -27,8 +31,6 @@ app.use(express.static(__dirname));
 // middleware لتسجيل جميع الطلبات
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.url} - Origin: ${req.get('Origin') || 'No Origin'}`);
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization');
   next();
 });
 
@@ -206,7 +208,7 @@ async function verifyAccountCredentials(id, password) {
   }
 }
 
-// Routes مع إضافة headers يدوياً للتأكد
+// Routes
 app.get('/', (req, res) => {
   console.log('🌐 Serving login page');
   res.sendFile(path.join(__dirname, 'login.html'));
@@ -223,10 +225,6 @@ app.get('/style.css', (req, res) => {
 // نقطة النهاية الرئيسية للتحقق من الحساب
 app.get('/api/verify-account', async (req, res) => {
   try {
-    // إضافة headers يدوياً للتأكد من CORS
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    
     const { id, password } = req.query;
     
     console.log(`🔐 Login attempt - ID: ${id}, Password: ${password}`);
@@ -252,10 +250,6 @@ app.get('/api/verify-account', async (req, res) => {
 
 app.get('/api/health', async (req, res) => {
   try {
-    // إضافة headers يدوياً للتأكد من CORS
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    
     let driveStatus = 'disconnected';
     if (driveService) {
       await driveService.files.get({ fileId: FILE_ID, fields: 'id' });
@@ -283,10 +277,6 @@ app.get('/api/health', async (req, res) => {
 // Route للتحقق من البيانات
 app.get('/api/debug/accounts', async (req, res) => {
   try {
-    // إضافة headers يدوياً للتأكد من CORS
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-    
     const csvData = await readCSVFromDrive(FILE_ID);
     const accounts = parseCSVToAccounts(csvData);
     res.json({
@@ -331,4 +321,3 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`   Network: http://0.0.0.0:${PORT}`);
   console.log('🎉 =================================\n');
 });
-
