@@ -11,24 +11,25 @@ console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
 // Middleware مع إعدادات CORS محسنة
 app.use(cors({
-  origin: ['https://b-y-pro-acounts-login.onrender.com', 'http://localhost:3000', 'http://127.0.0.1:3000'],
+  origin: '*', // السماح لجميع النطاقات مؤقتاً للتجربة
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Accept']
 }));
 
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
 // middleware لتسجيل جميع الطلبات
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url}`);
+  console.log(`📥 ${req.method} ${req.url} - Origin: ${req.get('Origin')}`);
   next();
 });
 
 console.log('✅ Middleware initialized');
 
-// بيانات حساب الخدمة - باستخدام البيانات الثابتة المؤكدة
+// بيانات حساب الخدمة
 const serviceAccount = {
   type: "service_account",
   project_id: "database-accounts-469323",
@@ -111,7 +112,7 @@ async function readCSVFromDrive(fileId) {
     });
 
     const data = response.data;
-    console.log(`✅ Successfully read CSV data`);
+    console.log(`✅ Successfully read CSV data, length: ${data.length}`);
     return data;
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
@@ -123,14 +124,22 @@ async function readCSVFromDrive(fileId) {
 function parseCSVToAccounts(csvData) {
   try {
     const lines = csvData.split('\n').filter(line => line.trim() !== '');
-    if (lines.length === 0) return [];
+    if (lines.length === 0) {
+      console.log('⚠️ CSV file is empty');
+      return [];
+    }
 
     const headers = lines[0].split(',').map(header => header.trim());
-    const accounts = [];
+    console.log('📋 CSV Headers:', headers);
     
+    const accounts = [];
     for (let i = 1; i < lines.length; i++) {
-      const values = lines[i].split(',').map(value => value.trim());
-      if (values.length === headers.length) {
+      const line = lines[i].trim();
+      if (!line) continue;
+      
+      const values = line.split(',').map(value => value.trim());
+      
+      if (values.length >= headers.length) {
         const account = {};
         headers.forEach((header, index) => {
           account[header] = values[index] || '';
@@ -150,15 +159,20 @@ function parseCSVToAccounts(csvData) {
 // التحقق من صحة الحساب
 async function verifyAccountCredentials(id, password) {
   try {
-    console.log(`🔐 Verifying credentials for ID: ${id}`);
+    console.log(`🔐 Verifying credentials for ID: ${id}, Password: ${password}`);
     
     const csvData = await readCSVFromDrive(FILE_ID);
     const accounts = parseCSVToAccounts(csvData);
     
+    console.log(`🔍 Searching through ${accounts.length} accounts...`);
+    
     // البحث عن الحساب المطابق
-    const account = accounts.find(acc => 
-      acc.id && acc.ps && acc.id.toString() === id.toString() && acc.ps === password
-    );
+    const account = accounts.find(acc => {
+      const idMatch = acc.id && acc.id.toString() === id.toString();
+      const passwordMatch = acc.ps && acc.ps === password;
+      console.log(`🔍 Checking: ${acc.id} - ID match: ${idMatch}, Password match: ${passwordMatch}`);
+      return idMatch && passwordMatch;
+    });
     
     if (account) {
       console.log(`✅ Login successful for ID: ${id}`);
@@ -172,6 +186,7 @@ async function verifyAccountCredentials(id, password) {
       };
     } else {
       console.log(`❌ Login failed for ID: ${id} - Invalid credentials`);
+      console.log(`📝 Available accounts:`, accounts.map(acc => ({ id: acc.id, hasPassword: !!acc.ps })));
       return {
         success: false,
         error: "Invalid ID or password"
@@ -205,7 +220,7 @@ app.get('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.query;
     
-    console.log(`🔐 Login attempt - ID: ${id}`);
+    console.log(`🔐 Login attempt - ID: ${id}, Password: ${password}`);
     
     if (!id || !password) {
       return res.json({ 
@@ -228,15 +243,16 @@ app.get('/api/verify-account', async (req, res) => {
 
 app.get('/api/health', async (req, res) => {
   try {
-    // اختبار اتصال Google Drive
+    let driveStatus = 'disconnected';
     if (driveService) {
       await driveService.files.get({ fileId: FILE_ID, fields: 'id' });
+      driveStatus = 'connected';
     }
     
     res.json({ 
       status: 'ok',
       service: 'B.Y PRO Accounts Login',
-      drive_status: driveService ? 'connected' : 'disconnected',
+      drive_status: driveStatus,
       timestamp: new Date().toISOString(),
       message: 'Server is running successfully!'
     });
@@ -259,7 +275,7 @@ app.get('/api/debug/accounts', async (req, res) => {
     res.json({
       success: true,
       count: accounts.length,
-      accounts: accounts.slice(0, 5)
+      accounts: accounts
     });
   } catch (error) {
     res.json({
