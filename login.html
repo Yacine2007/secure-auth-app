@@ -291,27 +291,6 @@
             gap: 8px;
         }
 
-        .logout-btn {
-            padding: 12px 24px;
-            background: transparent;
-            color: var(--danger-color);
-            border: 2px solid var(--danger-color);
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-        }
-
-        .logout-btn:hover {
-            background-color: var(--danger-color);
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.3);
-        }
-
         .connection-status {
             position: fixed;
             top: 20px;
@@ -478,9 +457,6 @@
                 <i class="fas fa-check-circle"></i>
                 <span>You are successfully logged</span>
             </div>
-            <button class="logout-btn" id="logoutBtn">
-                <i class="fas fa-sign-out-alt"></i> Logout
-            </button>
         </div>
 
         <!-- Login Methods -->
@@ -520,15 +496,15 @@
                     <label for="passwordInput"><i class="fas fa-lock"></i> Password</label>
                     <input type="password" id="passwordInput" placeholder="Enter your password" autocomplete="current-password">
                 </div>
+
+                <!-- Status Message -->
+                <div id="statusMessage" class="status-message"></div>
+
+                <!-- Login Button -->
+                <button class="login-btn" id="loginBtn">
+                    <i class="fas fa-sign-in-alt"></i> Login
+                </button>
             </div>
-
-            <!-- Status Message -->
-            <div id="statusMessage" class="status-message"></div>
-
-            <!-- Login Button -->
-            <button class="login-btn" id="loginBtn">
-                <i class="fas fa-sign-in-alt"></i> Login
-            </button>
 
             <!-- Signup Section -->
             <div class="signup-section">
@@ -551,7 +527,6 @@
         const qrForm = document.getElementById('qrForm');
         const manualForm = document.getElementById('manualForm');
         const loginBtn = document.getElementById('loginBtn');
-        const logoutBtn = document.getElementById('logoutBtn');
         const statusMessage = document.getElementById('statusMessage');
         const qrFileInput = document.getElementById('qr-file');
         const userIdInput = document.getElementById('userIdInput');
@@ -607,6 +582,12 @@
             }
             
             console.log('✅ User logged in:', user);
+            
+            // إعادة تحميل الصفحة بعد 5 ثواني
+            setTimeout(() => {
+                console.log('🔄 Reloading page...');
+                window.location.reload();
+            }, 5000);
         }
 
         // Show login form
@@ -676,7 +657,7 @@
             });
         });
 
-        // Process uploaded QR code image
+        // Process uploaded QR code image - التسجيل المباشر
         qrFileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -747,8 +728,17 @@
                 return;
             }
 
-            loginBtn.disabled = true;
-            loginBtn.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+            // إظهار حالة التحميل في واجهة QR
+            if (currentMethod === 'qr') {
+                const fileLabel = document.querySelector('.file-label');
+                const originalHTML = fileLabel.innerHTML;
+                fileLabel.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+                fileLabel.style.opacity = '0.7';
+                fileLabel.style.cursor = 'not-allowed';
+            } else {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+            }
 
             try {
                 const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
@@ -787,7 +777,7 @@
                         id: result.account.id,
                         name: result.account.name,
                         email: result.account.email,
-                        password: password, // حفظ الباسوورد للتسجيل التلقائي
+                        password: password,
                         image: userImage,
                         loginTime: new Date().toISOString(),
                         lastLogin: new Date().toISOString()
@@ -801,12 +791,6 @@
                     // عرض حالة تسجيل الدخول
                     showLoggedInState(userData);
                     
-                    // إعادة تحميل الصفحة بعد 5 ثواني
-                    setTimeout(() => {
-                        console.log('🔄 Reloading page...');
-                        window.location.reload();
-                    }, 5000);
-                    
                 } else {
                     showStatus(result.error || 'Login failed', 'error');
                 }
@@ -819,45 +803,38 @@
                     showStatus('Login error: ' + error.message, 'error');
                 }
             } finally {
-                loginBtn.disabled = false;
-                loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                // إعادة تعيين واجهة QR
+                if (currentMethod === 'qr') {
+                    const fileLabel = document.querySelector('.file-label');
+                    fileLabel.innerHTML = '<i class="fas fa-upload"></i> Upload QR Code Image';
+                    fileLabel.style.opacity = '1';
+                    fileLabel.style.cursor = 'pointer';
+                    qrFileInput.value = ''; // مسح الملف المختار
+                } else {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                }
             }
         }
 
         // Manual login
         loginBtn.addEventListener('click', () => {
-            if (currentMethod === 'qr') {
-                showStatus('Please upload QR code image', 'warning');
-            } else {
-                const id = userIdInput.value.trim();
-                const password = passwordInput.value.trim();
-                
-                if (!id) {
-                    showStatus('Please enter your account ID', 'error');
-                    userIdInput.focus();
-                    return;
-                }
-                
-                if (!password) {
-                    showStatus('Please enter your password', 'error');
-                    passwordInput.focus();
-                    return;
-                }
-                
-                verifyLogin(id, password);
-            }
-        });
-
-        // Logout
-        logoutBtn.addEventListener('click', () => {
-            localStorage.removeItem('bypro_user');
-            showLoginForm();
-            showStatus('Logged out successfully', 'success');
+            const id = userIdInput.value.trim();
+            const password = passwordInput.value.trim();
             
-            // مسح الحقول
-            userIdInput.value = '';
-            passwordInput.value = '';
-            qrFileInput.value = '';
+            if (!id) {
+                showStatus('Please enter your account ID', 'error');
+                userIdInput.focus();
+                return;
+            }
+            
+            if (!password) {
+                showStatus('Please enter your password', 'error');
+                passwordInput.focus();
+                return;
+            }
+            
+            verifyLogin(id, password);
         });
 
         // Allow Enter key in manual form
@@ -914,4 +891,3 @@
     </script>
 </body>
 </html>
-
