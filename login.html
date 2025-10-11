@@ -585,9 +585,9 @@
             
             // إعادة تحميل الصفحة بعد 5 ثواني
             setTimeout(() => {
-                console.log('🔄 Reloading page...');
-                window.location.reload();
-            }, 5000);
+			console.log('🔄 Refreshing page...');
+			window.location.href = window.location.href;
+			}, 5000);
         }
 
         // Show login form
