@@ -2,7 +2,6 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
-const { Resend } = require('resend');
 require('dotenv').config();
 
 const app = express();
@@ -30,54 +29,6 @@ app.use((req, res, next) => {
 });
 
 console.log('✅ Middleware initialized');
-
-// ==================== RESEND EMAIL SERVICE ====================
-console.log('📧 Setting up Resend email service...');
-
-const resend = new Resend('re_LV11ABfb_4WaAUuiyXpLqkyDchKmo6KEn');
-
-// دالة إرسال الإيميل
-async function sendVerificationEmail(toEmail, verificationCode) {
-  try {
-    console.log(`📧 Attempting to send email to: ${toEmail}`);
-    console.log(`📧 Verification code: ${verificationCode}`);
-    
-    const { data, error } = await resend.emails.send({
-      from: 'B.Y PRO Accounts <onboarding@resend.dev>',
-      to: [toEmail],
-      subject: 'B.Y PRO Accounts - Verification Code',
-      html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <h2 style="color: #3498db; text-align: center;">B.Y PRO Accounts</h2>
-          <div style="background: #f8f9fa; padding: 20px; border-radius: 10px;">
-            <h3 style="color: #2c3e50;">Verification Code</h3>
-            <p>Your verification code for B.Y PRO Accounts is:</p>
-            <div style="background: #3498db; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; border-radius: 5px; margin: 20px 0;">
-              ${verificationCode}
-            </div>
-            <p style="color: #7f8c8d; font-size: 14px;">
-              This code will expire in 10 minutes. If you didn't request this code, please ignore this email.
-            </p>
-          </div>
-          <p style="text-align: center; color: #95a5a6; margin-top: 20px;">
-            B.Y PRO Accounts Team
-          </p>
-        </div>
-      `
-    });
-
-    if (error) {
-      console.error('❌ Resend error:', error);
-      return { success: false, error: error.message };
-    }
-
-    console.log('✅ Email sent successfully via Resend');
-    return { success: true, data: data };
-  } catch (error) {
-    console.error('❌ Email sending failed:', error);
-    return { success: false, error: error.message };
-  }
-}
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
 const serviceAccount = {
@@ -179,14 +130,12 @@ async function writeCSVToDrive(fileId, accounts) {
   try {
     console.log(`📝 Writing ${accounts.length} accounts to Drive...`);
     
-    // تحويل المصفوفة إلى CSV
     const headers = ['id', 'ps', 'email', 'name', 'image'];
     const csvContent = [
       headers.join(','),
       ...accounts.map(account => headers.map(header => account[header] || '').join(','))
     ].join('\n');
 
-    // إنشاء media للرفع
     const media = {
       mimeType: 'text/csv',
       body: csvContent
@@ -282,10 +231,8 @@ async function addNewAccount(accountData) {
     const csvData = await readCSVFromDrive(FILE_ID);
     let accounts = parseCSVToAccounts(csvData);
     
-    // إضافة الحساب الجديد
     accounts.push(accountData);
     
-    // حفظ جميع الحسابات
     const saved = await saveAllAccounts(accounts);
     return saved;
   } catch (error) {
@@ -304,7 +251,6 @@ async function verifyAccountCredentials(id, password) {
     
     console.log(`🔍 Searching through ${accounts.length} accounts...`);
     
-    // البحث عن الحساب المطابق
     const account = accounts.find(acc => {
       const idMatch = acc.id && acc.id.toString() === id.toString();
       const passwordMatch = acc.ps && acc.ps === password;
@@ -493,12 +439,13 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
-// إرسال رمز التحقق عبر Resend
+// إرسال رمز التحقق
 app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
     
-    console.log(`📧 Sending verification code to: ${email}`);
+    console.log(`📧 EmailJS verification for: ${email}`);
+    console.log(`📧 Code: ${code}`);
     
     if (!email || !code) {
       return res.json({
@@ -507,7 +454,6 @@ app.post('/api/send-verification-email', async (req, res) => {
       });
     }
 
-    // التحقق من صيغة الإيميل
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(email)) {
       return res.json({
@@ -516,21 +462,14 @@ app.post('/api/send-verification-email', async (req, res) => {
       });
     }
 
-    const result = await sendVerificationEmail(email, code);
+    res.json({
+      success: true,
+      message: "Email sent successfully via EmailJS",
+      code: code
+    });
     
-    if (result.success) {
-      res.json({
-        success: true,
-        message: "Verification code sent successfully to your email"
-      });
-    } else {
-      res.json({
-        success: false,
-        error: "Failed to send verification email: " + result.error
-      });
-    }
   } catch (error) {
-    console.error('❌ Error sending verification email:', error.message);
+    console.error('❌ Error in send-verification-email:', error.message);
     res.json({
       success: false,
       error: "Server error: " + error.message
@@ -556,7 +495,7 @@ app.get('/api/health', async (req, res) => {
       status: 'ok',
       service: 'B.Y PRO Accounts Login',
       drive_status: driveStatus,
-      email_service: 'Resend',
+      email_service: 'EmailJS',
       timestamp: new Date().toISOString(),
       message: 'Server is running successfully!'
     });
@@ -599,6 +538,6 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🌐 Access your app:');
   console.log(`   Local: http://localhost:${PORT}`);
   console.log(`   Network: http://0.0.0.0:${PORT}`);
-  console.log('📧 Email service: Resend');
+  console.log('📧 Email service: EmailJS');
   console.log('🎉 =================================\n');
 });
