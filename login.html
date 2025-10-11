@@ -6,7 +6,6 @@
     <title>B.Y PRO Accounts - Login</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* نفس الأنماط السابقة - محفوظة */
         :root {
             --primary-color: #3498db;
             --primary-dark: #2980b9;
@@ -186,53 +185,6 @@
             text-align: center;
         }
 
-        .camera-container {
-            width: 100%;
-            max-width: 280px;
-            height: 280px;
-            margin: 0 auto 20px;
-            border: 3px solid var(--border-color);
-            border-radius: var(--border-radius);
-            overflow: hidden;
-            background: linear-gradient(135deg, #000000, #1a1a2e);
-            position: relative;
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-        }
-
-        #qr-video {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .camera-overlay {
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            border: 2px solid rgba(52, 152, 219, 0.5);
-            border-radius: var(--border-radius);
-        }
-
-        .scan-line {
-            position: absolute;
-            top: 20%;
-            left: 10%;
-            width: 80%;
-            height: 3px;
-            background: linear-gradient(90deg, transparent, var(--primary-color), transparent);
-            animation: scan 2s ease-in-out infinite;
-            border-radius: 3px;
-        }
-
-        @keyframes scan {
-            0% { top: 20%; opacity: 0; }
-            50% { opacity: 1; }
-            100% { top: 80%; opacity: 0; }
-        }
-
         .file-upload {
             margin: 20px 0;
         }
@@ -300,18 +252,26 @@
         }
 
         .user-avatar {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             margin: 0 auto 20px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2rem;
+            font-size: 3rem;
             color: white;
             box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
             border: 4px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+        }
+
+        .user-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
         }
 
         .logged-in-info h3 {
@@ -384,6 +344,39 @@
             to { transform: rotate(360deg); }
         }
 
+        .signup-section {
+            text-align: center;
+            margin-top: 25px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .signup-text {
+            color: var(--text-muted);
+            margin-bottom: 15px;
+            font-size: 0.9rem;
+        }
+
+        .signup-btn {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+        }
+
+        .signup-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
         /* تحسينات للتجاوب */
         @media (max-width: 768px) {
             .login-container {
@@ -402,15 +395,10 @@
                 font-size: 0.85rem;
             }
 
-            .camera-container {
-                max-width: 250px;
-                height: 250px;
-            }
-
             .user-avatar {
-                width: 80px;
-                height: 80px;
-                font-size: 1.5rem;
+                width: 100px;
+                height: 100px;
+                font-size: 2.5rem;
             }
 
             .logged-in-info h3 {
@@ -442,11 +430,6 @@
             .method-btn {
                 min-width: auto;
                 width: 100%;
-            }
-
-            .camera-container {
-                max-width: 220px;
-                height: 220px;
             }
 
             .form-group input {
@@ -482,12 +465,12 @@
 
         <!-- Logged In Info -->
         <div class="logged-in-info" id="loggedInInfo">
-            <div class="user-avatar pulse">
+            <div class="user-avatar" id="userAvatar">
                 <i class="fas fa-user-check"></i>
             </div>
-            <h3>Welcome, <span id="userName">User</span>!</h3>
-            <p>You are successfully logged in as</p>
-            <p><strong id="userId" style="color: var(--primary-color); font-size: 1.2rem;"></strong></p>
+            <h3>Welcome back, <span id="userName">User</span>!</h3>
+            <p>You are successfully logged in</p>
+            <p><strong id="userEmail" style="color: var(--primary-color); font-size: 1.1rem;"></strong></p>
             <button class="logout-btn" id="logoutBtn">
                 <i class="fas fa-sign-out-alt"></i> Logout
             </button>
@@ -507,14 +490,8 @@
             <!-- QR Code Login -->
             <div class="login-form active" id="qrForm">
                 <div class="qr-scanner">
-                    <div class="camera-container">
-                        <video id="qr-video" playsinline></video>
-                        <div class="camera-overlay">
-                            <div class="scan-line"></div>
-                        </div>
-                    </div>
                     <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">
-                        Point camera at QR code or upload image below
+                        Upload QR code image to login
                     </p>
                     
                     <div class="file-upload">
@@ -549,7 +526,7 @@
             <!-- Server Status -->
             <div style="text-align: center; margin-top: 20px;">
                 <small style="color: var(--text-muted);" id="serverStatus">
-                    <i class="fas fa-circle" style="color: var(--success-color);"></i> Checking server...
+                    <i class="fas fa-circle" style="color: var(--success-color);"></i> Server Connected
                 </small>
             </div>
 
@@ -560,6 +537,14 @@
                     ID: <code>1</code> | Password: <code>ABC123!?/</code><br>
                     ID: <code>2</code> | Password: <code>ABC123!?/</code>
                 </small>
+            </div>
+
+            <!-- Signup Section -->
+            <div class="signup-section">
+                <p class="signup-text">Don't have an account?</p>
+                <a href="https://yacine2007.github.io/secure-auth-app/signup.html" class="signup-btn">
+                    <i class="fas fa-user-plus"></i> Sign Up Now
+                </a>
             </div>
         </div>
     </div>
@@ -577,22 +562,20 @@
         const loginBtn = document.getElementById('loginBtn');
         const logoutBtn = document.getElementById('logoutBtn');
         const statusMessage = document.getElementById('statusMessage');
-        const qrVideo = document.getElementById('qr-video');
         const qrFileInput = document.getElementById('qr-file');
         const userIdInput = document.getElementById('userIdInput');
         const passwordInput = document.getElementById('passwordInput');
         const userNameSpan = document.getElementById('userName');
-        const userIdSpan = document.getElementById('userId');
+        const userEmailSpan = document.getElementById('userEmail');
+        const userAvatar = document.getElementById('userAvatar');
         const connectionStatus = document.getElementById('connectionStatus');
         const connectionText = document.getElementById('connectionText');
         const serverStatus = document.getElementById('serverStatus');
 
-        // Server Configuration - استخدام النطاق الحالي مباشرة
+        // Server Configuration
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
-        console.log('🌐 Detected API Base:', API_BASE);
 
         // Variables
-        let currentStream = null;
         let currentMethod = 'qr';
         let isOnline = false;
 
@@ -602,26 +585,53 @@
             if (userData) {
                 try {
                     const user = JSON.parse(userData);
+                    console.log('🔍 Found saved user data:', user);
+                    
+                    // تحميل البيانات في الحقول إذا كان في وضع التسجيل اليدوي
+                    if (user.id && user.password) {
+                        userIdInput.value = user.id;
+                        passwordInput.value = user.password;
+                    }
+                    
+                    // عرض حالة تسجيل الدخول
                     showLoggedInState(user);
+                    return true;
                 } catch (e) {
+                    console.error('❌ Error parsing saved user data:', e);
                     localStorage.removeItem('bypro_user');
                 }
             }
+            return false;
         }
 
         // Show logged in state
         function showLoggedInState(user) {
             loginSection.style.display = 'none';
             loggedInInfo.style.display = 'block';
-            userNameSpan.textContent = user.name || user.id;
-            userIdSpan.textContent = user.id;
+            userNameSpan.textContent = user.name || `User ${user.id}`;
+            userEmailSpan.textContent = user.email || `${user.id}@bypro.com`;
+            
+            // عرض صورة المستخدم إذا كانت موجودة
+            if (user.image) {
+                userAvatar.innerHTML = `<img src="${user.image}?t=${Date.now()}" alt="User Avatar" onerror="handleImageError(this)">`;
+            } else {
+                userAvatar.innerHTML = '<i class="fas fa-user-check"></i>';
+            }
+            
+            console.log('✅ User logged in:', user);
         }
 
         // Show login form
         function showLoginForm() {
             loginSection.style.display = 'block';
             loggedInInfo.style.display = 'none';
-            stopCamera();
+        }
+
+        // Handle image loading errors
+        function handleImageError(img) {
+            console.log('Image loading error, using default avatar');
+            const parent = img.parentElement;
+            parent.innerHTML = '<i class="fas fa-user-check"></i>';
         }
 
         // Update connection status
@@ -673,83 +683,12 @@
                 
                 if (currentMethod === 'qr') {
                     qrForm.classList.add('active');
-                    startCamera();
                 } else {
                     manualForm.classList.add('active');
-                    stopCamera();
                     setTimeout(() => userIdInput.focus(), 300);
                 }
             });
         });
-
-        // Start camera for QR scanning
-        async function startCamera() {
-            try {
-                stopCamera();
-                
-                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
-                    showStatus('Camera access not supported on this device', 'error');
-                    return;
-                }
-
-                const stream = await navigator.mediaDevices.getUserMedia({ 
-                    video: { 
-                        facingMode: "environment",
-                        width: { ideal: 1280 },
-                        height: { ideal: 720 }
-                    } 
-                });
-                
-                qrVideo.srcObject = stream;
-                currentStream = stream;
-                
-                await qrVideo.play();
-                scanQRCode();
-                
-            } catch (error) {
-                console.error('Error accessing camera:', error);
-                showStatus('Cannot access camera. Please upload QR image instead.', 'warning');
-            }
-        }
-
-        // Stop camera
-        function stopCamera() {
-            if (currentStream) {
-                currentStream.getTracks().forEach(track => {
-                    track.stop();
-                });
-                currentStream = null;
-            }
-        }
-
-        // Scan QR code from video stream
-        function scanQRCode() {
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            let scanning = true;
-            
-            function scan() {
-                if (!scanning) return;
-                
-                if (qrVideo.readyState === qrVideo.HAVE_ENOUGH_DATA) {
-                    canvas.width = qrVideo.videoWidth;
-                    canvas.height = qrVideo.videoHeight;
-                    context.drawImage(qrVideo, 0, 0, canvas.width, canvas.height);
-                    
-                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                    const code = jsQR(imageData.data, imageData.width, imageData.height);
-                    
-                    if (code) {
-                        scanning = false;
-                        processQRCode(code.data);
-                    }
-                }
-                if (scanning) {
-                    requestAnimationFrame(scan);
-                }
-            }
-            scan();
-        }
 
         // Process uploaded QR code image
         qrFileInput.addEventListener('change', (event) => {
@@ -771,7 +710,7 @@
                         context.drawImage(img, 0, 0);
                         
                         const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, imageData.height);
+                        const code = jsQR(imageData.data, imageData.width, canvas.height);
                         
                         if (code) {
                             processQRCode(code.data);
@@ -815,7 +754,7 @@
             }
         }
 
-        // Verify login credentials - الإصدار المحسّن
+        // Verify login credentials
         async function verifyLogin(id, password) {
             if (!id || !password) {
                 showStatus('ID and password are required', 'error');
@@ -833,7 +772,6 @@
                     method: 'GET',
                     headers: {
                         'Accept': 'application/json',
-                        'Content-Type': 'application/json'
                     },
                     mode: 'cors'
                 });
@@ -848,20 +786,41 @@
                 console.log('📦 Response data:', result);
 
                 if (result.success) {
+                    // الحصول على البيانات الكاملة للحساب
+                    const accountsResponse = await fetch(`${API_BASE}/api/debug/accounts`);
+                    const accountsData = await accountsResponse.json();
+                    
+                    let userImage = '';
+                    if (accountsData.success) {
+                        const account = accountsData.accounts.find(acc => acc.id === id);
+                        userImage = account?.image || '';
+                    }
+
+                    // حفظ بيانات المستخدم في localStorage
                     const userData = {
                         id: result.account.id,
                         name: result.account.name,
                         email: result.account.email,
-                        loginTime: new Date().toISOString()
+                        password: password, // حفظ الباسوورد للتسجيل التلقائي
+                        image: userImage,
+                        loginTime: new Date().toISOString(),
+                        lastLogin: new Date().toISOString()
                     };
+                    
                     localStorage.setItem('bypro_user', JSON.stringify(userData));
                     
                     showStatus('Login successful! Welcome to B.Y PRO', 'success');
                     updateConnectionStatus(true);
                     
+                    // عرض حالة تسجيل الدخول
+                    showLoggedInState(userData);
+                    
+                    // إعادة تحميل الصفحة بعد 5 ثواني
                     setTimeout(() => {
-                        showLoggedInState(userData);
-                    }, 1500);
+                        console.log('🔄 Reloading page...');
+                        window.location.reload();
+                    }, 5000);
+                    
                 } else {
                     showStatus(result.error || 'Login failed', 'error');
                 }
@@ -882,7 +841,7 @@
         // Manual login
         loginBtn.addEventListener('click', () => {
             if (currentMethod === 'qr') {
-                showStatus('Please scan QR code with camera or upload image', 'warning');
+                showStatus('Please upload QR code image', 'warning');
             } else {
                 const id = userIdInput.value.trim();
                 const password = passwordInput.value.trim();
@@ -909,6 +868,7 @@
             showLoginForm();
             showStatus('Logged out successfully', 'success');
             
+            // مسح الحقول
             userIdInput.value = '';
             passwordInput.value = '';
             qrFileInput.value = '';
@@ -928,7 +888,7 @@
             e.target.value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
         });
 
-        // Test server connection بشكل أفضل
+        // Test server connection
         async function testServerConnection() {
             try {
                 console.log('🔄 Testing server connection...');
@@ -953,33 +913,24 @@
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Initializing login page...');
-            checkLoginStatus();
             
-            // اختبار الاتصال فور التحميل
-            const connected = await testServerConnection();
-            if (connected) {
-                console.log('✅ Server is ready for login');
-            } else {
-                console.log('❌ Server connection failed');
+            // التحقق أولاً إذا كان المستخدم مسجلاً مسبقاً
+            const isLoggedIn = checkLoginStatus();
+            
+            if (!isLoggedIn) {
+                // اختبار الاتصال فقط إذا لم يكن مسجلاً
+                const connected = await testServerConnection();
+                if (connected) {
+                    console.log('✅ Server is ready for login');
+                } else {
+                    console.log('❌ Server connection failed');
+                }
             }
             
-            if (currentMethod === 'qr') {
-                startCamera();
+            // التركيز على حقل ID إذا كان في وضع التسجيل اليدوي
+            if (currentMethod === 'manual') {
+                setTimeout(() => userIdInput.focus(), 300);
             }
-        });
-
-        // Stop camera when page is hidden
-        document.addEventListener('visibilitychange', () => {
-            if (document.hidden) {
-                stopCamera();
-            } else if (currentMethod === 'qr') {
-                setTimeout(() => startCamera(), 300);
-            }
-        });
-
-        // Handle page unload
-        window.addEventListener('beforeunload', () => {
-            stopCamera();
         });
 
         // إضافة وظيفة لاختبار الاتصال يدوياً
