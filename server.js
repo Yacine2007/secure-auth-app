@@ -2,7 +2,6 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
-const nodemailer = require('nodemailer');
 require('dotenv').config();
 
 const app = express();
@@ -23,59 +22,12 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use(express.static(__dirname));
 
-// middleware لتسجيل جميع الطلبات
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.url}`);
   next();
 });
 
 console.log('✅ Middleware initialized');
-
-// ==================== EMAIL CONFIGURATION ====================
-console.log('📧 Setting up email services...');
-
-// إعداد الناقل البريدي مع خيارات متعددة
-const createTransporter = () => {
-  // الخيار 1: Gmail (الأسهل)
-  if (process.env.GMAIL_USER && process.env.GMAIL_PASS) {
-    console.log('📧 Using Gmail service');
-    return nodemailer.createTransporter({
-      service: 'gmail',
-      auth: {
-        user: process.env.GMAIL_USER,
-        pass: process.env.GMAIL_PASS
-      }
-    });
-  }
-  
-  // الخيار 2: SMTP عام
-  if (process.env.SMTP_HOST) {
-    console.log('📧 Using SMTP service');
-    return nodemailer.createTransporter({
-      host: process.env.SMTP_HOST,
-      port: process.env.SMTP_PORT || 587,
-      secure: false,
-      auth: {
-        user: process.env.SMTP_USER,
-        pass: process.env.SMTP_PASS
-      }
-    });
-  }
-
-  // الخيار 3: إعدادات افتراضية للاختبار
-  console.log('📧 Using test email service');
-  return nodemailer.createTransporter({
-    host: 'smtp.ethereal.email',
-    port: 587,
-    secure: false,
-    auth: {
-      user: 'test@ethereal.email',
-      pass: 'test'
-    }
-  });
-};
-
-const emailTransporter = createTransporter();
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
 const serviceAccount = {
@@ -330,91 +282,123 @@ async function verifyAccountCredentials(id, password) {
   }
 }
 
-// إرسال البريد الإلكتروني مع بدائل متعددة
+// إرسال البريد باستخدام Web3Forms (مجاني وسهل)
 async function sendVerificationEmail(email, code) {
-  const emailHtml = `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-            .container { background: white; padding: 30px; border-radius: 10px; max-width: 600px; margin: 0 auto; }
-            .header { background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; border-radius: 10px 10px 0 0; text-align: center; }
-            .code { font-size: 32px; font-weight: bold; color: #3498db; text-align: center; margin: 20px 0; letter-spacing: 5px; }
-            .footer { margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px; }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1>🔐 B.Y PRO Accounts</h1>
-                <p>Verification Code</p>
-            </div>
-            <h2>Hello!</h2>
-            <p>Your verification code for B.Y PRO Accounts is:</p>
-            <div class="code">${code}</div>
-            <p>This code will expire in 10 minutes.</p>
-            <div class="footer">
-                <p>If you didn't request this code, please ignore this email.</p>
-                <p>B.Y PRO Accounts Team</p>
-            </div>
-        </div>
-    </body>
-    </html>
-  `;
-
-  const mailOptions = {
-    from: process.env.EMAIL_FROM || 'noreply@bypro.com',
-    to: email,
-    subject: '🔐 B.Y PRO Verification Code',
-    html: emailHtml
-  };
-
   try {
-    console.log(`📧 Attempting to send email to: ${email}`);
+    console.log(`📧 Sending email via Web3Forms to: ${email}`);
     
-    // المحاولة الأولى: استخدام الناقل البريدي
-    if (emailTransporter) {
-      const info = await emailTransporter.sendMail(mailOptions);
-      console.log('✅ Email sent successfully via transporter');
-      return { success: true, method: 'transporter', info: info };
+    const emailData = {
+      apikey: "fd1pg7b8xf73pm", // سنحصل عليه مجاناً
+      subject: "🔐 B.Y PRO Verification Code",
+      from_name: "B.Y PRO Accounts",
+      email: email,
+      message: `
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f4f4f4;">
+          <div style="background: white; padding: 30px; border-radius: 10px; text-align: center;">
+            <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; border-radius: 10px 10px 0 0;">
+              <h1>🔐 B.Y PRO Accounts</h1>
+              <p>Verification Code</p>
+            </div>
+            <h2 style="color: #2c3e50; margin-top: 20px;">Hello!</h2>
+            <p style="color: #546e7a; font-size: 16px;">Your verification code for B.Y PRO Accounts is:</p>
+            <div style="font-size: 32px; font-weight: bold; color: #3498db; letter-spacing: 5px; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 2px dashed #3498db;">
+              ${code}
+            </div>
+            <p style="color: #546e7a; font-size: 14px;">This code will expire in 10 minutes.</p>
+            <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid #ddd; color: #666; font-size: 12px;">
+              <p>If you didn't request this code, please ignore this email.</p>
+              <p><strong>B.Y PRO Accounts Team</strong></p>
+            </div>
+          </div>
+        </div>
+      `
+    };
+
+    // استخدام Web3Forms API
+    const response = await fetch('https://api.web3forms.com/submit', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(emailData)
+    });
+
+    const result = await response.json();
+    
+    if (result.success) {
+      console.log('✅ Email sent successfully via Web3Forms');
+      return { success: true, method: 'web3forms' };
+    } else {
+      throw new Error(result.message || 'Web3Forms failed');
     }
     
-    throw new Error('No email transporter available');
-    
   } catch (error) {
-    console.error('❌ Email sending failed:', error.message);
+    console.error('❌ Web3Forms failed:', error.message);
     
-    // المحاولة الثانية: استخدام خدمة خارجية
+    // المحاولة الثانية: استخدام Formspree (بديل مجاني)
     try {
-      await sendViaExternalService(email, code);
-      return { success: true, method: 'external' };
-    } catch (externalError) {
-      console.error('❌ External email service failed:', externalError.message);
+      await sendViaFormspree(email, code);
+      return { success: true, method: 'formspree' };
+    } catch (formspreeError) {
+      console.error('❌ Formspree failed:', formspreeError.message);
       
-      // المحاولة الثالثة: استخدام webhook بسيط
+      // المحاولة الثالثة: استخدام FormSubmit (بديل مجاني)
       try {
-        await sendViaWebhook(email, code);
-        return { success: true, method: 'webhook' };
-      } catch (webhookError) {
-        console.error('❌ Webhook email failed:', webhookError.message);
+        await sendViaFormSubmit(email, code);
+        return { success: true, method: 'formsubmit' };
+      } catch (formsubmitError) {
+        console.error('❌ All email services failed');
         return { 
           success: false, 
           error: 'All email methods failed',
-          code: code // إرجاع الرمز لعرضه للمستخدم
+          code: code
         };
       }
     }
   }
 }
 
-// خدمة بريد خارجية (FormSubmit)
-async function sendViaExternalService(email, code) {
+// بديل Formspree
+async function sendViaFormspree(email, code) {
   const formData = new FormData();
   formData.append('_replyto', email);
   formData.append('_subject', 'B.Y PRO Verification Code');
-  formData.append('message', `Verification Code: ${code}\n\nEmail: ${email}\n\nThis is an automated message from B.Y PRO Accounts.`);
+  formData.append('message', `
+    B.Y PRO Verification Code
+    
+    Email: ${email}
+    Verification Code: ${code}
+    
+    This code will expire in 10 minutes.
+    
+    If you didn't request this code, please ignore this email.
+    
+    B.Y PRO Accounts Team
+  `);
+
+  const response = await fetch('https://formspree.io/f/xvojnzqw', { // استبدل ب Formspree ID خاص بك
+    method: 'POST',
+    body: formData,
+    headers: {
+      'Accept': 'application/json'
+    }
+  });
+
+  if (!response.ok) {
+    throw new Error('Formspree failed');
+  }
+
+  console.log('✅ Email sent via Formspree');
+  return true;
+}
+
+// بديل FormSubmit
+async function sendViaFormSubmit(email, code) {
+  const formData = new FormData();
+  formData.append('email', email);
+  formData.append('code', code);
+  formData.append('subject', 'B.Y PRO Verification Code');
+  formData.append('message', `Your verification code is: ${code}`);
   
   const response = await fetch('https://formsubmit.co/ajax/byprosprt2007@gmail.com', {
     method: 'POST',
@@ -426,36 +410,6 @@ async function sendViaExternalService(email, code) {
   }
   
   console.log('✅ Email sent via FormSubmit');
-  return true;
-}
-
-// webhook احتياطي
-async function sendViaWebhook(email, code) {
-  const webhookData = {
-    email: email,
-    code: code,
-    timestamp: new Date().toISOString(),
-    service: 'B.Y PRO Accounts'
-  };
-  
-  // يمكن إضافة webhooks أخرى هنا
-  const webhooks = [
-    'https://webhook.site/YOUR_WEBHOOK_ID'
-  ];
-  
-  for (const webhookUrl of webhooks) {
-    try {
-      await fetch(webhookUrl, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(webhookData)
-      });
-    } catch (error) {
-      console.log(`Webhook ${webhookUrl} failed:`, error.message);
-    }
-  }
-  
-  console.log('✅ Webhook notification sent');
   return true;
 }
 
@@ -615,7 +569,7 @@ app.post('/api/upload-image', async (req, res) => {
   }
 });
 
-// إرسال رمز التحقق مع بدائل متعددة
+// إرسال رمز التحقق
 app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -648,7 +602,6 @@ app.post('/api/send-verification-email', async (req, res) => {
         code: code
       });
     } else {
-      // إذا فشلت جميع الطرق، نعيد الرمز للعرض في الواجهة
       res.json({
         success: false,
         error: "Failed to send email, but you can use this code:",
@@ -662,7 +615,7 @@ app.post('/api/send-verification-email', async (req, res) => {
     res.json({
       success: false,
       error: "Server error: " + error.message,
-      code: req.body.code // إرجاع الرمز للعرض
+      code: req.body.code
     });
   }
 });
@@ -671,7 +624,6 @@ app.post('/api/send-verification-email', async (req, res) => {
 app.get('/api/health', async (req, res) => {
   try {
     let driveStatus = 'disconnected';
-    let emailStatus = 'not configured';
     
     if (driveService) {
       try {
@@ -682,16 +634,11 @@ app.get('/api/health', async (req, res) => {
       }
     }
     
-    // اختبار خدمة البريد
-    if (process.env.GMAIL_USER || process.env.SMTP_HOST) {
-      emailStatus = 'configured';
-    }
-    
     res.json({ 
       status: 'ok',
       service: 'B.Y PRO Accounts Login',
       drive_status: driveStatus,
-      email_service: emailStatus,
+      email_service: 'Web3Forms + Fallbacks',
       timestamp: new Date().toISOString(),
       message: 'Server is running successfully!'
     });
@@ -734,6 +681,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🌐 Access your app:');
   console.log(`   Local: http://localhost:${PORT}`);
   console.log(`   Network: http://0.0.0.0:${PORT}`);
-  console.log('📧 Email service: Multi-provider with fallbacks');
+  console.log('📧 Email service: Web3Forms + Multiple Fallbacks');
+  console.log('🔑 To get free API key: https://web3forms.com');
   console.log('🎉 =================================\n');
 });
