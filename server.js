@@ -3,6 +3,7 @@ const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const { Resend } = require('resend');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -30,141 +31,190 @@ app.use((req, res, next) => {
 
 console.log('✅ Middleware initialized');
 
-// ==================== ENHANCED GMAIL SMTP CONFIGURATION ====================
-console.log('📧 Setting up Gmail SMTP service...');
+// ==================== RESEND EMAIL SERVICE ====================
+console.log('📧 Setting up Resend Email Service...');
 
-let emailTransporter = null;
-let smtpStatus = 'disconnected';
+// Initialize Resend with your API Key
+const resend = new Resend('re_3qMCBtPH_GTnpkHaZfXyRTuTUPfbDAobg');
 
-const initializeEmailService = async () => {
+let emailServiceStatus = 'disconnected';
+
+// Test email connection on startup
+async function initializeEmailService() {
   try {
-    console.log('🔧 Initializing SMTP transporter...');
+    console.log('🔧 Testing Resend connection...');
     
-    const smtpConfig = {
-      service: 'gmail',
-      auth: {
-        user: process.env.EMAIL_USER || 'byprosprt2007@gmail.com',
-        pass: process.env.EMAIL_PASSWORD || 'bwau grcq jivh bvri'
-      },
-      pool: true,
-      maxConnections: 5,
-      maxMessages: 100
-    };
+    // Send a test email to verify connection (won't actually send to invalid email)
+    const { data, error } = await resend.emails.send({
+      from: 'B.Y PRO <onboarding@resend.dev>',
+      to: ['verify@bypro.com'],
+      subject: 'Resend Service Active',
+      html: '<p>B.Y PRO Email Service is ready!</p>'
+    });
 
-    emailTransporter = nodemailer.createTransport(smtpConfig);
+    if (error) {
+      if (error.message.includes('Invalid email')) {
+        // This is expected since we're using a test email
+        console.log('✅ Resend API is responding correctly');
+        emailServiceStatus = 'connected';
+        return true;
+      }
+      throw error;
+    }
 
-    // Verify connection
-    await emailTransporter.verify();
-    smtpStatus = 'connected';
-    console.log('✅ SMTP Server is ready to send emails');
-    
+    emailServiceStatus = 'connected';
+    console.log('✅ Resend Email Service initialized successfully');
     return true;
   } catch (error) {
-    console.error('❌ SMTP Connection Failed:', error.message);
-    smtpStatus = 'error';
-    emailTransporter = null;
+    console.error('❌ Resend connection failed:', error.message);
+    emailServiceStatus = 'error';
     return false;
   }
-};
+}
 
-// Initialize email service on startup
+// Initialize email service
 initializeEmailService();
 
-// Enhanced email sending with retry logic
+// Enhanced email sending with Resend
 async function sendVerificationEmail(userEmail, code) {
-  if (!emailTransporter || smtpStatus !== 'connected') {
-    console.error('❌ SMTP transporter not available');
+  if (emailServiceStatus !== 'connected') {
+    console.log('🔄 Re-initializing email service...');
+    await initializeEmailService();
+  }
+
+  try {
+    console.log(`📧 Sending verification email to: ${userEmail}`);
+    console.log(`🔑 Verification code: ${code}`);
+
+    const { data, error } = await resend.emails.send({
+      from: 'B.Y PRO <onboarding@resend.dev>',
+      to: [userEmail],
+      subject: '🔐 B.Y PRO Verification Code',
+      html: generateEmailTemplate(code, userEmail)
+    });
+
+    if (error) {
+      console.error('❌ Resend API Error:', error);
+      throw error;
+    }
+
+    console.log('✅ Email sent successfully via Resend!');
+    console.log('📧 Email ID:', data.id);
+    
+    return { 
+      success: true, 
+      method: 'resend', 
+      messageId: data.id,
+      email: userEmail
+    };
+      
+  } catch (error) {
+    console.error('❌ Email sending failed:', error.message);
+    
     return { 
       success: false, 
-      error: 'Email service is temporarily unavailable. Please try again later.',
+      error: 'Unable to send verification email. Please try again in a few moments.',
       retryable: true
     };
   }
+}
 
-  const maxRetries = 2;
-  let retryCount = 0;
-
-  while (retryCount <= maxRetries) {
-    try {
-      console.log(`📧 Attempting to send email to: ${userEmail} (Attempt ${retryCount + 1})`);
-
-      const mailOptions = {
-        from: '"B.Y PRO Accounts" <byprosprt2007@gmail.com>',
-        to: userEmail,
-        subject: '🔐 B.Y PRO Verification Code',
-        html: `
-          <!DOCTYPE html>
-          <html>
-          <head>
-              <meta charset="utf-8">
-              <style>
-                  body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-                  .container { background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                  .header { background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 30px; border-radius: 15px 15px 0 0; text-align: center; margin: -40px -40px 30px -40px; }
-                  .code { font-size: 42px; font-weight: bold; color: #3498db; text-align: center; margin: 30px 0; letter-spacing: 8px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 3px dashed #3498db; }
-              </style>
-          </head>
-          <body>
-              <div class="container">
-                  <div class="header">
-                      <h1 style="margin: 0; font-size: 28px;">B.Y PRO Accounts</h1>
-                      <p style="margin: 10px 0 0; opacity: 0.9;">Verification Code</p>
-                  </div>
-                  
-                  <h2 style="color: #2c3e50; text-align: center;">Hello!</h2>
-                  <p style="color: #546e7a; text-align: center; font-size: 16px;">
-                      Your verification code is:
-                  </p>
-                  
-                  <div class="code">${code}</div>
-                  
-                  <p style="color: #546e7a; text-align: center; font-size: 14px;">
-                      ⏰ This code will expire in 10 minutes.
-                  </p>
-                  
-                  <div style="background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 10px; padding: 15px; margin: 20px 0;">
-                      <p style="color: #856404; margin: 0; text-align: center;">
-                          🔒 Security Notice: If you didn't request this code, please ignore this email.
-                      </p>
-                  </div>
-                  
-                  <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e3f2fd; color: #666; text-align: center;">
-                      <p style="margin: 5px 0;"><strong>B.Y PRO Accounts Team</strong></p>
-                      <p style="margin: 5px 0; font-size: 14px;">Secure • Professional • Reliable</p>
-                  </div>
-              </div>
-          </body>
-          </html>
-        `
-      };
-
-      const info = await emailTransporter.sendMail(mailOptions);
-      
-      console.log('✅ Email sent successfully!');
-      console.log('📧 Message ID:', info.messageId);
-      
-      return { 
-        success: true, 
-        method: 'gmail_smtp', 
-        messageId: info.messageId
-      };
-      
-    } catch (error) {
-      retryCount++;
-      console.error(`❌ Email sending failed (Attempt ${retryCount}):`, error.message);
-      
-      if (retryCount <= maxRetries) {
-        console.log(`🔄 Retrying... (${retryCount}/${maxRetries})`);
-        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
-      } else {
-        return { 
-          success: false, 
-          error: 'Unable to send verification email. Please try again in a few minutes.',
-          retryable: false
-        };
-      }
-    }
-  }
+function generateEmailTemplate(code, userEmail) {
+  return `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <meta charset="utf-8">
+        <style>
+            body { 
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                margin: 0;
+                padding: 20px;
+            }
+            .container { 
+                background: white; 
+                padding: 40px; 
+                border-radius: 20px; 
+                max-width: 600px; 
+                margin: 0 auto; 
+                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+                border: 1px solid #e0e0e0;
+            }
+            .header { 
+                background: linear-gradient(135deg, #3498db, #2980b9); 
+                color: white; 
+                padding: 40px; 
+                border-radius: 15px 15px 0 0; 
+                text-align: center; 
+                margin: -40px -40px 40px -40px; 
+            }
+            .code { 
+                font-size: 48px; 
+                font-weight: bold; 
+                color: #2c3e50; 
+                text-align: center; 
+                margin: 40px 0; 
+                letter-spacing: 12px; 
+                padding: 30px; 
+                background: #f8f9fa; 
+                border-radius: 15px; 
+                border: 3px dashed #3498db;
+                font-family: 'Courier New', monospace;
+            }
+            .footer {
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 2px solid #ecf0f1;
+                color: #7f8c8d;
+                text-align: center;
+                font-size: 14px;
+            }
+            .security-notice {
+                background: #fff3cd;
+                border: 2px solid #ffeaa7;
+                border-radius: 10px;
+                padding: 20px;
+                margin: 20px 0;
+                text-align: center;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1 style="margin: 0; font-size: 32px; font-weight: 700;">B.Y PRO Accounts</h1>
+                <p style="margin: 10px 0 0; opacity: 0.9; font-size: 16px;">Secure Verification System</p>
+            </div>
+            
+            <h2 style="color: #2c3e50; text-align: center; margin-bottom: 10px;">Hello!</h2>
+            <p style="color: #546e7a; text-align: center; font-size: 16px; line-height: 1.6;">
+                Thank you for choosing B.Y PRO. Your verification code is:
+            </p>
+            
+            <div class="code">${code}</div>
+            
+            <p style="color: #546e7a; text-align: center; font-size: 14px; margin: 20px 0;">
+                ⏰ This code will expire in 10 minutes.
+            </p>
+            
+            <div class="security-notice">
+                <p style="color: #856404; margin: 0; text-align: center; font-weight: 500;">
+                    🔒 Security Notice: If you didn't request this code, please ignore this email.
+                </p>
+            </div>
+            
+            <div class="footer">
+                <p style="margin: 5px 0;"><strong>B.Y PRO Accounts Team</strong></p>
+                <p style="margin: 5px 0; font-size: 14px;">Secure • Professional • Reliable</p>
+                <p style="margin: 10px 0 0; font-size: 12px; color: #bdc3c7;">
+                    This email was sent to ${userEmail}
+                </p>
+            </div>
+        </div>
+    </body>
+    </html>
+  `;
 }
 
 // ==================== ENHANCED GOOGLE DRIVE CONFIGURATION ====================
@@ -494,7 +544,7 @@ app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
     
-    console.log(`📧 API Request - To: ${email}`);
+    console.log(`📧 API Request - To: ${email}, Code: ${code}`);
     
     if (!email || !code) {
       return res.status(400).json({
@@ -594,7 +644,7 @@ app.post('/api/accounts', async (req, res) => {
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   // Recheck email service status
-  if (smtpStatus !== 'connected') {
+  if (emailServiceStatus !== 'connected') {
     await initializeEmailService();
   }
   
@@ -614,10 +664,11 @@ app.get('/api/health', async (req, res) => {
     service: 'B.Y PRO Accounts Management System',
     timestamp: new Date().toISOString(),
     services: {
-      email: smtpStatus,
+      email: emailServiceStatus,
       database: driveStatus
     },
-    version: '2.2.0'
+    version: '2.3.0',
+    email_provider: 'Resend'
   });
 });
 
@@ -664,17 +715,11 @@ const autoHealthCheck = () => {
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
   console.log('🔄 Received SIGTERM, shutting down gracefully...');
-  if (emailTransporter) {
-    emailTransporter.close();
-  }
   process.exit(0);
 });
 
 process.on('SIGINT', () => {
   console.log('🔄 Received SIGINT, shutting down gracefully...');
-  if (emailTransporter) {
-    emailTransporter.close();
-  }
   process.exit(0);
 });
 
@@ -685,11 +730,11 @@ autoHealthCheck();
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS - ENHANCED PRODUCTION');
+  console.log('🚀 B.Y PRO ACCOUNTS - PRODUCTION READY');
   console.log('✅ Server started successfully!');
   console.log(`🔗 Port: ${PORT}`);
-  console.log('📧 Email: Gmail SMTP with Retry Logic');
-  console.log('💾 Database: Google Drive with Error Handling');
+  console.log('📧 Email: Resend Service (100 emails/day)');
+  console.log('💾 Database: Google Drive');
   console.log('🔐 Auth: QR Code + Password');
   console.log('🛡️  Enhanced Error Handling: Active');
   console.log('❤️  Keep-alive: Active');
