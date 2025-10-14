@@ -1021,6 +1021,7 @@ async function sendVerificationCode() {
             // استخدام EmailJS لإرسال البريد
             const templateParams = {
                 to_email: emailValue,
+                email: emailValue,  // أضف هذا كبديل
                 code: generatedCode,
                 timestamp: new Date().toLocaleString(),
                 expiry_time: new Date(Date.now() + 10 * 60 * 1000).toLocaleString(),
@@ -1434,6 +1435,7 @@ async function sendVerificationCode() {
     </script>
 </body>
 </html>
+
 
 
 
