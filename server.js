@@ -361,30 +361,133 @@ app.get('/style.css', (req, res) => {
 app.get('/qrcode.min.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`
-    // Minimal QR Code implementation for B.Y PRO Accounts
-    window.QRCode = {
-      toCanvas: function(canvas, text, options, callback) {
-        try {
-          const ctx = canvas.getContext('2d');
-          ctx.fillStyle = options.color.light || '#FFFFFF';
-          ctx.fillRect(0, 0, canvas.width, canvas.height);
-          
-          // Simple QR code simulation
-          ctx.fillStyle = options.color.dark || '#000000';
-          ctx.font = '10px Arial';
-          ctx.fillText('B.Y PRO QR', 10, 50);
-          ctx.fillText('ID: ' + text.split(':')[1], 10, 70);
-          
-          if (callback) callback(null);
-        } catch (error) {
-          if (callback) callback(error);
+    // QR Code Generator for B.Y PRO Accounts
+    (function(){
+      window.QRCode = {
+        toCanvas: function(canvas, text, options, callback) {
+          try {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            // Clear canvas
+            ctx.fillStyle = options.color.light || '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            
+            // Draw QR code background
+            ctx.fillStyle = options.color.dark || '#000000';
+            
+            // Simple QR pattern simulation
+            const size = 8;
+            const cols = Math.floor(width / size);
+            const rows = Math.floor(height / size);
+            
+            // Generate deterministic pattern based on text
+            let hash = 0;
+            for (let i = 0; i < text.length; i++) {
+              hash = text.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            for (let row = 0; row < rows; row++) {
+              for (let col = 0; col < cols; col++) {
+                if ((row * col + hash) % 3 === 0) {
+                  ctx.fillRect(col * size, row * size, size - 1, size - 1);
+                }
+              }
+            }
+            
+            // Add text overlay
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('B.Y PRO', width / 2, height - 20);
+            
+            if (callback) callback(null);
+          } catch (error) {
+            if (callback) callback(error);
+          }
         }
-      }
-    };
+      };
+    })();
   `);
 });
 
-// Enhanced API Routes with better error handling
+// ==================== API ROUTES ====================
+
+// Account verification route
+app.get('/api/verify-account', async (req, res) => {
+  try {
+    const { id, password } = req.query;
+    
+    console.log(`🔐 Login attempt - ID: ${id}`);
+    
+    if (!id || !password) {
+      return res.json({ 
+        success: false, 
+        error: "ID and password are required" 
+      });
+    }
+
+    const result = await verifyAccountCredentials(id, password);
+    res.json(result);
+    
+  } catch (error) {
+    console.error('❌ Server error in verify-account:', error.message);
+    res.json({ 
+      success: false, 
+      error: "Authentication service unavailable" 
+    });
+  }
+});
+
+// Debug route to view all accounts
+app.get('/api/debug/accounts', async (req, res) => {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    res.json({
+      success: true,
+      count: accounts.length,
+      accounts: accounts
+    });
+  } catch (error) {
+    res.json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Upload image route
+app.post('/api/upload-image', async (req, res) => {
+  try {
+    const { accountId, imageData } = req.body;
+    
+    console.log(`🖼️ Uploading image for account: ${accountId}`);
+    
+    if (!accountId) {
+      return res.json({
+        success: false,
+        error: "Account ID is required"
+      });
+    }
+
+    // In a real implementation, you would upload to GitHub or cloud storage
+    const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
+    
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      message: "Image upload simulated successfully"
+    });
+  } catch (error) {
+    console.error('❌ Error uploading image:', error.message);
+    res.json({
+      success: false,
+      error: "Image service temporarily unavailable"
+    });
+  }
+});
 
 // Send verification email
 app.post('/api/send-verification-email', async (req, res) => {
@@ -514,7 +617,7 @@ app.get('/api/health', async (req, res) => {
       email: smtpStatus,
       database: driveStatus
     },
-    version: '2.1.0'
+    version: '2.2.0'
   });
 });
 
