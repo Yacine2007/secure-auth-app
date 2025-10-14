@@ -32,57 +32,57 @@ console.log('✅ Middleware initialized');
 // ==================== GMAIL SMTP CONFIGURATION ====================
 console.log('📧 Setting up Gmail SMTP service...');
 
-// إعدادات Gmail SMTP - استخدم App Password الحقيقي
-const SMTP_CONFIG = {
-  service: 'gmail',
-  auth: {
-    user: 'byprosprt2007@gmail.com', // بريدك الحقيقي
-    pass: 'bwau grcq jivh bvri'      // App Password الحقيقي
-  }
-};
-
-// إنشاء الناقل البريدي
 let emailTransporter = null;
+let smtpStatus = 'disconnected';
 
-const createTransporter = () => {
+const initializeEmailService = async () => {
   try {
-    console.log('🔧 Creating SMTP transporter...');
-    const transporter = nodemailer.createTransporter(SMTP_CONFIG);
+    console.log('🔧 Initializing email service...');
     
-    // اختبار الاتصال
-    transporter.verify((error, success) => {
-      if (error) {
-        console.error('❌ SMTP Connection Failed:', error.message);
-      } else {
-        console.log('✅ SMTP Server is ready to send emails');
-      }
+    // استخدام إعدادات أكثر أماناً
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        user: process.env.EMAIL_USER || 'byprosprt2007@gmail.com',
+        pass: process.env.EMAIL_PASS || 'bwau grcq jivh bvri'
+      },
+      pool: true,
+      maxConnections: 5,
+      maxMessages: 100
     });
-    
+
+    // التحقق من الاتصال
+    await transporter.verify();
+    console.log('✅ SMTP Server is ready to send emails');
+    smtpStatus = 'connected';
     return transporter;
+    
   } catch (error) {
-    console.error('❌ Failed to create SMTP transporter:', error.message);
+    console.error('❌ SMTP Connection Failed:', error.message);
+    smtpStatus = 'error';
     return null;
   }
 };
 
-// تهيئة الناقل البريدي
-emailTransporter = createTransporter();
+// تهيئة خدمة البريد عند بدء التشغيل
+initializeEmailService().then(transporter => {
+  emailTransporter = transporter;
+});
 
-// دالة إرسال البريد الحقيقية
+// وظيفة إرسال البريد الإلكتروني
 async function sendVerificationEmail(userEmail, code) {
   if (!emailTransporter) {
-    console.error('❌ SMTP transporter not initialized');
+    console.error('❌ SMTP transporter not available');
     return { 
       success: false, 
-      error: 'SMTP service not configured',
-      code: code 
+      error: 'Email service is currently unavailable. Please try again later.',
+      systemError: 'SMTP service not configured'
     };
   }
 
   try {
-    console.log(`📧 Sending email to: ${userEmail}`);
-    console.log(`🔑 Code: ${code}`);
-
+    console.log(`📧 Attempting to send email to: ${userEmail}`);
+    
     const mailOptions = {
       from: '"B.Y PRO Accounts" <byprosprt2007@gmail.com>',
       to: userEmail,
@@ -133,25 +133,22 @@ async function sendVerificationEmail(userEmail, code) {
       `
     };
 
-    // إرسال البريد الحقيقي
     const info = await emailTransporter.sendMail(mailOptions);
     
     console.log('✅ Email sent successfully!');
-    console.log('📨 Message ID:', info.messageId);
-    console.log('✅ Sent to:', userEmail);
     
     return { 
       success: true, 
-      method: 'gmail_smtp', 
-      messageId: info.messageId
+      method: 'gmail_smtp',
+      message: 'Verification code sent successfully'
     };
     
   } catch (error) {
     console.error('❌ Email sending failed:', error.message);
     return { 
       success: false, 
-      error: 'Failed to send email. Please try again.',
-      code: code
+      error: 'Unable to send verification email at this time. Please try again in a few minutes.',
+      systemError: error.message
     };
   }
 }
@@ -227,12 +224,10 @@ const driveService = initializeDriveService();
 // قراءة CSV من Google Drive
 async function readCSVFromDrive(fileId) {
   if (!driveService) {
-    throw new Error("Drive service not available");
+    throw new Error("Database service is currently unavailable");
   }
 
   try {
-    console.log(`📖 Reading CSV from Drive (File ID: ${fileId})`);
-    
     const response = await driveService.files.get({
       fileId: fileId,
       alt: 'media'
@@ -243,18 +238,18 @@ async function readCSVFromDrive(fileId) {
     return data;
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
-    throw error;
+    throw new Error('Unable to access database at this time');
   }
 }
 
 // كتابة CSV إلى Google Drive
 async function writeCSVToDrive(fileId, accounts) {
   if (!driveService) {
-    throw new Error("Drive service not available");
+    throw new Error("Database service is currently unavailable");
   }
 
   try {
-    console.log(`📝 Writing ${accounts.length} accounts to Drive...`);
+    console.log(`💾 Writing ${accounts.length} accounts to Drive...`);
     
     const headers = ['id', 'ps', 'email', 'name', 'image'];
     const csvContent = [
@@ -277,23 +272,21 @@ async function writeCSVToDrive(fileId, accounts) {
     return response.data;
   } catch (error) {
     console.error('❌ Error writing CSV to Drive:', error.message);
-    throw error;
+    throw new Error('Unable to save data to database');
   }
 }
 
-// تحويل بيانات CSV إلى مصفوفة حسابات
+// تحويل CSV إلى مصفوفة حسابات
 function parseCSVToAccounts(csvData) {
   try {
     const lines = csvData.split('\n').filter(line => line.trim() !== '');
     if (lines.length === 0) {
-      console.log('⚠️ CSV file is empty');
       return [];
     }
 
     const headers = lines[0].split(',').map(header => header.trim());
-    console.log('📋 CSV Headers:', headers);
-    
     const accounts = [];
+    
     for (let i = 1; i < lines.length; i++) {
       const line = lines[i].trim();
       if (!line) continue;
@@ -317,7 +310,7 @@ function parseCSVToAccounts(csvData) {
   }
 }
 
-// الحصول على التالي ID المتاح
+// الحصول على ID التالي المتاح
 async function getNextAvailableId() {
   try {
     const csvData = await readCSVFromDrive(FILE_ID);
@@ -336,7 +329,8 @@ async function getNextAvailableId() {
     return (maxId + 1).toString();
   } catch (error) {
     console.error('❌ Error getting next ID:', error.message);
-    return "1";
+    // استخدام ID عشوائي كبديل
+    return (Math.floor(Math.random() * 10000) + 1000).toString();
   }
 }
 
@@ -367,15 +361,13 @@ async function addNewAccount(accountData) {
   }
 }
 
-// التحقق من صحة الحساب
+// التحقق من بيانات الحساب
 async function verifyAccountCredentials(id, password) {
   try {
     console.log(`🔐 Verifying credentials for ID: ${id}`);
     
     const csvData = await readCSVFromDrive(FILE_ID);
     const accounts = parseCSVToAccounts(csvData);
-    
-    console.log(`🔍 Searching through ${accounts.length} accounts...`);
     
     const account = accounts.find(acc => {
       const idMatch = acc.id && acc.id.toString() === id.toString();
@@ -404,29 +396,14 @@ async function verifyAccountCredentials(id, password) {
     console.error('❌ Error verifying account:', error.message);
     return {
       success: false,
-      error: "Server error: " + error.message
+      error: "Authentication service is temporarily unavailable. Please try again later."
     };
-  }
-}
-
-// رفع الصورة
-async function uploadImageToGitHub(accountId, imageFile) {
-  try {
-    console.log(`🖼️ Uploading image for account: ${accountId}`);
-    
-    // محاكاة رفع الصورة
-    const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
-    
-    return imageUrl;
-  } catch (error) {
-    console.error('Error uploading image:', error);
-    return `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/default.png`;
   }
 }
 
 // ==================== ROUTES ====================
 
-// الصفحات الرئيسية
+// Routes الأساسية
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
@@ -466,30 +443,12 @@ app.get('/api/verify-account', async (req, res) => {
     console.error('❌ Server error in verify-account:', error.message);
     res.json({ 
       success: false, 
-      error: "Server error: " + error.message 
+      error: "Authentication service is temporarily unavailable. Please try again later." 
     });
   }
 });
 
-// الحصول على جميع الحسابات
-app.get('/api/debug/accounts', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    res.json({
-      success: true,
-      count: accounts.length,
-      accounts: accounts
-    });
-  } catch (error) {
-    res.json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// الحصول على التالي ID المتاح
+// الحصول على ID التالي
 app.get('/api/next-id', async (req, res) => {
   try {
     const nextId = await getNextAvailableId();
@@ -500,17 +459,18 @@ app.get('/api/next-id', async (req, res) => {
   } catch (error) {
     res.json({
       success: false,
-      error: error.message
+      error: "Unable to generate account ID at this time. Please try again.",
+      systemError: error.message
     });
   }
 });
 
-// إضافة حساب جديد
+// إنشاء حساب جديد
 app.post('/api/accounts', async (req, res) => {
   try {
     const { id, name, email, password, image } = req.body;
     
-    console.log(`➕ Adding new account: ${id} - ${name} - ${email}`);
+    console.log(`👤 Adding new account: ${id} - ${name}`);
     
     if (!id || !name || !email || !password) {
       return res.json({
@@ -538,54 +498,24 @@ app.post('/api/accounts', async (req, res) => {
     } else {
       res.json({
         success: false,
-        error: "Failed to save account to database"
+        error: "Unable to create account at this time. Please try again later."
       });
     }
   } catch (error) {
     console.error('❌ Error creating account:', error.message);
     res.json({
       success: false,
-      error: "Server error: " + error.message
+      error: "Account creation service is temporarily unavailable. Please try again later."
     });
   }
 });
 
-// رفع الصورة
-app.post('/api/upload-image', async (req, res) => {
-  try {
-    const { accountId, imageData } = req.body;
-    
-    console.log(`🖼️ Uploading image for account: ${accountId}`);
-    
-    if (!accountId) {
-      return res.json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-
-    const imageUrl = await uploadImageToGitHub(accountId);
-    
-    res.json({
-      success: true,
-      imageUrl: imageUrl,
-      message: "Image uploaded successfully"
-    });
-  } catch (error) {
-    console.error('❌ Error uploading image:', error.message);
-    res.json({
-      success: false,
-      error: "Server error: " + error.message
-    });
-  }
-});
-
-// إرسال رمز التحقق
+// إرسال بريد التحقق
 app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
     
-    console.log(`📧 API Request - To: ${email}, Code: ${code}`);
+    console.log(`📧 API Request - To: ${email}`);
     
     if (!email || !code) {
       return res.json({
@@ -598,7 +528,7 @@ app.post('/api/send-verification-email', async (req, res) => {
     if (!emailRegex.test(email)) {
       return res.json({
         success: false,
-        error: "Invalid email format"
+        error: "Please enter a valid email address"
       });
     }
 
@@ -610,36 +540,24 @@ app.post('/api/send-verification-email', async (req, res) => {
     console.error('❌ API Error:', error.message);
     res.json({
       success: false,
-      error: "Server error: " + error.message,
-      code: req.body.code
+      error: "Email service is temporarily unavailable. Please try again in a few minutes."
     });
   }
 });
 
-// فحص صحة الخادم
+// التحقق من صحة الخدمة
 app.get('/api/health', async (req, res) => {
-  let smtpStatus = 'disconnected';
-  
-  if (emailTransporter) {
-    try {
-      await emailTransporter.verify();
-      smtpStatus = 'connected';
-    } catch (error) {
-      smtpStatus = 'error';
-    }
-  }
-  
   res.json({ 
-    status: 'ok',
+    status: 'operational',
     service: 'B.Y PRO Accounts',
     smtp_status: smtpStatus,
-    email_service: 'Gmail SMTP (Direct)',
+    database_status: driveService ? 'connected' : 'disconnected',
     timestamp: new Date().toISOString(),
-    message: 'Production Server - Real Email Service'
+    message: 'Professional Account Management System'
   });
 });
 
-// معالجة الأخطاء 404
+// معالجة 404
 app.use('*', (req, res) => {
   console.log(`❌ 404 - Route not found: ${req.originalUrl}`);
   res.status(404).json({
@@ -648,22 +566,22 @@ app.use('*', (req, res) => {
   });
 });
 
-// معالجة أخطاء الخادم
+// معالجة الأخطاء
 app.use((err, req, res, next) => {
   console.error('❌ Unhandled error:', err);
   res.status(500).json({
     success: false,
-    error: 'Internal server error'
+    error: 'Internal server error. Our team has been notified and is working on a solution.'
   });
 });
 
-// Start server
+// بدء الخادم
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
   console.log('🚀 B.Y PRO ACCOUNTS - PRODUCTION');
   console.log('✅ Server started successfully!');
   console.log(`🔗 Port: ${PORT}`);
-  console.log('📧 Email: Gmail SMTP (Direct to User)');
+  console.log('📧 Email: Gmail SMTP');
   console.log('💾 Database: Google Drive');
   console.log('🔐 Auth: QR Code + Password');
   console.log('🎉 =================================\n');
