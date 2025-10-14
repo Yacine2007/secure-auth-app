@@ -32,7 +32,7 @@ console.log('✅ Middleware initialized');
 // ==================== BREVO EMAIL SERVICE ====================
 console.log('📧 Setting up Brevo Email Service...');
 
-const BREVO_API_KEY = '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';
+const BREVO_API_KEY = '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';
 let emailServiceStatus = 'connected';
 
 async function sendVerificationEmail(userEmail, code) {
@@ -785,3 +785,4 @@ async function verifyAccountCredentials(id, password) {
     };
   }
 }
+
