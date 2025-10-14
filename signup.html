@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B.Y PRO Accounts - Sign UP</title>
+    <title>B.Y PRO Accounts - Professional Sign Up</title>
     <link rel="icon" type="image/png" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="shortcut icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
@@ -409,39 +409,19 @@
         .strength-strong { background: var(--success-color); width: 75%; }
         .strength-very-strong { background: var(--success-color); width: 100%; }
 
-        .code-display {
+        .service-status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 8px;
+            text-align: center;
+            font-size: 0.8rem;
             background: rgba(52, 152, 219, 0.1);
-            padding: 15px;
-            border-radius: var(--border-radius);
-            margin: 10px 0;
-            border: 2px solid var(--primary-color);
-            text-align: center;
+            border: 1px solid var(--primary-color);
         }
 
-        .code-display .code {
-            font-size: 1.5rem;
-            font-weight: bold;
-            letter-spacing: 5px;
-            color: var(--primary-color);
-            text-align: center;
-            margin: 10px 0;
-        }
-
-        .copy-code-btn {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            border: none;
-            padding: 8px 16px;
-            border-radius: 15px;
-            cursor: pointer;
-            font-size: 14px;
-            margin: 10px 0;
-            transition: all 0.3s ease;
-        }
-
-        .copy-code-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        .service-status.error {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid var(--danger-color);
         }
 
         @media (max-width: 768px) {
@@ -464,41 +444,13 @@
                 height: 120px;
             }
         }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .signup-container {
-                padding: 25px 15px;
-            }
-
-            .logo h1 {
-                font-size: 1.6rem;
-            }
-
-            .logo p {
-                font-size: 0.9rem;
-            }
-
-            .form-group input {
-                padding: 12px 14px;
-                font-size: 0.9rem;
-            }
-
-            .btn {
-                padding: 14px;
-                font-size: 0.9rem;
-            }
-        }
     </style>
 </head>
 <body>
     <div class="signup-container">
         <div class="logo">
             <h1><i class="fas fa-user-plus"></i> B.Y PRO Accounts</h1>
-            <p>Create Your Account</p>
+            <p>Professional Account Registration</p>
         </div>
 
         <!-- Progress Bar -->
@@ -513,6 +465,9 @@
         <!-- Status Message -->
         <div id="statusMessage" class="status-message"></div>
 
+        <!-- Service Status -->
+        <div id="serviceStatus" class="service-status" style="display: none;"></div>
+
         <!-- Step 1: Full Name -->
         <div class="step active" id="step1-content">
             <div class="form-group">
@@ -520,7 +475,7 @@
                 <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name">
             </div>
             <button class="btn" id="next1">
-                Next <i class="fas fa-arrow-right"></i>
+                Continue <i class="fas fa-arrow-right"></i>
             </button>
         </div>
 
@@ -541,21 +496,13 @@
                 <button class="resend-btn" id="resendCodeBtn" disabled style="width: 100%;">
                     Resend code in <span id="countdown">60</span>s
                 </button>
-                
-                <!-- Display for manual code entry -->
-                <div id="codeDisplay" class="code-display" style="display: none;">
-                    <p><i class="fas fa-info-circle"></i> Enter the verification code sent to your email</p>
-                    <p style="font-size: 0.8rem; color: var(--text-muted); margin-top: 10px;">
-                        ⏰ Code expires in <strong>10 minutes</strong>
-                    </p>
-                </div>
             </div>
             <div style="display: flex; gap: 10px;">
                 <button class="btn btn-secondary" id="prev2">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
                 <button class="btn" id="next2" disabled>
-                    Verify & Next <i class="fas fa-arrow-right"></i>
+                    Verify & Continue <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
@@ -578,7 +525,7 @@
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
                 <button class="btn" id="next3" disabled>
-                    Next <i class="fas fa-arrow-right"></i>
+                    Continue <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
@@ -586,7 +533,7 @@
         <!-- Step 4: Profile Picture -->
         <div class="step" id="step4-content">
             <div class="form-group">
-                <label>Profile Picture</label>
+                <label>Profile Picture (Optional)</label>
                 <div class="image-preview" id="imagePreview">
                     <i class="fas fa-user"></i>
                 </div>
@@ -602,7 +549,7 @@
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
                 <button class="btn" id="next4">
-                    Next <i class="fas fa-arrow-right"></i>
+                    Create Account <i class="fas fa-user-plus"></i>
                 </button>
             </div>
         </div>
@@ -616,7 +563,7 @@
                 
                 <h3 style="margin: 20px 0 10px 0;">Welcome to B.Y PRO, <span id="successName"></span>!</h3>
                 <p style="color: var(--text-muted); margin-bottom: 30px;">
-                    Your account has been created successfully. Here's your QR code for login:
+                    Your professional account has been created successfully. Here's your QR code for secure login:
                 </p>
 
                 <div class="qr-container">
@@ -628,533 +575,456 @@
                         <i class="fas fa-download"></i> Download QR Code
                     </button>
                     <a href="login.html" class="login-btn">
-                        <i class="fas fa-sign-in-alt"></i> Go to Login
+                        <i class="fas fa-sign-in-alt"></i> Proceed to Login
                     </a>
                 </div>
 
                 <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
                     <p style="font-size: 0.9rem; color: var(--text-muted);">
-                        <strong>Save your credentials:</strong><br>
-                        ID: <span id="displayId" style="color: var(--primary-color); font-weight: bold;"></span><br>
-                        Keep your password secure and save this QR code for quick login.
+                        <strong>Account Information:</strong><br>
+                        Account ID: <span id="displayId" style="color: var(--primary-color); font-weight: bold;"></span><br>
+                        Please keep your credentials secure and save the QR code for quick access.
                     </p>
                 </div>
             </div>
         </div>
     </div>
 
+    <script>
+        // DOM Elements
+        const steps = document.querySelectorAll('.step');
+        const progressSteps = document.querySelectorAll('.progress-step');
+        const statusMessage = document.getElementById('statusMessage');
+        const serviceStatus = document.getElementById('serviceStatus');
 
-<script>
-    // DOM Elements
-    const steps = document.querySelectorAll('.step');
-    const progressSteps = document.querySelectorAll('.progress-step');
-    const statusMessage = document.getElementById('statusMessage');
-    const codeDisplay = document.getElementById('codeDisplay');
+        // Form Elements
+        const fullName = document.getElementById('fullName');
+        const email = document.getElementById('email');
+        const verificationCode = document.getElementById('verificationCode');
+        const password = document.getElementById('password');
+        const confirmPassword = document.getElementById('confirmPassword');
+        const profileImage = document.getElementById('profileImage');
+        const imagePreview = document.getElementById('imagePreview');
 
-    // Form Elements
-    const fullName = document.getElementById('fullName');
-    const email = document.getElementById('email');
-    const verificationCode = document.getElementById('verificationCode');
-    const password = document.getElementById('password');
-    const confirmPassword = document.getElementById('confirmPassword');
-    const profileImage = document.getElementById('profileImage');
-    const imagePreview = document.getElementById('imagePreview');
+        // Buttons
+        const next1 = document.getElementById('next1');
+        const prev2 = document.getElementById('prev2');
+        const next2 = document.getElementById('next2');
+        const prev3 = document.getElementById('prev3');
+        const next3 = document.getElementById('next3');
+        const prev4 = document.getElementById('prev4');
+        const next4 = document.getElementById('next4');
+        const sendCodeBtn = document.getElementById('sendCodeBtn');
+        const resendCodeBtn = document.getElementById('resendCodeBtn');
+        const downloadQR = document.getElementById('downloadQR');
 
-    // Buttons
-    const next1 = document.getElementById('next1');
-    const prev2 = document.getElementById('prev2');
-    const next2 = document.getElementById('next2');
-    const prev3 = document.getElementById('prev3');
-    const next3 = document.getElementById('next3');
-    const prev4 = document.getElementById('prev4');
-    const next4 = document.getElementById('next4');
-    const sendCodeBtn = document.getElementById('sendCodeBtn');
-    const resendCodeBtn = document.getElementById('resendCodeBtn');
-    const downloadQR = document.getElementById('downloadQR');
+        // Success Elements
+        const successName = document.getElementById('successName');
+        const displayId = document.getElementById('displayId');
+        const qrCodeCanvas = document.getElementById('qrCode');
 
-    // Success Elements
-    const successName = document.getElementById('successName');
-    const displayId = document.getElementById('displayId');
-    const qrCodeCanvas = document.getElementById('qrCode');
+        // Server Configuration
+        const API_BASE = window.location.origin;
 
-    // Server Configuration
-    const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
-
-    // Email Configuration
-    const EMAIL_SERVICE = 'server'; // 'emailjs' أو 'server'
-
-    // Variables
-    let currentStep = 1;
-    let verificationSent = false;
-    let generatedCode = '';
-    let countdownInterval;
-    let countdownTime = 60;
-    let userData = {
-        name: '',
-        email: '',
-        password: '',
-        image: '',
-        id: ''
-    };
-
-    // Show status message
-    function showStatus(message, type) {
-        statusMessage.textContent = message;
-        statusMessage.className = `status-message status-${type}`;
-        statusMessage.style.display = 'block';
-        
-        setTimeout(() => {
-            statusMessage.style.display = 'none';
-        }, 5000);
-    }
-
-    // Navigate to step
-    function goToStep(step) {
-        steps.forEach(s => s.classList.remove('active'));
-        progressSteps.forEach(p => {
-            p.classList.remove('active');
-            if (parseInt(p.textContent) < step) {
-                p.classList.add('completed');
-            }
-        });
-
-        document.getElementById(`step${step}-content`).classList.add('active');
-        document.getElementById(`step${step}`).classList.add('active');
-        currentStep = step;
-    }
-
-    // Start countdown for resend button
-    function startCountdown() {
-        countdownTime = 60;
-        resendCodeBtn.disabled = true;
-        sendCodeBtn.disabled = true;
-        
-        countdownInterval = setInterval(() => {
-            countdownTime--;
-            document.getElementById('countdown').textContent = countdownTime;
-            
-            if (countdownTime <= 0) {
-                clearInterval(countdownInterval);
-                resendCodeBtn.disabled = false;
-                sendCodeBtn.disabled = false;
-                resendCodeBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
-            } else {
-                resendCodeBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
-            }
-        }, 1000);
-    }
-
-    // Send verification code using Server API
-    async function sendVerificationCode() {
-        try {
-            const emailValue = email.value.trim();
-            if (!emailValue) {
-                showStatus('Please enter your email address', 'error');
-                return;
-            }
-            
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(emailValue)) {
-                showStatus('Please enter a valid email address', 'error');
-                return;
-            }
-
-            showStatus('Sending verification code...', 'success');
-            
-            // Generate random code
-            generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-            
-            console.log('📧 Sending verification code:', {
-                to: emailValue,
-                code: generatedCode
-            });
-
-            // استخدام API الخادم لإرسال البريد
-            const response = await fetch(`${API_BASE}/api/send-verification-email`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    email: emailValue, 
-                    code: generatedCode
-                })
-            });
-
-            const result = await response.json();
-            
-            if (result.success) {
-                console.log('✅ Email sent successfully via server:', result);
-                showStatus(`Verification code sent to ${emailValue}`, 'success');
-                verificationSent = true;
-                startCountdown();
-                codeDisplay.style.display = 'block';
-                
-                // عرض الرمز للمستخدم للتجربة (يمكن إزالته لاحقاً)
-                console.log('🔑 Your verification code:', generatedCode);
-                
-            } else {
-                console.error('❌ Server email failed:', result.error);
-                showStatus('Email service temporarily unavailable. Please try again in a few minutes.', 'error');
-                verificationSent = false;
-            }
-            
-        } catch (error) {
-            console.error('Error sending verification:', error);
-            
-            // البديل: محاكاة الإرسال الناجح للتجربة
-            const emailValue = email.value.trim();
-            showStatus(`Verification code would be sent to ${emailValue} (Simulation)`, 'warning');
-            verificationSent = true;
-            startCountdown();
-            codeDisplay.style.display = 'block';
-            
-            console.log('🔑 Your verification code (Simulation):', generatedCode);
-            console.log('📧 Email would be sent to:', emailValue);
-        }
-    }
-
-    // Check password strength
-    function checkPasswordStrength(password) {
-        let strength = 0;
-        const strengthBar = document.getElementById('passwordStrength');
-        
-        if (password.length >= 8) strength++;
-        if (password.match(/[a-z]+/)) strength++;
-        if (password.match(/[A-Z]+/)) strength++;
-        if (password.match(/[0-9]+/)) strength++;
-        if (password.match(/[$@#&!]+/)) strength++;
-        
-        strengthBar.className = 'strength-bar';
-        if (strength <= 2) {
-            strengthBar.classList.add('strength-weak');
-            return 'weak';
-        } else if (strength === 3) {
-            strengthBar.classList.add('strength-medium');
-            return 'medium';
-        } else if (strength === 4) {
-            strengthBar.classList.add('strength-strong');
-            return 'strong';
-        } else {
-            strengthBar.classList.add('strength-very-strong');
-            return 'very-strong';
-        }
-    }
-
-    // Preview image
-    function previewImage(file) {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
+        // Variables
+        let currentStep = 1;
+        let verificationSent = false;
+        let generatedCode = '';
+        let countdownInterval;
+        let countdownTime = 60;
+        let userData = {
+            name: '',
+            email: '',
+            password: '',
+            image: '',
+            id: ''
         };
-        reader.readAsDataURL(file);
-    }
 
-    // Get next available ID
-    async function getNextAvailableId() {
-        try {
-            const response = await fetch(`${API_BASE}/api/next-id`);
-            if (!response.ok) throw new Error('API not available');
+        // Show status message
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
             
-            const data = await response.json();
-            if (data.success) {
-                return data.nextId;
-            }
-            throw new Error('Failed to get next ID');
-        } catch (error) {
-            console.log('🔄 Falling back to manual ID calculation');
-            try {
-                const response = await fetch(`${API_BASE}/api/debug/accounts`);
-                const data = await response.json();
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        // Show service status
+        function showServiceStatus(message, isError = false) {
+            serviceStatus.textContent = message;
+            serviceStatus.className = `service-status ${isError ? 'error' : ''}`;
+            serviceStatus.style.display = 'block';
+        }
+
+        // Hide service status
+        function hideServiceStatus() {
+            serviceStatus.style.display = 'none';
+        }
+
+        // Navigate to step
+        function goToStep(step) {
+            steps.forEach(s => s.classList.remove('active'));
+            progressSteps.forEach(p => {
+                p.classList.remove('active');
+                if (parseInt(p.textContent) < step) {
+                    p.classList.add('completed');
+                }
+            });
+
+            document.getElementById(`step${step}-content`).classList.add('active');
+            document.getElementById(`step${step}`).classList.add('active');
+            currentStep = step;
+        }
+
+        // Start countdown for resend button
+        function startCountdown() {
+            countdownTime = 60;
+            resendCodeBtn.disabled = true;
+            sendCodeBtn.disabled = true;
+            
+            countdownInterval = setInterval(() => {
+                countdownTime--;
+                document.getElementById('countdown').textContent = countdownTime;
                 
-                if (data.success && data.accounts.length > 0) {
-                    const ids = data.accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
-                    if (ids.length > 0) {
-                        const maxId = Math.max(...ids);
-                        return (maxId + 1).toString();
-                    }
-                }
-                return "3";
-            } catch (fallbackError) {
-                console.error('Fallback failed:', fallbackError);
-                return "3";
-            }
-        }
-    }
-
-    // Save account
-    async function saveAccountToDatabase(accountData) {
-        try {
-            const response = await fetch(`${API_BASE}/api/accounts`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify(accountData)
-            });
-
-            if (!response.ok) throw new Error('Save failed');
-            
-            const result = await response.json();
-            return result.success;
-        } catch (error) {
-            console.error('Save failed, but continuing:', error);
-            return true;
-        }
-    }
-
-    // Upload image
-    async function uploadImageToGitHub(accountId, imageFile) {
-        try {
-            showStatus('Uploading profile picture...', 'success');
-            
-            const imageData = await new Promise((resolve, reject) => {
-                const reader = new FileReader();
-                reader.onload = () => resolve(reader.result);
-                reader.onerror = reject;
-                reader.readAsDataURL(imageFile);
-            });
-
-            const response = await fetch(`${API_BASE}/api/upload-image`, {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({accountId: accountId, imageData: imageData})
-            });
-
-            if (!response.ok) throw new Error('Upload failed');
-            
-            const result = await response.json();
-            if (result.success) {
-                showStatus('Profile picture uploaded successfully', 'success');
-                return result.imageUrl;
-            } else {
-                throw new Error(result.error || 'Upload failed');
-            }
-        } catch (error) {
-            console.error('Error uploading image:', error);
-            showStatus('Failed to upload image, using default', 'warning');
-            return `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
-        }
-    }
-
-    // Generate QR Code
-    function generateQRCode(text) {
-        try {
-            qrCodeCanvas.width = 200;
-            qrCodeCanvas.height = 200;
-            
-            const ctx = qrCodeCanvas.getContext('2d');
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
-            
-            QRCode.toCanvas(qrCodeCanvas, text, {
-                width: 200,
-                margin: 1,
-                color: {dark: '#000000', light: '#FFFFFF'}
-            }, function (error) {
-                if (error) {
-                    console.error('QR Code error:', error);
-                    showStatus('Error generating QR code', 'error');
+                if (countdownTime <= 0) {
+                    clearInterval(countdownInterval);
+                    resendCodeBtn.disabled = false;
+                    sendCodeBtn.disabled = false;
+                    resendCodeBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
                 } else {
-                    console.log('✅ QR Code generated successfully');
+                    resendCodeBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
                 }
-            });
-        } catch (error) {
-            console.error('QR Code generation failed:', error);
-            showStatus('Error generating QR code', 'error');
+            }, 1000);
         }
-    }
 
-    // Download QR Code
-    function downloadQRCode() {
-        try {
-            const link = document.createElement('a');
-            link.download = `BYPRO-${userData.id}-QR.png`;
-            link.href = qrCodeCanvas.toDataURL();
-            link.click();
-            showStatus('QR code downloaded successfully', 'success');
-        } catch (error) {
-            console.error('Error downloading QR code:', error);
-            showStatus('Error downloading QR code', 'error');
-        }
-    }
+        // Send verification code using Server API
+        async function sendVerificationCode() {
+            try {
+                const emailValue = email.value.trim();
+                if (!emailValue) {
+                    showStatus('Please enter your email address', 'error');
+                    return;
+                }
+                
+                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(emailValue)) {
+                    showStatus('Please enter a valid email address', 'error');
+                    return;
+                }
 
-    // Complete registration process
-    async function completeRegistration() {
-        try {
-            next4.disabled = true;
-            next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
-            
-            showStatus('Getting next available ID...', 'success');
+                sendCodeBtn.disabled = true;
+                sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
 
-            userData.id = await getNextAvailableId();
-            console.log('📝 Next available ID:', userData.id);
+                showStatus('Sending verification code to your email...', 'success');
+                
+                // Generate random code
+                generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-            if (!userData.id || userData.id === "1") {
-                userData.id = (Math.floor(Math.random() * 1000) + 3).toString();
-                console.log('🔄 Using random ID:', userData.id);
+                // استخدام API الخادم لإرسال البريد
+                const response = await fetch(`${API_BASE}/api/send-verification-email`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({
+                        email: emailValue, 
+                        code: generatedCode
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus(`Verification code sent to ${emailValue}`, 'success');
+                    verificationSent = true;
+                    startCountdown();
+                    hideServiceStatus();
+                    
+                } else {
+                    showStatus('Unable to send verification email. Please try again in a few minutes.', 'error');
+                    showServiceStatus('Email service temporarily unavailable', true);
+                    verificationSent = false;
+                }
+                
+            } catch (error) {
+                showStatus('Network error. Please check your connection and try again.', 'error');
+                showServiceStatus('Connection issue detected', true);
+                verificationSent = false;
+            } finally {
+                sendCodeBtn.disabled = false;
+                sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
             }
+        }
 
-            let imageUrl = '';
-            if (profileImage.files[0]) {
-                imageUrl = await uploadImageToGitHub(userData.id, profileImage.files[0]);
+        // Check password strength
+        function checkPasswordStrength(password) {
+            let strength = 0;
+            const strengthBar = document.getElementById('passwordStrength');
+            
+            if (password.length >= 8) strength++;
+            if (password.match(/[a-z]+/)) strength++;
+            if (password.match(/[A-Z]+/)) strength++;
+            if (password.match(/[0-9]+/)) strength++;
+            if (password.match(/[$@#&!]+/)) strength++;
+            
+            strengthBar.className = 'strength-bar';
+            if (strength <= 2) {
+                strengthBar.classList.add('strength-weak');
+                return 'weak';
+            } else if (strength === 3) {
+                strengthBar.classList.add('strength-medium');
+                return 'medium';
+            } else if (strength === 4) {
+                strengthBar.classList.add('strength-strong');
+                return 'strong';
             } else {
-                imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/default.png`;
+                strengthBar.classList.add('strength-very-strong');
+                return 'very-strong';
             }
+        }
 
-            userData.image = imageUrl;
-
-            showStatus('Saving account to database...', 'success');
-            
-            const accountData = {
-                id: userData.id,
-                name: userData.name,
-                email: userData.email,
-                password: userData.password,
-                image: userData.image
+        // Preview image
+        function previewImage(file) {
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
             };
+            reader.readAsDataURL(file);
+        }
 
-            console.log('💾 Saving account data:', accountData);
-
-            const saved = await saveAccountToDatabase(accountData);
-
-            if (saved) {
-                const qrData = `BYPRO:${userData.id}:${userData.password}`;
-                generateQRCode(qrData);
-
-                successName.textContent = userData.name;
-                displayId.textContent = userData.id;
-
-                showStatus('Account created successfully!', 'success');
-                goToStep(5);
-            } else {
-                throw new Error('Failed to save account');
+        // Get next available ID
+        async function getNextAvailableId() {
+            try {
+                const response = await fetch(`${API_BASE}/api/next-id`);
+                if (!response.ok) throw new Error('API not available');
+                
+                const data = await response.json();
+                if (data.success) {
+                    return data.nextId;
+                }
+                throw new Error('Failed to get next ID');
+            } catch (error) {
+                // استخدام ID عشوائي كبديل
+                return (Math.floor(Math.random() * 9000) + 1000).toString();
             }
-        } catch (error) {
-            console.error('❌ Registration error:', error);
-            showStatus('Registration failed. Please try again.', 'error');
-        } finally {
-            next4.disabled = false;
-            next4.innerHTML = 'Next <i class="fas fa-arrow-right"></i>';
-        }
-    }
-
-    // Event Listeners
-    next1.addEventListener('click', () => {
-        if (!fullName.value.trim()) {
-            showStatus('Please enter your full name', 'error');
-            return;
-        }
-        userData.name = fullName.value.trim();
-        goToStep(2);
-    });
-
-    prev2.addEventListener('click', () => goToStep(1));
-
-    sendCodeBtn.addEventListener('click', sendVerificationCode);
-    resendCodeBtn.addEventListener('click', sendVerificationCode);
-
-    verificationCode.addEventListener('input', () => {
-        const code = verificationCode.value.trim();
-        next2.disabled = !(verificationSent && code === generatedCode);
-        
-        if (code && code !== generatedCode) {
-            showStatus('Invalid verification code', 'error');
-        } else if (code && code === generatedCode) {
-            showStatus('Verification code is correct', 'success');
-        }
-    });
-
-    next2.addEventListener('click', () => {
-        if (!verificationSent) {
-            showStatus('Please send verification code first', 'error');
-            return;
         }
 
-        const code = verificationCode.value.trim();
-        if (code !== generatedCode) {
-            showStatus('Invalid verification code', 'error');
-            return;
+        // Save account
+        async function saveAccountToDatabase(accountData) {
+            try {
+                const response = await fetch(`${API_BASE}/api/accounts`, {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(accountData)
+                });
+
+                if (!response.ok) throw new Error('Save failed');
+                
+                const result = await response.json();
+                return result.success;
+            } catch (error) {
+                console.error('Save failed:', error);
+                return false;
+            }
         }
 
-        userData.email = email.value.trim();
-        goToStep(3);
-    });
-
-    prev3.addEventListener('click', () => goToStep(2));
-
-    password.addEventListener('input', () => {
-        checkPasswordStrength(password.value);
-        
-        const isPasswordValid = password.value.length >= 6;
-        const isConfirmValid = confirmPassword.value === password.value;
-        next3.disabled = !(isPasswordValid && isConfirmValid);
-    });
-
-    confirmPassword.addEventListener('input', () => {
-        const isPasswordValid = password.value.length >= 6;
-        const isConfirmValid = confirmPassword.value === password.value;
-        next3.disabled = !(isPasswordValid && isConfirmValid);
-        
-        if (confirmPassword.value && password.value !== confirmPassword.value) {
-            showStatus('Passwords do not match', 'error');
-        } else if (confirmPassword.value && password.value === confirmPassword.value) {
-            showStatus('Passwords match', 'success');
-        }
-    });
-
-    next3.addEventListener('click', () => {
-        if (password.value.length < 6) {
-            showStatus('Password must be at least 6 characters', 'error');
-            return;
+        // Generate QR Code
+        function generateQRCode(text) {
+            try {
+                qrCodeCanvas.width = 200;
+                qrCodeCanvas.height = 200;
+                
+                QRCode.toCanvas(qrCodeCanvas, text, {
+                    width: 200,
+                    margin: 1,
+                    color: {dark: '#000000', light: '#FFFFFF'}
+                }, function (error) {
+                    if (error) {
+                        console.error('QR Code error:', error);
+                        showStatus('Error generating QR code', 'error');
+                    }
+                });
+            } catch (error) {
+                console.error('QR Code generation failed:', error);
+                showStatus('Error generating QR code', 'error');
+            }
         }
 
-        if (password.value !== confirmPassword.value) {
-            showStatus('Passwords do not match', 'error');
-            return;
+        // Download QR Code
+        function downloadQRCode() {
+            try {
+                const link = document.createElement('a');
+                link.download = `BYPRO-${userData.id}-QR.png`;
+                link.href = qrCodeCanvas.toDataURL();
+                link.click();
+                showStatus('QR code downloaded successfully', 'success');
+            } catch (error) {
+                console.error('Error downloading QR code:', error);
+                showStatus('Error downloading QR code', 'error');
+            }
         }
 
-        userData.password = password.value;
-        goToStep(4);
-    });
+        // Complete registration process
+        async function completeRegistration() {
+            try {
+                next4.disabled = true;
+                next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
+                
+                showStatus('Creating your professional account...', 'success');
 
-    prev4.addEventListener('click', () => goToStep(3));
+                userData.id = await getNextAvailableId();
 
-    profileImage.addEventListener('change', (e) => {
-        if (e.target.files[0]) {
-            previewImage(e.target.files[0]);
+                // استخدام صورة افتراضية
+                userData.image = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/default.png`;
+
+                const accountData = {
+                    id: userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    password: userData.password,
+                    image: userData.image
+                };
+
+                const saved = await saveAccountToDatabase(accountData);
+
+                if (saved) {
+                    const qrData = `BYPRO:${userData.id}:${userData.password}`;
+                    generateQRCode(qrData);
+
+                    successName.textContent = userData.name;
+                    displayId.textContent = userData.id;
+
+                    showStatus('Account created successfully!', 'success');
+                    goToStep(5);
+                } else {
+                    throw new Error('Failed to save account');
+                }
+            } catch (error) {
+                console.error('Registration error:', error);
+                showStatus('We apologize, but we were unable to create your account at this time. Please try again later.', 'error');
+                showServiceStatus('Registration service temporarily unavailable', true);
+            } finally {
+                next4.disabled = false;
+                next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+            }
         }
-    });
 
-    next4.addEventListener('click', completeRegistration);
+        // Event Listeners
+        next1.addEventListener('click', () => {
+            if (!fullName.value.trim()) {
+                showStatus('Please enter your full name', 'error');
+                return;
+            }
+            userData.name = fullName.value.trim();
+            goToStep(2);
+        });
 
-    downloadQR.addEventListener('click', downloadQRCode);
+        prev2.addEventListener('click', () => goToStep(1));
 
-    // Initialize the application
-    document.addEventListener('DOMContentLoaded', () => {
-        console.log('🚀 Signup page initialized');
-        
-        // Set focus to first input
-        fullName.focus();
-        
-        // Test server connection
-        fetch(`${API_BASE}/api/health`)
-            .then(response => response.json())
-            .then(data => {
-                console.log('✅ Server status:', data);
-            })
-            .catch(error => console.error('❌ Server connection failed:', error));
+        sendCodeBtn.addEventListener('click', sendVerificationCode);
+        resendCodeBtn.addEventListener('click', sendVerificationCode);
+
+        verificationCode.addEventListener('input', () => {
+            const code = verificationCode.value.trim();
+            next2.disabled = !(verificationSent && code === generatedCode);
             
-        // Auto-format verification code input
-        verificationCode.addEventListener('input', function() {
-            this.value = this.value.replace(/[^0-9]/g, '');
-            if (this.value.length > 6) {
-                this.value = this.value.slice(0, 6);
+            if (code && code !== generatedCode) {
+                showStatus('Invalid verification code', 'error');
+            } else if (code && code === generatedCode) {
+                showStatus('Verification code is correct', 'success');
             }
         });
-        
-        console.log('🎯 B.Y PRO Signup System Ready - Using Server API for emails');
-    });
-</script>
-<!-- Load EmailJS SDK -->
-<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+
+        next2.addEventListener('click', () => {
+            if (!verificationSent) {
+                showStatus('Please send verification code first', 'error');
+                return;
+            }
+
+            const code = verificationCode.value.trim();
+            if (code !== generatedCode) {
+                showStatus('Invalid verification code', 'error');
+                return;
+            }
+
+            userData.email = email.value.trim();
+            goToStep(3);
+        });
+
+        prev3.addEventListener('click', () => goToStep(2));
+
+        password.addEventListener('input', () => {
+            checkPasswordStrength(password.value);
+            
+            const isPasswordValid = password.value.length >= 6;
+            const isConfirmValid = confirmPassword.value === password.value;
+            next3.disabled = !(isPasswordValid && isConfirmValid);
+        });
+
+        confirmPassword.addEventListener('input', () => {
+            const isPasswordValid = password.value.length >= 6;
+            const isConfirmValid = confirmPassword.value === password.value;
+            next3.disabled = !(isPasswordValid && isConfirmValid);
+            
+            if (confirmPassword.value && password.value !== confirmPassword.value) {
+                showStatus('Passwords do not match', 'error');
+            } else if (confirmPassword.value && password.value === confirmPassword.value) {
+                showStatus('Passwords match', 'success');
+            }
+        });
+
+        next3.addEventListener('click', () => {
+            if (password.value.length < 6) {
+                showStatus('Password must be at least 6 characters', 'error');
+                return;
+            }
+
+            if (password.value !== confirmPassword.value) {
+                showStatus('Passwords do not match', 'error');
+                return;
+            }
+
+            userData.password = password.value;
+            goToStep(4);
+        });
+
+        prev4.addEventListener('click', () => goToStep(3));
+
+        profileImage.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                previewImage(e.target.files[0]);
+            }
+        });
+
+        next4.addEventListener('click', completeRegistration);
+
+        downloadQR.addEventListener('click', downloadQRCode);
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', () => {
+            // Set focus to first input
+            fullName.focus();
+            
+            // Test server connection
+            fetch(`${API_BASE}/api/health`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.smtp_status !== 'connected') {
+                        showServiceStatus('Email verification may be delayed', true);
+                    }
+                })
+                .catch(error => {
+                    showServiceStatus('Some services may be temporarily unavailable', true);
+                });
+            
+            // Auto-format verification code input
+            verificationCode.addEventListener('input', function() {
+                this.value = this.value.replace(/[^0-9]/g, '');
+                if (this.value.length > 6) {
+                    this.value = this.value.slice(0, 6);
+                }
+            });
+        });
+    </script>
 </body>
 </html>
-
