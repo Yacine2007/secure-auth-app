@@ -8,6 +8,7 @@
     <link rel="shortcut icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
     <script src="/qrcode.min.js"></script>
     <style>
         :root {
@@ -430,6 +431,117 @@
             color: var(--warning-color);
         }
 
+        /* Terms & Conditions Styles */
+        .terms-link {
+            color: var(--primary-color);
+            text-decoration: underline;
+            cursor: pointer;
+            font-size: 0.9rem;
+            margin: 10px 0;
+            display: inline-block;
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+        }
+
+        .terms-checkbox label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* Modal Styles */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            padding: 20px;
+        }
+
+        .modal-content {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            border: 2px solid var(--primary-color);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        .modal-header {
+            text-align: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid var(--border-color);
+        }
+
+        .modal-header h2 {
+            color: var(--primary-color);
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .modal-body {
+            color: var(--text-muted);
+            line-height: 1.8;
+        }
+
+        .modal-body h3 {
+            color: var(--primary-color);
+            margin: 25px 0 10px 0;
+            font-size: 1.2rem;
+        }
+
+        .modal-body p {
+            margin-bottom: 15px;
+            font-size: 0.95rem;
+        }
+
+        .modal-body ul {
+            margin: 10px 0 20px 20px;
+        }
+
+        .modal-body li {
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            font-size: 1.5rem;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .close-modal:hover {
+            color: var(--primary-color);
+        }
+
         @media (max-width: 768px) {
             .signup-container {
                 padding: 30px 20px;
@@ -448,6 +560,15 @@
             .image-preview {
                 width: 120px;
                 height: 120px;
+            }
+
+            .modal-content {
+                padding: 20px;
+                margin: 10px;
+            }
+
+            .modal-header h2 {
+                font-size: 1.5rem;
             }
         }
 
@@ -477,10 +598,78 @@
                 padding: 14px;
                 font-size: 0.9rem;
             }
+
+            .modal-content {
+                padding: 15px;
+            }
         }
     </style>
 </head>
 <body>
+    <!-- Terms & Conditions Modal -->
+    <div class="modal-overlay" id="termsModal">
+        <div class="modal-content">
+            <button class="close-modal" id="closeModal">&times;</button>
+            <div class="modal-header">
+                <h2>🛡️ شروط الخدمة وسياسة الخصوصية – B.Y PRO</h2>
+            </div>
+            <div class="modal-body">
+                <h3>1. المقدّمة | Introduction</h3>
+                <p>باستخدامك لأي منتج أو خدمة تابعة لشركة B.Y PRO، فإنك توافق بشكل كامل ونهائي على هذه الشروط والسياسات.</p>
+                <p>By using any product or service of B.Y PRO, you fully and irrevocably agree to these Terms and Policies.</p>
+                <p>تحتفظ B.Y PRO بالحق في تعديل هذه الشروط والسياسات في أي وقت دون إشعار مسبق، ويُعتبر استمرار استخدامك للخدمات قبولًا صريحًا للتعديلات الجديدة.</p>
+                <p>B.Y PRO reserves the right to modify these terms at any time without prior notice. Continued use constitutes acceptance of updates.</p>
+
+                <h3>2. إنشاء الحساب | Account Creation</h3>
+                <ul>
+                    <li>يجب إدخال بيانات صحيحة ودقيقة عند التسجيل.</li>
+                    <li>لا يُطلب رقم الهاتف إلا في حال إطلاق منتج جديد يحتاج التحقق عبره لأسباب أمنية أو تقنية.</li>
+                    <li>الحسابات شخصية فقط ولا يجوز بيعها أو نقلها أو مشاركتها.</li>
+                    <li>تحتفظ B.Y PRO بحق رفض أو حذف أي حساب دون توضيح الأسباب.</li>
+                </ul>
+                <p>Users must provide accurate and valid data upon registration.</p>
+                <p>Phone number is not required unless a new product specifically demands it for verification.</p>
+                <p>Accounts are personal and non-transferable.</p>
+                <p>B.Y PRO may deny or remove any account at its discretion.</p>
+
+                <h3>3. ملكية الحساب والبيانات | Account & Data Ownership</h3>
+                <ul>
+                    <li>جميع الحسابات والبيانات داخل منتجات B.Y PRO تخضع لإدارة الشركة الكاملة.</li>
+                    <li>تمتلك B.Y PRO الحق في تعديل، تحديث، أو حذف أي حساب أو بيانات في أي وقت لأسباب تقنية أو أمنية أو إدارية.</li>
+                    <li>تعديل البيانات الحساسة (مثل البريد الإلكتروني أو الاسم أو الصورة) يتم فقط عبر التواصل المباشر مع إدارة B.Y PRO.</li>
+                    <li>بعض المعلومات يمكن تعديلها من داخل التطبيق ضمن الحدود المسموح بها.</li>
+                    <li>يُمنع نقل الحساب أو بيعه أو منحه لطرف ثالث دون إذن كتابي من الشركة.</li>
+                    <li>تحتفظ B.Y PRO بالحق الكامل في تغيير أو حذف أو تحديث أي محتوى أو وظيفة ضمن منتجاتها في أي وقت دون إشعار مسبق.</li>
+                </ul>
+
+                <h3>4. تسريب البيانات والمسؤولية | Data Breach & Liability</h3>
+                <p>في حال حدوث تسريب أو اختراق أو فقدان للبيانات الشخصية بسبب عوامل خارجية أو هجمات رقمية، لا تتحمّل شركة B.Y PRO أي مسؤولية قانونية أو مالية تجاه المستخدمين.</p>
+                <p>In case of any external data breach or cyberattack, B.Y PRO shall not be legally or financially liable for any user data loss or exposure.</p>
+
+                <h3>5. استخدام المنتجات | Product Usage</h3>
+                <p>يُمنع استخدام أي منتج من منتجات B.Y PRO في أنشطة غير قانونية أو مضرة بالغير.</p>
+                <p>Use of B.Y PRO products for illegal, abusive, or harmful purposes is prohibited.</p>
+
+                <h3>6. الملكية الفكرية | Intellectual Property</h3>
+                <p>جميع الشعارات، التصاميم، الشيفرات البرمجية، والمحتوى المرئي أو الصوتي ضمن منتجات B.Y PRO هي ملك حصري للشركة ومحميّة وفق القوانين المحلية والدولية.</p>
+
+                <h3>7. حماية الخصوصية | Privacy Protection</h3>
+                <ul>
+                    <li>تجمع B.Y PRO فقط البيانات الضرورية لتقديم الخدمة وتحسين الأداء.</li>
+                    <li>لا تتم مشاركة البيانات مع أي جهة خارجية إلا للضرورات التقنية أو بطلب قانوني رسمي.</li>
+                    <li>يتم تخزين جميع البيانات في بيئات آمنة وتخضع للحماية المستمرة.</li>
+                    <li>يمكن للمستخدم طلب حذف حسابه وبياناته نهائيًا عبر القنوات الرسمية.</li>
+                </ul>
+
+                <h3>8. الدعم والتواصل | Support & Contact</h3>
+                <p>📩 البريد الرسمي للدعم والتواصل: byprosprt2007@gmail.com</p>
+
+                <h3>9. القوانين المطبقة | Governing Law</h3>
+                <p>تخضع هذه الشروط لقوانين الجمهورية الجزائرية الديمقراطية الشعبية، وأي نزاع يُحال إلى الجهات القضائية المختصة داخل الجزائر.</p>
+            </div>
+        </div>
+    </div>
+
     <div class="signup-container">
         <div class="logo">
             <h1><i class="fas fa-user-plus"></i> B.Y PRO Accounts</h1>
@@ -504,8 +693,36 @@
         <!-- Status Message -->
         <div id="statusMessage" class="status-message"></div>
 
+        <!-- Step 0: Terms & Conditions -->
+        <div class="step active" id="step0-content">
+            <div class="form-group">
+                <h3 style="color: var(--primary-color); text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-shield-alt"></i> Terms & Conditions
+                </h3>
+                <p style="color: var(--text-muted); text-align: center; margin-bottom: 20px;">
+                    Before creating your account, please read and accept our Terms of Service and Privacy Policy.
+                </p>
+                
+                <div style="text-align: center; margin: 20px 0;">
+                    <a class="terms-link" id="showTerms">
+                        <i class="fas fa-file-contract"></i> View Terms & Conditions
+                    </a>
+                </div>
+
+                <div class="terms-checkbox">
+                    <input type="checkbox" id="acceptTerms">
+                    <label for="acceptTerms">
+                        I have read and agree to the Terms of Service and Privacy Policy
+                    </label>
+                </div>
+            </div>
+            <button class="btn" id="next0" disabled>
+                Accept & Continue <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
         <!-- Step 1: Full Name -->
-        <div class="step active" id="step1-content">
+        <div class="step" id="step1-content">
             <div class="form-group">
                 <label for="fullName"><i class="fas fa-user"></i> Full Name</label>
                 <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name">
@@ -627,12 +844,19 @@
     </div>
 
     <script>
+        // Initialize EmailJS
+        emailjs.init("YOUR_PUBLIC_KEY_HERE");
+
         // DOM Elements
         const steps = document.querySelectorAll('.step');
         const progressSteps = document.querySelectorAll('.progress-step');
         const statusMessage = document.getElementById('statusMessage');
         const serviceStatus = document.getElementById('serviceStatus');
         const statusText = document.getElementById('statusText');
+        const termsModal = document.getElementById('termsModal');
+        const showTermsBtn = document.getElementById('showTerms');
+        const closeModalBtn = document.getElementById('closeModal');
+        const acceptTermsCheckbox = document.getElementById('acceptTerms');
 
         // Form Elements
         const fullName = document.getElementById('fullName');
@@ -644,6 +868,7 @@
         const imagePreview = document.getElementById('imagePreview');
 
         // Buttons
+        const next0 = document.getElementById('next0');
         const next1 = document.getElementById('next1');
         const prev2 = document.getElementById('prev2');
         const next2 = document.getElementById('next2');
@@ -660,11 +885,11 @@
         const displayId = document.getElementById('displayId');
         const qrCodeCanvas = document.getElementById('qrCode');
 
-        // Server Configuration - Use Render URL directly
+        // Server Configuration
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
 
         // Variables
-        let currentStep = 1;
+        let currentStep = 0;
         let verificationSent = false;
         let generatedCode = '';
         let countdownInterval;
@@ -676,6 +901,26 @@
             image: '',
             id: ''
         };
+
+        // Modal Functions
+        showTermsBtn.addEventListener('click', () => {
+            termsModal.style.display = 'flex';
+        });
+
+        closeModalBtn.addEventListener('click', () => {
+            termsModal.style.display = 'none';
+        });
+
+        termsModal.addEventListener('click', (e) => {
+            if (e.target === termsModal) {
+                termsModal.style.display = 'none';
+            }
+        });
+
+        // Terms Acceptance
+        acceptTermsCheckbox.addEventListener('change', () => {
+            next0.disabled = !acceptTermsCheckbox.checked;
+        });
 
         // Show status message
         function showStatus(message, type) {
@@ -701,13 +946,15 @@
             steps.forEach(s => s.classList.remove('active'));
             progressSteps.forEach(p => {
                 p.classList.remove('active');
-                if (parseInt(p.textContent) < step) {
+                if (parseInt(p.textContent) <= step) {
                     p.classList.add('completed');
                 }
             });
 
             document.getElementById(`step${step}-content`).classList.add('active');
-            document.getElementById(`step${step}`).classList.add('active');
+            if (document.getElementById(`step${step}`)) {
+                document.getElementById(`step${step}`).classList.add('active');
+            }
             currentStep = step;
         }
 
@@ -745,7 +992,7 @@
             }, 1000);
         }
 
-        // Enhanced email sending with better error handling
+        // Enhanced email sending with EmailJS
         async function sendVerificationCode() {
             try {
                 const emailValue = email.value.trim();
@@ -770,41 +1017,31 @@
                 generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
                 
                 try {
-                    // استخدام API الخادم لإرسال البريد
-                    const response = await fetch(`${API_BASE}/api/send-verification-email`, {
-                        method: 'POST',
-                        headers: {'Content-Type': 'application/json'},
-                        body: JSON.stringify({
-                            email: emailValue, 
-                            code: generatedCode
-                        })
-                    });
+                    // استخدام EmailJS لإرسال البريد
+                    const templateParams = {
+                        to_email: emailValue,
+                        code: generatedCode,
+                        timestamp: new Date().toLocaleString(),
+                        expiry_time: new Date(Date.now() + 10 * 60 * 1000).toLocaleString(),
+                        current_year: new Date().getFullYear()
+                    };
 
-                    if (!response.ok) {
-                        throw new Error(`Service temporarily unavailable`);
-                    }
-
-                    const result = await response.json();
+                    await emailjs.send(
+                        'byprologin25', 
+                        'template_q1rmq2n', 
+                        templateParams
+                    );
                     
-                    if (result.success) {
-                        showStatus(`Verification code sent to ${emailValue}`, 'success');
-                        verificationSent = true;
-                        startCountdown();
-                        
-                    } else {
-                        throw new Error(result.error || 'Email service unavailable');
-                    }
+                    showStatus(`Verification code sent to ${emailValue}`, 'success');
+                    verificationSent = true;
+                    startCountdown();
                     
-                } catch (apiError) {
-                    console.log('🔄 Email service unavailable, using verification system');
-                    showStatus('Email service preparing. Please proceed with verification.', 'warning');
-                    
-                    // Allow user to continue with the generated code
-                    setTimeout(() => {
-                        showStatus(`Verification system ready for ${emailValue}`, 'success');
-                        verificationSent = true;
-                        startCountdown();
-                    }, 1500);
+                } catch (emailjsError) {
+                    console.log('📧 EmailJS fallback activated');
+                    // نظام احتياطي
+                    showStatus(`Verification system ready for ${emailValue}`, 'success');
+                    verificationSent = true;
+                    startCountdown();
                 }
                 
             } catch (error) {
@@ -1019,130 +1256,109 @@
         }
 
         // Event Listeners
-        if (next1) {
-            next1.addEventListener('click', () => {
-                if (!fullName.value.trim()) {
-                    showStatus('Please enter your full name', 'error');
-                    return;
-                }
-                userData.name = fullName.value.trim();
-                goToStep(2);
-            });
-        }
+        next0.addEventListener('click', () => {
+            if (!acceptTermsCheckbox.checked) {
+                showStatus('Please accept the terms and conditions', 'error');
+                return;
+            }
+            goToStep(1);
+        });
 
-        if (prev2) {
-            prev2.addEventListener('click', () => goToStep(1));
-        }
+        next1.addEventListener('click', () => {
+            if (!fullName.value.trim()) {
+                showStatus('Please enter your full name', 'error');
+                return;
+            }
+            userData.name = fullName.value.trim();
+            goToStep(2);
+        });
 
-        if (sendCodeBtn) {
-            sendCodeBtn.addEventListener('click', sendVerificationCode);
-        }
+        prev2.addEventListener('click', () => goToStep(1));
 
-        if (resendCodeBtn) {
-            resendCodeBtn.addEventListener('click', sendVerificationCode);
-        }
+        sendCodeBtn.addEventListener('click', sendVerificationCode);
+        resendCodeBtn.addEventListener('click', sendVerificationCode);
 
-        if (verificationCode) {
-            verificationCode.addEventListener('input', () => {
-                const code = verificationCode.value.trim();
-                if (next2) {
-                    next2.disabled = !(verificationSent && code === generatedCode);
-                }
-                
-                if (code && code !== generatedCode) {
-                    showStatus('Invalid verification code', 'error');
-                } else if (code && code === generatedCode) {
-                    showStatus('Verification code is correct', 'success');
-                }
-            });
-        }
+        verificationCode.addEventListener('input', () => {
+            const code = verificationCode.value.trim();
+            if (next2) {
+                next2.disabled = !(verificationSent && code === generatedCode);
+            }
+            
+            if (code && code !== generatedCode) {
+                showStatus('Invalid verification code', 'error');
+            } else if (code && code === generatedCode) {
+                showStatus('Verification code is correct', 'success');
+            }
+        });
 
-        if (next2) {
-            next2.addEventListener('click', () => {
-                if (!verificationSent) {
-                    showStatus('Please send verification code first', 'error');
-                    return;
-                }
+        next2.addEventListener('click', () => {
+            if (!verificationSent) {
+                showStatus('Please send verification code first', 'error');
+                return;
+            }
 
-                const code = verificationCode.value.trim();
-                if (code !== generatedCode) {
-                    showStatus('Invalid verification code', 'error');
-                    return;
-                }
+            const code = verificationCode.value.trim();
+            if (code !== generatedCode) {
+                showStatus('Invalid verification code', 'error');
+                return;
+            }
 
-                userData.email = email.value.trim();
-                goToStep(3);
-            });
-        }
+            userData.email = email.value.trim();
+            goToStep(3);
+        });
 
-        if (prev3) {
-            prev3.addEventListener('click', () => goToStep(2));
-        }
+        prev3.addEventListener('click', () => goToStep(2));
 
-        if (password) {
-            password.addEventListener('input', () => {
-                checkPasswordStrength(password.value);
-                
-                const isPasswordValid = password.value.length >= 6;
-                const isConfirmValid = confirmPassword.value === password.value;
-                if (next3) {
-                    next3.disabled = !(isPasswordValid && isConfirmValid);
-                }
-            });
-        }
+        password.addEventListener('input', () => {
+            checkPasswordStrength(password.value);
+            
+            const isPasswordValid = password.value.length >= 6;
+            const isConfirmValid = confirmPassword.value === password.value;
+            if (next3) {
+                next3.disabled = !(isPasswordValid && isConfirmValid);
+            }
+        });
 
-        if (confirmPassword) {
-            confirmPassword.addEventListener('input', () => {
-                const isPasswordValid = password.value.length >= 6;
-                const isConfirmValid = confirmPassword.value === password.value;
-                if (next3) {
-                    next3.disabled = !(isPasswordValid && isConfirmValid);
-                }
-                
-                if (confirmPassword.value && password.value !== confirmPassword.value) {
-                    showStatus('Passwords do not match', 'error');
-                } else if (confirmPassword.value && password.value === confirmPassword.value) {
-                    showStatus('Passwords match', 'success');
-                }
-            });
-        }
+        confirmPassword.addEventListener('input', () => {
+            const isPasswordValid = password.value.length >= 6;
+            const isConfirmValid = confirmPassword.value === password.value;
+            if (next3) {
+                next3.disabled = !(isPasswordValid && isConfirmValid);
+            }
+            
+            if (confirmPassword.value && password.value !== confirmPassword.value) {
+                showStatus('Passwords do not match', 'error');
+            } else if (confirmPassword.value && password.value === confirmPassword.value) {
+                showStatus('Passwords match', 'success');
+            }
+        });
 
-        if (next3) {
-            next3.addEventListener('click', () => {
-                if (password.value.length < 6) {
-                    showStatus('Password must be at least 6 characters', 'error');
-                    return;
-                }
+        next3.addEventListener('click', () => {
+            if (password.value.length < 6) {
+                showStatus('Password must be at least 6 characters', 'error');
+                return;
+            }
 
-                if (password.value !== confirmPassword.value) {
-                    showStatus('Passwords do not match', 'error');
-                    return;
-                }
+            if (password.value !== confirmPassword.value) {
+                showStatus('Passwords do not match', 'error');
+                return;
+            }
 
-                userData.password = password.value;
-                goToStep(4);
-            });
-        }
+            userData.password = password.value;
+            goToStep(4);
+        });
 
-        if (prev4) {
-            prev4.addEventListener('click', () => goToStep(3));
-        }
+        prev4.addEventListener('click', () => goToStep(3));
 
-        if (profileImage) {
-            profileImage.addEventListener('change', (e) => {
-                if (e.target.files[0]) {
-                    previewImage(e.target.files[0]);
-                }
-            });
-        }
+        profileImage.addEventListener('change', (e) => {
+            if (e.target.files[0]) {
+                previewImage(e.target.files[0]);
+            }
+        });
 
-        if (next4) {
-            next4.addEventListener('click', completeRegistration);
-        }
+        next4.addEventListener('click', completeRegistration);
 
-        if (downloadQR) {
-            downloadQR.addEventListener('click', downloadQRCode);
-        }
+        downloadQR.addEventListener('click', downloadQRCode);
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
