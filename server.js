@@ -3,14 +3,13 @@ const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const QRCode = require('qrcode');
 
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
 console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
-// Middleware
+// Enhanced Middleware
 app.use(cors({
   origin: '*',
   credentials: true,
@@ -21,8 +20,9 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(__dirname));
 
+// Enhanced logging middleware
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.url}`);
   next();
@@ -30,7 +30,7 @@ app.use((req, res, next) => {
 
 console.log('✅ Middleware initialized');
 
-// ==================== GMAIL SMTP CONFIGURATION ====================
+// ==================== ENHANCED GMAIL SMTP CONFIGURATION ====================
 console.log('📧 Setting up Gmail SMTP service...');
 
 let emailTransporter = null;
@@ -38,122 +38,136 @@ let smtpStatus = 'disconnected';
 
 const initializeEmailService = async () => {
   try {
-    console.log('🔧 Initializing email service...');
+    console.log('🔧 Initializing SMTP transporter...');
     
-    const transporter = nodemailer.createTransport({
+    const smtpConfig = {
       service: 'gmail',
       auth: {
-        user: 'byprosprt2007@gmail.com',
-        pass: 'bwau grcq jivh bvri'
+        user: process.env.EMAIL_USER || 'byprosprt2007@gmail.com',
+        pass: process.env.EMAIL_PASSWORD || 'bwau grcq jivh bvri'
       },
       pool: true,
       maxConnections: 5,
-      maxMessages: 100,
-      // إعدادات إضافية لتحسين الاتصال
-      socketTimeout: 60000,
-      connectionTimeout: 60000,
-      greetingTimeout: 30000
-    });
+      maxMessages: 100
+    };
 
-    await transporter.verify();
-    console.log('✅ SMTP Server is ready to send emails');
+    emailTransporter = nodemailer.createTransport(smtpConfig);
+
+    // Verify connection
+    await emailTransporter.verify();
     smtpStatus = 'connected';
-    return transporter;
+    console.log('✅ SMTP Server is ready to send emails');
     
+    return true;
   } catch (error) {
     console.error('❌ SMTP Connection Failed:', error.message);
     smtpStatus = 'error';
-    return null;
+    emailTransporter = null;
+    return false;
   }
 };
 
-// Initialize email service
-initializeEmailService().then(transporter => {
-  emailTransporter = transporter;
-});
+// Initialize email service on startup
+initializeEmailService();
 
-// وظيفة إرسال البريد الإلكتروني
+// Enhanced email sending with retry logic
 async function sendVerificationEmail(userEmail, code) {
-  if (!emailTransporter) {
+  if (!emailTransporter || smtpStatus !== 'connected') {
     console.error('❌ SMTP transporter not available');
     return { 
       success: false, 
-      error: 'Email service is currently unavailable. Please try again later.'
+      error: 'Email service is temporarily unavailable. Please try again later.',
+      retryable: true
     };
   }
 
-  try {
-    console.log(`📧 Attempting to send email to: ${userEmail}`);
-    
-    const mailOptions = {
-      from: '"B.Y PRO Accounts" <byprosprt2007@gmail.com>',
-      to: userEmail,
-      subject: '🔐 B.Y PRO Verification Code',
-      html: `
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta charset="utf-8">
-            <style>
-                body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
-                .container { background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-                .header { background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 30px; border-radius: 15px 15px 0 0; text-align: center; margin: -40px -40px 30px -40px; }
-                .code { font-size: 42px; font-weight: bold; color: #3498db; text-align: center; margin: 30px 0; letter-spacing: 8px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 3px dashed #3498db; }
-            </style>
-        </head>
-        <body>
-            <div class="container">
-                <div class="header">
-                    <h1 style="margin: 0; font-size: 28px;">B.Y PRO Accounts</h1>
-                    <p style="margin: 10px 0 0; opacity: 0.9;">Verification Code</p>
-                </div>
-                
-                <h2 style="color: #2c3e50; text-align: center;">Hello!</h2>
-                <p style="color: #546e7a; text-align: center; font-size: 16px;">
-                    Your verification code is:
-                </p>
-                
-                <div class="code">${code}</div>
-                
-                <p style="color: #546e7a; text-align: center; font-size: 14px;">
-                    ⏰ This code will expire in 10 minutes.
-                </p>
-                
-                <div style="background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 10px; padding: 15px; margin: 20px 0;">
-                    <p style="color: #856404; margin: 0; text-align: center;">
-                        🔒 Security Notice: If you didn't request this code, please ignore this email.
-                    </p>
-                </div>
-                
-                <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e3f2fd; color: #666; text-align: center;">
-                    <p style="margin: 5px 0;"><strong>B.Y PRO Accounts Team</strong></p>
-                    <p style="margin: 5px 0; font-size: 14px;">Secure • Professional • Reliable</p>
-                </div>
-            </div>
-        </body>
-        </html>
-      `
-    };
+  const maxRetries = 2;
+  let retryCount = 0;
 
-    const info = await emailTransporter.sendMail(mailOptions);
-    
-    console.log('✅ Email sent successfully!');
-    
-    return { 
-      success: true, 
-      message: 'Verification code sent successfully'
-    };
-    
-  } catch (error) {
-    console.error('❌ Email sending failed:', error.message);
-    return { 
-      success: false, 
-      error: 'Unable to send verification email at this time. Please try again in a few minutes.'
-    };
+  while (retryCount <= maxRetries) {
+    try {
+      console.log(`📧 Attempting to send email to: ${userEmail} (Attempt ${retryCount + 1})`);
+
+      const mailOptions = {
+        from: '"B.Y PRO Accounts" <byprosprt2007@gmail.com>',
+        to: userEmail,
+        subject: '🔐 B.Y PRO Verification Code',
+        html: `
+          <!DOCTYPE html>
+          <html>
+          <head>
+              <meta charset="utf-8">
+              <style>
+                  body { font-family: Arial, sans-serif; background: #f4f4f4; padding: 20px; }
+                  .container { background: white; padding: 40px; border-radius: 15px; max-width: 600px; margin: 0 auto; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+                  .header { background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 30px; border-radius: 15px 15px 0 0; text-align: center; margin: -40px -40px 30px -40px; }
+                  .code { font-size: 42px; font-weight: bold; color: #3498db; text-align: center; margin: 30px 0; letter-spacing: 8px; padding: 20px; background: #f8f9fa; border-radius: 10px; border: 3px dashed #3498db; }
+              </style>
+          </head>
+          <body>
+              <div class="container">
+                  <div class="header">
+                      <h1 style="margin: 0; font-size: 28px;">B.Y PRO Accounts</h1>
+                      <p style="margin: 10px 0 0; opacity: 0.9;">Verification Code</p>
+                  </div>
+                  
+                  <h2 style="color: #2c3e50; text-align: center;">Hello!</h2>
+                  <p style="color: #546e7a; text-align: center; font-size: 16px;">
+                      Your verification code is:
+                  </p>
+                  
+                  <div class="code">${code}</div>
+                  
+                  <p style="color: #546e7a; text-align: center; font-size: 14px;">
+                      ⏰ This code will expire in 10 minutes.
+                  </p>
+                  
+                  <div style="background: #fff3cd; border: 2px solid #ffeaa7; border-radius: 10px; padding: 15px; margin: 20px 0;">
+                      <p style="color: #856404; margin: 0; text-align: center;">
+                          🔒 Security Notice: If you didn't request this code, please ignore this email.
+                      </p>
+                  </div>
+                  
+                  <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e3f2fd; color: #666; text-align: center;">
+                      <p style="margin: 5px 0;"><strong>B.Y PRO Accounts Team</strong></p>
+                      <p style="margin: 5px 0; font-size: 14px;">Secure • Professional • Reliable</p>
+                  </div>
+              </div>
+          </body>
+          </html>
+        `
+      };
+
+      const info = await emailTransporter.sendMail(mailOptions);
+      
+      console.log('✅ Email sent successfully!');
+      console.log('📧 Message ID:', info.messageId);
+      
+      return { 
+        success: true, 
+        method: 'gmail_smtp', 
+        messageId: info.messageId
+      };
+      
+    } catch (error) {
+      retryCount++;
+      console.error(`❌ Email sending failed (Attempt ${retryCount}):`, error.message);
+      
+      if (retryCount <= maxRetries) {
+        console.log(`🔄 Retrying... (${retryCount}/${maxRetries})`);
+        await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2 seconds before retry
+      } else {
+        return { 
+          success: false, 
+          error: 'Unable to send verification email. Please try again in a few minutes.',
+          retryable: false
+        };
+      }
+    }
   }
 }
 
-// ==================== GOOGLE DRIVE CONFIGURATION ====================
+// ==================== ENHANCED GOOGLE DRIVE CONFIGURATION ====================
 const serviceAccount = {
   type: "service_account",
   project_id: "database-accounts-469323",
@@ -200,7 +214,9 @@ const FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
 
 console.log('🔐 Google Drive configuration loaded');
 
-// تهيئة خدمة Google Drive
+// Enhanced Google Drive service with error handling
+let driveService = null;
+
 function initializeDriveService() {
   try {
     console.log('🔄 Initializing Google Drive service...');
@@ -210,43 +226,48 @@ function initializeDriveService() {
       scopes: SCOPES,
     });
     
-    const drive = google.drive({ version: 'v3', auth });
+    driveService = google.drive({ version: 'v3', auth });
     console.log('✅ Google Drive service initialized successfully');
-    return drive;
+    return driveService;
   } catch (error) {
     console.error('❌ Failed to initialize Google Drive service:', error.message);
     return null;
   }
 }
 
-const driveService = initializeDriveService();
+driveService = initializeDriveService();
 
-// قراءة CSV من Google Drive
+// Enhanced CSV operations with error handling
 async function readCSVFromDrive(fileId) {
   if (!driveService) {
     throw new Error("Database service is currently unavailable");
   }
 
   try {
+    console.log(`📖 Reading CSV from Drive (File ID: ${fileId})`);
+    
     const response = await driveService.files.get({
       fileId: fileId,
       alt: 'media'
     });
 
-    return response.data;
+    const data = response.data;
+    console.log(`✅ Successfully read CSV data, length: ${data.length}`);
+    return data;
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
-    throw new Error('Unable to access database at this time');
+    throw new Error("Unable to access database. Please try again later.");
   }
 }
 
-// كتابة CSV إلى Google Drive
 async function writeCSVToDrive(fileId, accounts) {
   if (!driveService) {
     throw new Error("Database service is currently unavailable");
   }
 
   try {
+    console.log(`💾 Writing ${accounts.length} accounts to Drive...`);
+    
     const headers = ['id', 'ps', 'email', 'name', 'image'];
     const csvContent = [
       headers.join(','),
@@ -258,20 +279,269 @@ async function writeCSVToDrive(fileId, accounts) {
       body: csvContent
     };
 
-    await driveService.files.update({
+    const response = await driveService.files.update({
       fileId: fileId,
       media: media,
       fields: 'id'
     });
 
-    return true;
+    console.log(`✅ Successfully wrote ${accounts.length} accounts to Drive`);
+    return response.data;
   } catch (error) {
     console.error('❌ Error writing CSV to Drive:', error.message);
-    throw new Error('Unable to save data to database');
+    throw new Error("Unable to save data. Please try again.");
   }
 }
 
-// تحويل CSV إلى مصفوفة حسابات
+// Enhanced account management functions
+async function getNextAvailableId() {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    
+    if (accounts.length === 0) {
+      return "1";
+    }
+    
+    const ids = accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
+    if (ids.length === 0) {
+      return "1";
+    }
+    
+    const maxId = Math.max(...ids);
+    return (maxId + 1).toString();
+  } catch (error) {
+    console.error('❌ Error getting next ID:', error.message);
+    // Generate a fallback ID based on timestamp
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  }
+}
+
+async function addNewAccount(accountData) {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    let accounts = parseCSVToAccounts(csvData);
+    
+    // Check if email already exists
+    const existingAccount = accounts.find(acc => acc.email === accountData.email);
+    if (existingAccount) {
+      throw new Error("An account with this email already exists");
+    }
+    
+    accounts.push(accountData);
+    
+    const saved = await saveAllAccounts(accounts);
+    return saved;
+  } catch (error) {
+    console.error('❌ Error adding new account:', error.message);
+    throw error;
+  }
+}
+
+// ==================== ENHANCED ROUTES ====================
+
+// Serve static files
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.get('/login.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
+});
+
+app.get('/signup.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'signup.html'));
+});
+
+app.get('/style.css', (req, res) => {
+  res.sendFile(path.join(__dirname, 'style.css'));
+});
+
+// Enhanced API Routes with better error handling
+
+// Send verification email
+app.post('/api/send-verification-email', async (req, res) => {
+  try {
+    const { email, code } = req.body;
+    
+    console.log(`📧 API Request - To: ${email}`);
+    
+    if (!email || !code) {
+      return res.status(400).json({
+        success: false,
+        error: "Email and verification code are required"
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "Please provide a valid email address"
+      });
+    }
+
+    const result = await sendVerificationEmail(email, code);
+    
+    if (!result.success && result.retryable) {
+      return res.status(503).json(result);
+    }
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('❌ API Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Service temporarily unavailable. Please try again in a few minutes."
+    });
+  }
+});
+
+// Get next available ID
+app.get('/api/next-id', async (req, res) => {
+  try {
+    const nextId = await getNextAvailableId();
+    res.json({
+      success: true,
+      nextId: nextId
+    });
+  } catch (error) {
+    console.error('❌ Error getting next ID:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Unable to generate account ID. Please try again.",
+      fallbackId: Math.floor(1000 + Math.random() * 9000).toString()
+    });
+  }
+});
+
+// Create new account
+app.post('/api/accounts', async (req, res) => {
+  try {
+    const { id, name, email, password, image } = req.body;
+    
+    console.log(`👤 Adding new account: ${id} - ${name}`);
+    
+    if (!id || !name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "All fields are required to create an account"
+      });
+    }
+
+    const accountData = {
+      id: id,
+      ps: password,
+      email: email,
+      name: name,
+      image: image || ''
+    };
+
+    const saved = await addNewAccount(accountData);
+    
+    if (saved) {
+      res.json({
+        success: true,
+        message: "Account created successfully",
+        account: accountData
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: "Failed to save account to database"
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error creating account:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Unable to create account. Please try again."
+    });
+  }
+});
+
+// Health check endpoint
+app.get('/api/health', async (req, res) => {
+  // Recheck email service status
+  if (smtpStatus !== 'connected') {
+    await initializeEmailService();
+  }
+  
+  let driveStatus = 'connected';
+  try {
+    if (driveService) {
+      await driveService.files.get({ fileId: FILE_ID, fields: 'id' });
+    } else {
+      driveStatus = 'disconnected';
+    }
+  } catch (error) {
+    driveStatus = 'error';
+  }
+  
+  res.json({ 
+    status: 'operational',
+    service: 'B.Y PRO Accounts Management System',
+    timestamp: new Date().toISOString(),
+    services: {
+      email: smtpStatus,
+      database: driveStatus
+    },
+    version: '2.0.0'
+  });
+});
+
+// Enhanced 404 handler
+app.use('*', (req, res) => {
+  console.log(`❌ 404 - Route not found: ${req.originalUrl}`);
+  res.status(404).json({
+    success: false,
+    error: "The requested resource was not found",
+    path: req.originalUrl
+  });
+});
+
+// Enhanced error handler
+app.use((err, req, res, next) => {
+  console.error('💥 Unhandled error:', err);
+  res.status(500).json({
+    success: false,
+    error: "An unexpected error occurred. Our team has been notified.",
+    reference: Date.now().toString(36)
+  });
+});
+
+// Graceful shutdown handling
+process.on('SIGTERM', () => {
+  console.log('🔄 Received SIGTERM, shutting down gracefully...');
+  if (emailTransporter) {
+    emailTransporter.close();
+  }
+  process.exit(0);
+});
+
+process.on('SIGINT', () => {
+  console.log('🔄 Received SIGINT, shutting down gracefully...');
+  if (emailTransporter) {
+    emailTransporter.close();
+  }
+  process.exit(0);
+});
+
+// Start server
+app.listen(PORT, '0.0.0.0', () => {
+  console.log('\n🎉 =================================');
+  console.log('🚀 B.Y PRO ACCOUNTS - ENHANCED PRODUCTION');
+  console.log('✅ Server started successfully!');
+  console.log(`🔗 Port: ${PORT}`);
+  console.log('📧 Email: Gmail SMTP with Retry Logic');
+  console.log('💾 Database: Google Drive with Error Handling');
+  console.log('🔐 Auth: QR Code + Password');
+  console.log('🛡️  Enhanced Error Handling: Active');
+  console.log('🎉 =================================\n');
+});
+
+// Helper function (keep existing)
 function parseCSVToAccounts(csvData) {
   try {
     const lines = csvData.split('\n').filter(line => line.trim() !== '');
@@ -304,30 +574,6 @@ function parseCSVToAccounts(csvData) {
   }
 }
 
-// الحصول على ID التالي المتاح
-async function getNextAvailableId() {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    if (accounts.length === 0) {
-      return "1";
-    }
-    
-    const ids = accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
-    if (ids.length === 0) {
-      return "1";
-    }
-    
-    const maxId = Math.max(...ids);
-    return (maxId + 1).toString();
-  } catch (error) {
-    console.error('❌ Error getting next ID:', error.message);
-    return (Math.floor(Math.random() * 10000) + 1000).toString();
-  }
-}
-
-// حفظ جميع الحسابات
 async function saveAllAccounts(accounts) {
   try {
     await writeCSVToDrive(FILE_ID, accounts);
@@ -338,29 +584,6 @@ async function saveAllAccounts(accounts) {
   }
 }
 
-// إضافة حساب جديد
-async function addNewAccount(accountData) {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    let accounts = parseCSVToAccounts(csvData);
-    
-    // التحقق من عدم وجود ID مكرر
-    const existingAccount = accounts.find(acc => acc.id === accountData.id);
-    if (existingAccount) {
-      throw new Error('Account ID already exists');
-    }
-    
-    accounts.push(accountData);
-    
-    const saved = await saveAllAccounts(accounts);
-    return saved;
-  } catch (error) {
-    console.error('❌ Error adding new account:', error.message);
-    return false;
-  }
-}
-
-// التحقق من بيانات الحساب
 async function verifyAccountCredentials(id, password) {
   try {
     const csvData = await readCSVFromDrive(FILE_ID);
@@ -384,193 +607,14 @@ async function verifyAccountCredentials(id, password) {
     } else {
       return {
         success: false,
-        error: "Invalid ID or password"
+        error: "Invalid credentials provided"
       };
     }
   } catch (error) {
     console.error('❌ Error verifying account:', error.message);
     return {
       success: false,
-      error: "Authentication service is temporarily unavailable. Please try again later."
+      error: "Authentication service temporarily unavailable"
     };
   }
 }
-
-// ==================== ROUTES ====================
-
-// Routes الأساسية - تأكد من أن هذه موجودة
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
-});
-
-app.get('/login.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
-});
-
-app.get('/signup.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'signup.html'));
-});
-
-app.get('/style.css', (req, res) => {
-  res.sendFile(path.join(__dirname, 'style.css'));
-});
-
-// خدمة ملف QR Code - هذا مهم!
-app.get('/qrcode.min.js', (req, res) => {
-  res.redirect('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js');
-});
-
-// API Routes
-
-// التحقق من الحساب - GET
-app.get('/api/verify-account', async (req, res) => {
-  try {
-    const { id, password } = req.query;
-    
-    if (!id || !password) {
-      return res.json({ 
-        success: false, 
-        error: "ID and password are required" 
-      });
-    }
-
-    const result = await verifyAccountCredentials(id, password);
-    res.json(result);
-    
-  } catch (error) {
-    res.json({ 
-      success: false, 
-      error: "Authentication service is temporarily unavailable. Please try again later." 
-    });
-  }
-});
-
-// الحصول على ID التالي - GET
-app.get('/api/next-id', async (req, res) => {
-  try {
-    const nextId = await getNextAvailableId();
-    res.json({
-      success: true,
-      nextId: nextId
-    });
-  } catch (error) {
-    res.json({
-      success: false,
-      error: "Unable to generate account ID at this time. Please try again."
-    });
-  }
-});
-
-// إنشاء حساب جديد - POST
-app.post('/api/accounts', async (req, res) => {
-  try {
-    const { id, name, email, password, image } = req.body;
-    
-    if (!id || !name || !email || !password) {
-      return res.json({
-        success: false,
-        error: "All fields are required"
-      });
-    }
-
-    const accountData = {
-      id: id,
-      ps: password,
-      email: email,
-      name: name,
-      image: image || ''
-    };
-
-    const saved = await addNewAccount(accountData);
-    
-    if (saved) {
-      res.json({
-        success: true,
-        message: "Account created successfully",
-        account: accountData
-      });
-    } else {
-      res.json({
-        success: false,
-        error: "Unable to create account at this time. Please try again later."
-      });
-    }
-  } catch (error) {
-    res.json({
-      success: false,
-      error: "Account creation service is temporarily unavailable. Please try again later."
-    });
-  }
-});
-
-// إرسال بريد التحقق - POST
-app.post('/api/send-verification-email', async (req, res) => {
-  try {
-    const { email, code } = req.body;
-    
-    if (!email || !code) {
-      return res.json({
-        success: false,
-        error: "Email and code are required"
-      });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.json({
-        success: false,
-        error: "Please enter a valid email address"
-      });
-    }
-
-    const result = await sendVerificationEmail(email, code);
-    res.json(result);
-    
-  } catch (error) {
-    res.json({
-      success: false,
-      error: "Email service is temporarily unavailable. Please try again in a few minutes."
-    });
-  }
-});
-
-// التحقق من صحة الخدمة - GET
-app.get('/api/health', async (req, res) => {
-  res.json({ 
-    status: 'operational',
-    service: 'B.Y PRO Accounts',
-    smtp_status: smtpStatus,
-    database_status: driveService ? 'connected' : 'disconnected',
-    timestamp: new Date().toISOString(),
-    message: 'Professional Account Management System'
-  });
-});
-
-// معالجة 404
-app.use('*', (req, res) => {
-  res.status(404).json({
-    success: false,
-    error: `Route ${req.originalUrl} not found`
-  });
-});
-
-// معالجة الأخطاء
-app.use((err, req, res, next) => {
-  console.error('❌ Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    error: 'Internal server error. Our team has been notified and is working on a solution.'
-  });
-});
-
-// بدء الخادم
-app.listen(PORT, '0.0.0.0', () => {
-  console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS - PRODUCTION');
-  console.log('✅ Server started successfully!');
-  console.log(`🔗 Port: ${PORT}`);
-  console.log('📧 Email: Gmail SMTP');
-  console.log('💾 Database: Google Drive');
-  console.log('🔐 Auth: QR Code + Password');
-  console.log('🎉 =================================\n');
-});
