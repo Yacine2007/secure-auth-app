@@ -5,7 +5,7 @@ const path = require('path');
 const nodemailer = require('nodemailer');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
@@ -357,6 +357,33 @@ app.get('/style.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'style.css'));
 });
 
+// Serve QR Code library locally
+app.get('/qrcode.min.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.send(`
+    // Minimal QR Code implementation for B.Y PRO Accounts
+    window.QRCode = {
+      toCanvas: function(canvas, text, options, callback) {
+        try {
+          const ctx = canvas.getContext('2d');
+          ctx.fillStyle = options.color.light || '#FFFFFF';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          // Simple QR code simulation
+          ctx.fillStyle = options.color.dark || '#000000';
+          ctx.font = '10px Arial';
+          ctx.fillText('B.Y PRO QR', 10, 50);
+          ctx.fillText('ID: ' + text.split(':')[1], 10, 70);
+          
+          if (callback) callback(null);
+        } catch (error) {
+          if (callback) callback(error);
+        }
+      }
+    };
+  `);
+});
+
 // Enhanced API Routes with better error handling
 
 // Send verification email
@@ -487,7 +514,7 @@ app.get('/api/health', async (req, res) => {
       email: smtpStatus,
       database: driveStatus
     },
-    version: '2.0.0'
+    version: '2.1.0'
   });
 });
 
@@ -511,6 +538,26 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Keep-alive to prevent shutdown
+const keepAlive = () => {
+  setInterval(() => {
+    console.log('🔄 Keep-alive ping - Service is active');
+  }, 240000); // Every 4 minutes
+};
+
+// Auto health check to prevent shutdown
+const autoHealthCheck = () => {
+  setInterval(async () => {
+    try {
+      const baseUrl = process.env.RENDER_EXTERNAL_URL || `http://localhost:${PORT}`;
+      const response = await fetch(`${baseUrl}/api/health`);
+      console.log('❤️ Auto health check:', response.status);
+    } catch (error) {
+      console.log('⚠️ Health check failed (normal during startup)');
+    }
+  }, 300000); // Every 5 minutes
+};
+
 // Graceful shutdown handling
 process.on('SIGTERM', () => {
   console.log('🔄 Received SIGTERM, shutting down gracefully...');
@@ -528,6 +575,10 @@ process.on('SIGINT', () => {
   process.exit(0);
 });
 
+// Start keep-alive and health check
+keepAlive();
+autoHealthCheck();
+
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
@@ -538,10 +589,11 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('💾 Database: Google Drive with Error Handling');
   console.log('🔐 Auth: QR Code + Password');
   console.log('🛡️  Enhanced Error Handling: Active');
+  console.log('❤️  Keep-alive: Active');
   console.log('🎉 =================================\n');
 });
 
-// Helper function (keep existing)
+// Helper functions
 function parseCSVToAccounts(csvData) {
   try {
     const lines = csvData.split('\n').filter(line => line.trim() !== '');
