@@ -29,10 +29,9 @@ app.use((req, res, next) => {
 
 console.log('✅ Middleware initialized');
 
-// ==================== BREVO EMAIL SERVICE ====================
-console.log('📧 Setting up Brevo Email Service...');
+// ==================== EMAILJS EMAIL SERVICE ====================
+console.log('📧 Setting up EmailJS Service...');
 
-const BREVO_API_KEY = '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';
 let emailServiceStatus = 'connected';
 
 async function sendVerificationEmail(userEmail, code) {
@@ -40,157 +39,27 @@ async function sendVerificationEmail(userEmail, code) {
     console.log(`📧 Sending verification to: ${userEmail}`);
     console.log(`🔑 Verification code: ${code}`);
     
-    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-      method: 'POST',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-        'api-key': BREVO_API_KEY
-      },
-      body: JSON.stringify({
-        sender: {
-          name: 'B.Y PRO Accounts',
-          email: 'byprosprt2007@gmail.com'
-        },
-        to: [
-          {
-            email: userEmail,
-            name: userEmail.split('@')[0]
-          }
-        ],
-        subject: '🔐 B.Y PRO Verification Code',
-        htmlContent: generateEmailTemplate(code, userEmail)
-      })
-    });
-
-    if (!response.ok) {
-      const errorData = await response.json();
-      console.error('❌ Brevo API error:', errorData);
-      throw new Error(errorData.message || `HTTP ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log('✅ Email sent successfully via Brevo!');
-    console.log('📧 Message ID:', data.messageId);
-    emailServiceStatus = 'connected';
-    
+    // EmailJS يعمل من جانب العميل، لذلك نعيد نجاح مباشرة
+    // سيقوم signup.html بإرسال البريد باستخدام EmailJS
     return { 
       success: true, 
-      method: 'brevo', 
-      messageId: data.messageId,
+      message: "Verification email sent successfully",
+      method: 'emailjs',
+      code: code,
       email: userEmail
     };
       
   } catch (error) {
-    console.error('❌ Brevo email failed:', error.message);
-    emailServiceStatus = 'error';
+    console.error('❌ Email service error:', error.message);
     
-    // نظام احتياطي - يعتبر الإرسال ناجحاً مع تحذير
+    // نظام احتياطي - يعتبر الإرسال ناجحاً
     return { 
       success: true, 
-      message: "Verification system ready - Check your email",
+      message: "Verification system ready",
       fallback: true,
       code: code
     };
   }
-}
-
-function generateEmailTemplate(code, userEmail) {
-  return `
-    <!DOCTYPE html>
-    <html>
-    <head>
-        <meta charset="utf-8">
-        <style>
-            body { 
-                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-                margin: 0;
-                padding: 20px;
-            }
-            .container { 
-                background: white; 
-                padding: 40px; 
-                border-radius: 20px; 
-                max-width: 600px; 
-                margin: 0 auto; 
-                box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-                border: 1px solid #e0e0e0;
-            }
-            .header { 
-                background: linear-gradient(135deg, #3498db, #2980b9); 
-                color: white; 
-                padding: 40px; 
-                border-radius: 15px 15px 0 0; 
-                text-align: center; 
-                margin: -40px -40px 40px -40px; 
-            }
-            .code { 
-                font-size: 48px; 
-                font-weight: bold; 
-                color: #2c3e50; 
-                text-align: center; 
-                margin: 40px 0; 
-                letter-spacing: 12px; 
-                padding: 30px; 
-                background: #f8f9fa; 
-                border-radius: 15px; 
-                border: 3px dashed #3498db;
-                font-family: 'Courier New', monospace;
-            }
-            .footer {
-                margin-top: 40px;
-                padding-top: 20px;
-                border-top: 2px solid #ecf0f1;
-                color: #7f8c8d;
-                text-align: center;
-                font-size: 14px;
-            }
-            .security-notice {
-                background: #fff3cd;
-                border: 2px solid #ffeaa7;
-                border-radius: 10px;
-                padding: 20px;
-                margin: 20px 0;
-                text-align: center;
-            }
-        </style>
-    </head>
-    <body>
-        <div class="container">
-            <div class="header">
-                <h1 style="margin: 0; font-size: 32px; font-weight: 700;">B.Y PRO Accounts</h1>
-                <p style="margin: 10px 0 0; opacity: 0.9; font-size: 16px;">Secure Verification System</p>
-            </div>
-            
-            <h2 style="color: #2c3e50; text-align: center; margin-bottom: 10px;">Hello!</h2>
-            <p style="color: #546e7a; text-align: center; font-size: 16px; line-height: 1.6;">
-                Thank you for choosing B.Y PRO. Your verification code is:
-            </p>
-            
-            <div class="code">${code}</div>
-            
-            <p style="color: #546e7a; text-align: center; font-size: 14px; margin: 20px 0;">
-                ⏰ This code will expire in 10 minutes.
-            </p>
-            
-            <div class="security-notice">
-                <p style="color: #856404; margin: 0; text-align: center; font-weight: 500;">
-                    🔒 Security Notice: If you didn't request this code, please ignore this email.
-                </p>
-            </div>
-            
-            <div class="footer">
-                <p style="margin: 5px 0;"><strong>B.Y PRO Accounts Team</strong></p>
-                <p style="margin: 5px 0; font-size: 14px;">Secure • Professional • Reliable</p>
-                <p style="margin: 10px 0 0; font-size: 12px; color: #bdc3c7;">
-                    This email was sent to ${userEmail}
-                </p>
-            </div>
-        </div>
-    </body>
-    </html>
-  `;
 }
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
@@ -634,8 +503,8 @@ app.get('/api/health', async (req, res) => {
       email: emailServiceStatus,
       database: driveStatus
     },
-    version: '2.4.0',
-    email_provider: 'Brevo (300 emails/day)'
+    version: '2.5.0',
+    email_provider: 'EmailJS (200 emails/month)'
   });
 });
 
@@ -700,7 +569,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('🚀 B.Y PRO ACCOUNTS - PRODUCTION READY');
   console.log('✅ Server started successfully!');
   console.log(`🔗 Port: ${PORT}`);
-  console.log('📧 Email: Brevo Service (300 emails/day)');
+  console.log('📧 Email: EmailJS Service (200 emails/month)');
   console.log('💾 Database: Google Drive');
   console.log('🔐 Auth: QR Code + Password');
   console.log('🛡️  Enhanced Error Handling: Active');
@@ -785,4 +654,3 @@ async function verifyAccountCredentials(id, password) {
     };
   }
 }
-
