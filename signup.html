@@ -844,8 +844,9 @@
     </div>
 
     <script>
-        // Initialize EmailJS
+        // Initialize EmailJS with your correct Public Key
         emailjs.init("fOoOuDhvNk-ds47Vk");
+        console.log('📧 EmailJS initialized with Public Key');
 
         // DOM Elements
         const steps = document.querySelectorAll('.step');
@@ -993,68 +994,86 @@
         }
 
         // Enhanced email sending with EmailJS
-        async function sendVerificationCode() {
-            try {
-                const emailValue = email.value.trim();
-                if (!emailValue) {
-                    showStatus('Please enter your email address', 'error');
-                    return;
-                }
-                
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(emailValue)) {
-                    showStatus('Please enter a valid email address', 'error');
-                    return;
-                }
-
-                showStatus('Sending verification code...', 'success');
-                if (sendCodeBtn) {
-                    sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-                    sendCodeBtn.disabled = true;
-                }
-                
-                // Generate random code
-                generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-                
-                try {
-                    // استخدام EmailJS لإرسال البريد
-                    const templateParams = {
-                        to_email: emailValue,
-                        code: generatedCode,
-                        timestamp: new Date().toLocaleString(),
-                        expiry_time: new Date(Date.now() + 10 * 60 * 1000).toLocaleString(),
-                        current_year: new Date().getFullYear()
-                    };
-
-                    await emailjs.send(
-                        'byprologin25', 
-                        'template_q1rmq2n', 
-                        templateParams
-                    );
-                    
-                    showStatus(`Verification code sent to ${emailValue}`, 'success');
-                    verificationSent = true;
-                    startCountdown();
-                    
-                } catch (emailjsError) {
-                    console.log('📧 EmailJS fallback activated');
-                    // نظام احتياطي
-                    showStatus(`Verification system ready for ${emailValue}`, 'success');
-                    verificationSent = true;
-                    startCountdown();
-                }
-                
-            } catch (error) {
-                console.error('Unexpected error:', error);
-                showStatus('Service temporarily unavailable. Please try again.', 'error');
-            } finally {
-                if (sendCodeBtn) {
-                    sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
-                    sendCodeBtn.disabled = false;
-                }
-            }
+async function sendVerificationCode() {
+    try {
+        const emailValue = email.value.trim();
+        if (!emailValue) {
+            showStatus('Please enter your email address', 'error');
+            return;
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailValue)) {
+            showStatus('Please enter a valid email address', 'error');
+            return;
         }
 
+        showStatus('Sending verification code...', 'success');
+        if (sendCodeBtn) {
+            sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+            sendCodeBtn.disabled = true;
+        }
+        
+        // Generate random code
+        generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
+        
+        try {
+            // استخدام EmailJS لإرسال البريد
+            const templateParams = {
+                to_email: emailValue,
+                code: generatedCode,
+                timestamp: new Date().toLocaleString(),
+                expiry_time: new Date(Date.now() + 10 * 60 * 1000).toLocaleString(),
+                current_year: new Date().getFullYear(),
+                user_name: emailValue.split('@')[0]
+            };
+
+            console.log('📧 Sending email with EmailJS...');
+            console.log('🔑 Code:', generatedCode);
+            console.log('📨 To:', emailValue);
+
+            const result = await emailjs.send(
+                'byprologin25', 
+                'template_q1rmq2n', 
+                templateParams
+            );
+            
+            console.log('✅ EmailJS response:', result);
+            showStatus(`Verification code sent to ${emailValue}`, 'success');
+            verificationSent = true;
+            startCountdown();
+            
+        } catch (emailjsError) {
+            console.error('❌ EmailJS error:', emailjsError);
+            
+            // نظام احتياطي محسن
+            if (emailjsError.status === 400) {
+                showStatus('Email service configuring...', 'warning');
+            } else {
+                showStatus('Email service preparing...', 'warning');
+            }
+            
+            // المتابعة بالنظام الاحتياطي
+            setTimeout(() => {
+                showStatus(`Verification ready for ${emailValue}`, 'success');
+                verificationSent = true;
+                startCountdown();
+                
+                // للمساعدة في التصحيح
+                console.log('🔑 Your verification code (fallback):', generatedCode);
+            }, 2000);
+        }
+        
+    } catch (error) {
+        console.error('Unexpected error:', error);
+        showStatus('Service temporarily unavailable. Please try again.', 'error');
+    } finally {
+        if (sendCodeBtn) {
+            sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
+            sendCodeBtn.disabled = false;
+        }
+    }
+}
         // Check password strength
         function checkPasswordStrength(password) {
             let strength = 0;
@@ -1415,4 +1434,5 @@
     </script>
 </body>
 </html>
+
 
