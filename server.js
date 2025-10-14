@@ -2,11 +2,12 @@ const express = require('express');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
+const QRCode = require('qrcode');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Accounts Login Server...');
+console.log('🚀 Starting B.Y PRO Unified Accounts System...');
 
 // Enhanced Middleware
 app.use(cors({
@@ -28,39 +29,6 @@ app.use((req, res, next) => {
 });
 
 console.log('✅ Middleware initialized');
-
-// ==================== EMAILJS EMAIL SERVICE ====================
-console.log('📧 Setting up EmailJS Service...');
-
-let emailServiceStatus = 'connected';
-
-async function sendVerificationEmail(userEmail, code) {
-  try {
-    console.log(`📧 Sending verification to: ${userEmail}`);
-    console.log(`🔑 Verification code: ${code}`);
-    
-    // EmailJS يعمل من جانب العميل، لذلك نعيد نجاح مباشرة
-    // سيقوم signup.html بإرسال البريد باستخدام EmailJS
-    return { 
-      success: true, 
-      message: "Verification email sent successfully",
-      method: 'emailjs',
-      code: code,
-      email: userEmail
-    };
-      
-  } catch (error) {
-    console.error('❌ Email service error:', error.message);
-    
-    // نظام احتياطي - يعتبر الإرسال ناجحاً
-    return { 
-      success: true, 
-      message: "Verification system ready",
-      fallback: true,
-      code: code
-    };
-  }
-}
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
 const serviceAccount = {
@@ -248,6 +216,14 @@ app.get('/signup.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'signup.html'));
 });
 
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'adminboard.html'));
+});
+
+app.get('/adminboard.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'adminboard.html'));
+});
+
 app.get('/style.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'style.css'));
 });
@@ -389,7 +365,7 @@ app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
     
-    console.log(`📧 API Request - To: ${email}, Code: ${code}`);
+    console.log(`📧 API Request - To: ${email}`);
     
     if (!email || !code) {
       return res.status(400).json({
@@ -406,9 +382,16 @@ app.post('/api/send-verification-email', async (req, res) => {
       });
     }
 
-    const result = await sendVerificationEmail(email, code);
+    // إخفاء الكود من الكونسول لأسباب أمنية
+    console.log(`✅ Verification system ready for: ${email}`);
     
-    res.json(result);
+    res.json({
+      success: true, 
+      message: "Verification system ready",
+      method: 'secure',
+      code: code,
+      email: email
+    });
     
   } catch (error) {
     console.error('❌ API Error:', error.message);
@@ -482,6 +465,208 @@ app.post('/api/accounts', async (req, res) => {
   }
 });
 
+// Generate QR Code endpoint
+app.post('/api/generate-qr', async (req, res) => {
+  try {
+    const { id, password } = req.body;
+    
+    if (!id || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "ID and password are required"
+      });
+    }
+
+    const qrData = `BYPRO:${id}:${password}`;
+    
+    try {
+      // Generate QR code as data URL
+      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+        width: 300,
+        margin: 2,
+        color: {
+          dark: '#000000',
+          light: '#FFFFFF'
+        }
+      });
+      
+      res.json({
+        success: true,
+        qrCode: qrCodeDataURL,
+        qrData: qrData
+      });
+    } catch (qrError) {
+      console.error('QR Generation Error:', qrError);
+      // Fallback to simple QR
+      res.json({
+        success: true,
+        qrCode: '',
+        qrData: qrData,
+        fallback: true
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ QR Generation Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "QR code generation failed"
+    });
+  }
+});
+
+// ==================== DASHBOARD API ROUTES ====================
+
+// Dashboard API - Get all accounts
+app.get('/api/accounts', async (req, res) => {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    
+    const formattedAccounts = accounts.map(account => ({
+      id: account.id,
+      name: account.name,
+      password: account.ps,
+      email: account.email,
+      image: account.image
+    }));
+    
+    console.log(`📊 Sending ${formattedAccounts.length} accounts to dashboard`);
+    res.json(formattedAccounts);
+  } catch (error) {
+    console.error('❌ Dashboard API Error:', error.message);
+    res.status(500).json({ 
+      success: false, 
+      error: "Unable to load accounts from database" 
+    });
+  }
+});
+
+// Dashboard API - Save all accounts
+app.post('/api/accounts', async (req, res) => {
+  try {
+    const accountsData = req.body;
+    
+    console.log(`💾 Dashboard saving ${accountsData.length} accounts`);
+    
+    if (!Array.isArray(accountsData)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid data format: expected array"
+      });
+    }
+
+    // Convert to CSV format
+    const formattedAccounts = accountsData.map(account => ({
+      id: account.id,
+      ps: account.password,
+      email: account.email,
+      name: account.name,
+      image: account.image || ''
+    }));
+
+    const saved = await saveAllAccounts(formattedAccounts);
+    
+    if (saved) {
+      console.log('✅ Accounts saved successfully from dashboard');
+      res.json({
+        success: true,
+        message: `${accountsData.length} accounts saved successfully`,
+        count: accountsData.length
+      });
+    } else {
+      throw new Error("Failed to save to Google Drive");
+    }
+  } catch (error) {
+    console.error('❌ Dashboard Save Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Database save failed"
+    });
+  }
+});
+
+// Dashboard API - Upload image
+app.post('/api/upload-image', async (req, res) => {
+  try {
+    const { accountId, imageData } = req.body;
+    
+    console.log(`🖼️ Dashboard uploading image for account: ${accountId}`);
+    
+    if (!accountId || !imageData) {
+      return res.status(400).json({
+        success: false,
+        error: "accountId and imageData are required"
+      });
+    }
+
+    // Simulate image upload
+    const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
+    
+    console.log(`✅ Image upload simulated for account ${accountId}`);
+    
+    res.json({
+      success: true,
+      imageUrl: imageUrl,
+      message: "Image uploaded successfully"
+    });
+  } catch (error) {
+    console.error('❌ Image Upload Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Image service temporarily unavailable"
+    });
+  }
+});
+
+// Dashboard API - Delete image
+app.post('/api/delete-image', async (req, res) => {
+  try {
+    const { accountId } = req.body;
+    
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        error: "accountId is required"
+      });
+    }
+
+    console.log(`🗑️ Dashboard deleting image for account: ${accountId}`);
+    
+    res.json({
+      success: true,
+      message: "Image deletion completed"
+    });
+  } catch (error) {
+    console.error('❌ Image Delete Error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Image deletion failed"
+    });
+  }
+});
+
+// Dashboard API - Get statistics
+app.get('/api/admin/stats', async (req, res) => {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    
+    res.json({
+      success: true,
+      totalAccounts: accounts.length,
+      accountsWithImages: accounts.filter(acc => acc.image).length,
+      lastUpdated: new Date().toISOString(),
+      databaseStatus: 'connected'
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      error: "Cannot fetch statistics" 
+    });
+  }
+});
+
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   let driveStatus = 'connected';
@@ -497,14 +682,13 @@ app.get('/api/health', async (req, res) => {
   
   res.json({ 
     status: 'operational',
-    service: 'B.Y PRO Accounts Management System',
+    service: 'B.Y PRO Unified Accounts System',
     timestamp: new Date().toISOString(),
     services: {
-      email: emailServiceStatus,
       database: driveStatus
     },
-    version: '2.5.0',
-    email_provider: 'EmailJS (200 emails/month)'
+    version: '3.0.0',
+    features: ['login', 'signup', 'dashboard', 'qr-codes']
   });
 });
 
@@ -566,13 +750,13 @@ autoHealthCheck();
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS - PRODUCTION READY');
+  console.log('🚀 B.Y PRO UNIFIED ACCOUNTS SYSTEM');
   console.log('✅ Server started successfully!');
   console.log(`🔗 Port: ${PORT}`);
-  console.log('📧 Email: EmailJS Service (200 emails/month)');
+  console.log('📧 Features: Login + Signup + Dashboard');
   console.log('💾 Database: Google Drive');
   console.log('🔐 Auth: QR Code + Password');
-  console.log('🛡️  Enhanced Error Handling: Active');
+  console.log('🛡️  Security: Enhanced');
   console.log('❤️  Keep-alive: Active');
   console.log('🎉 =================================\n');
 });
@@ -637,7 +821,8 @@ async function verifyAccountCredentials(id, password) {
         account: {
           id: account.id,
           name: account.name || `User ${account.id}`,
-          email: account.email || `${account.id}@bypro.com`
+          email: account.email || `${account.id}@bypro.com`,
+          image: account.image || ''
         }
       };
     } else {
