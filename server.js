@@ -3,9 +3,10 @@ const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
 const nodemailer = require('nodemailer');
+const QRCode = require('qrcode');
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 10000;
 
 console.log('🚀 Starting B.Y PRO Accounts Login Server...');
 
@@ -20,7 +21,7 @@ app.use(cors({
 app.options('*', cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
-app.use(express.static(__dirname));
+app.use(express.static(path.join(__dirname)));
 
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.url}`);
@@ -39,19 +40,21 @@ const initializeEmailService = async () => {
   try {
     console.log('🔧 Initializing email service...');
     
-    // استخدام إعدادات أكثر أماناً
     const transporter = nodemailer.createTransport({
       service: 'gmail',
       auth: {
-        user: process.env.EMAIL_USER || 'byprosprt2007@gmail.com',
-        pass: process.env.EMAIL_PASS || 'bwau grcq jivh bvri'
+        user: 'byprosprt2007@gmail.com',
+        pass: 'bwau grcq jivh bvri'
       },
       pool: true,
       maxConnections: 5,
-      maxMessages: 100
+      maxMessages: 100,
+      // إعدادات إضافية لتحسين الاتصال
+      socketTimeout: 60000,
+      connectionTimeout: 60000,
+      greetingTimeout: 30000
     });
 
-    // التحقق من الاتصال
     await transporter.verify();
     console.log('✅ SMTP Server is ready to send emails');
     smtpStatus = 'connected';
@@ -64,7 +67,7 @@ const initializeEmailService = async () => {
   }
 };
 
-// تهيئة خدمة البريد عند بدء التشغيل
+// Initialize email service
 initializeEmailService().then(transporter => {
   emailTransporter = transporter;
 });
@@ -75,8 +78,7 @@ async function sendVerificationEmail(userEmail, code) {
     console.error('❌ SMTP transporter not available');
     return { 
       success: false, 
-      error: 'Email service is currently unavailable. Please try again later.',
-      systemError: 'SMTP service not configured'
+      error: 'Email service is currently unavailable. Please try again later.'
     };
   }
 
@@ -139,7 +141,6 @@ async function sendVerificationEmail(userEmail, code) {
     
     return { 
       success: true, 
-      method: 'gmail_smtp',
       message: 'Verification code sent successfully'
     };
     
@@ -147,8 +148,7 @@ async function sendVerificationEmail(userEmail, code) {
     console.error('❌ Email sending failed:', error.message);
     return { 
       success: false, 
-      error: 'Unable to send verification email at this time. Please try again in a few minutes.',
-      systemError: error.message
+      error: 'Unable to send verification email at this time. Please try again in a few minutes.'
     };
   }
 }
@@ -233,9 +233,7 @@ async function readCSVFromDrive(fileId) {
       alt: 'media'
     });
 
-    const data = response.data;
-    console.log(`✅ Successfully read CSV data, length: ${data.length}`);
-    return data;
+    return response.data;
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
     throw new Error('Unable to access database at this time');
@@ -249,8 +247,6 @@ async function writeCSVToDrive(fileId, accounts) {
   }
 
   try {
-    console.log(`💾 Writing ${accounts.length} accounts to Drive...`);
-    
     const headers = ['id', 'ps', 'email', 'name', 'image'];
     const csvContent = [
       headers.join(','),
@@ -262,14 +258,13 @@ async function writeCSVToDrive(fileId, accounts) {
       body: csvContent
     };
 
-    const response = await driveService.files.update({
+    await driveService.files.update({
       fileId: fileId,
       media: media,
       fields: 'id'
     });
 
-    console.log(`✅ Successfully wrote ${accounts.length} accounts to Drive`);
-    return response.data;
+    return true;
   } catch (error) {
     console.error('❌ Error writing CSV to Drive:', error.message);
     throw new Error('Unable to save data to database');
@@ -302,7 +297,6 @@ function parseCSVToAccounts(csvData) {
       }
     }
     
-    console.log(`📊 Parsed ${accounts.length} accounts from CSV`);
     return accounts;
   } catch (error) {
     console.error('❌ Error parsing CSV:', error.message);
@@ -329,7 +323,6 @@ async function getNextAvailableId() {
     return (maxId + 1).toString();
   } catch (error) {
     console.error('❌ Error getting next ID:', error.message);
-    // استخدام ID عشوائي كبديل
     return (Math.floor(Math.random() * 10000) + 1000).toString();
   }
 }
@@ -351,6 +344,12 @@ async function addNewAccount(accountData) {
     const csvData = await readCSVFromDrive(FILE_ID);
     let accounts = parseCSVToAccounts(csvData);
     
+    // التحقق من عدم وجود ID مكرر
+    const existingAccount = accounts.find(acc => acc.id === accountData.id);
+    if (existingAccount) {
+      throw new Error('Account ID already exists');
+    }
+    
     accounts.push(accountData);
     
     const saved = await saveAllAccounts(accounts);
@@ -364,8 +363,6 @@ async function addNewAccount(accountData) {
 // التحقق من بيانات الحساب
 async function verifyAccountCredentials(id, password) {
   try {
-    console.log(`🔐 Verifying credentials for ID: ${id}`);
-    
     const csvData = await readCSVFromDrive(FILE_ID);
     const accounts = parseCSVToAccounts(csvData);
     
@@ -376,7 +373,6 @@ async function verifyAccountCredentials(id, password) {
     });
     
     if (account) {
-      console.log(`✅ Login successful for ID: ${id}`);
       return {
         success: true,
         account: {
@@ -386,7 +382,6 @@ async function verifyAccountCredentials(id, password) {
         }
       };
     } else {
-      console.log(`❌ Login failed for ID: ${id} - Invalid credentials`);
       return {
         success: false,
         error: "Invalid ID or password"
@@ -403,7 +398,7 @@ async function verifyAccountCredentials(id, password) {
 
 // ==================== ROUTES ====================
 
-// Routes الأساسية
+// Routes الأساسية - تأكد من أن هذه موجودة
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
@@ -420,14 +415,17 @@ app.get('/style.css', (req, res) => {
   res.sendFile(path.join(__dirname, 'style.css'));
 });
 
+// خدمة ملف QR Code - هذا مهم!
+app.get('/qrcode.min.js', (req, res) => {
+  res.redirect('https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js');
+});
+
 // API Routes
 
-// التحقق من الحساب
+// التحقق من الحساب - GET
 app.get('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.query;
-    
-    console.log(`🔐 Login attempt - ID: ${id}`);
     
     if (!id || !password) {
       return res.json({ 
@@ -440,7 +438,6 @@ app.get('/api/verify-account', async (req, res) => {
     res.json(result);
     
   } catch (error) {
-    console.error('❌ Server error in verify-account:', error.message);
     res.json({ 
       success: false, 
       error: "Authentication service is temporarily unavailable. Please try again later." 
@@ -448,7 +445,7 @@ app.get('/api/verify-account', async (req, res) => {
   }
 });
 
-// الحصول على ID التالي
+// الحصول على ID التالي - GET
 app.get('/api/next-id', async (req, res) => {
   try {
     const nextId = await getNextAvailableId();
@@ -459,18 +456,15 @@ app.get('/api/next-id', async (req, res) => {
   } catch (error) {
     res.json({
       success: false,
-      error: "Unable to generate account ID at this time. Please try again.",
-      systemError: error.message
+      error: "Unable to generate account ID at this time. Please try again."
     });
   }
 });
 
-// إنشاء حساب جديد
+// إنشاء حساب جديد - POST
 app.post('/api/accounts', async (req, res) => {
   try {
     const { id, name, email, password, image } = req.body;
-    
-    console.log(`👤 Adding new account: ${id} - ${name}`);
     
     if (!id || !name || !email || !password) {
       return res.json({
@@ -502,7 +496,6 @@ app.post('/api/accounts', async (req, res) => {
       });
     }
   } catch (error) {
-    console.error('❌ Error creating account:', error.message);
     res.json({
       success: false,
       error: "Account creation service is temporarily unavailable. Please try again later."
@@ -510,12 +503,10 @@ app.post('/api/accounts', async (req, res) => {
   }
 });
 
-// إرسال بريد التحقق
+// إرسال بريد التحقق - POST
 app.post('/api/send-verification-email', async (req, res) => {
   try {
     const { email, code } = req.body;
-    
-    console.log(`📧 API Request - To: ${email}`);
     
     if (!email || !code) {
       return res.json({
@@ -533,11 +524,9 @@ app.post('/api/send-verification-email', async (req, res) => {
     }
 
     const result = await sendVerificationEmail(email, code);
-    
     res.json(result);
     
   } catch (error) {
-    console.error('❌ API Error:', error.message);
     res.json({
       success: false,
       error: "Email service is temporarily unavailable. Please try again in a few minutes."
@@ -545,7 +534,7 @@ app.post('/api/send-verification-email', async (req, res) => {
   }
 });
 
-// التحقق من صحة الخدمة
+// التحقق من صحة الخدمة - GET
 app.get('/api/health', async (req, res) => {
   res.json({ 
     status: 'operational',
@@ -559,7 +548,6 @@ app.get('/api/health', async (req, res) => {
 
 // معالجة 404
 app.use('*', (req, res) => {
-  console.log(`❌ 404 - Route not found: ${req.originalUrl}`);
   res.status(404).json({
     success: false,
     error: `Route ${req.originalUrl} not found`
