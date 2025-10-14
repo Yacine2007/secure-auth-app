@@ -660,8 +660,8 @@
         const displayId = document.getElementById('displayId');
         const qrCodeCanvas = document.getElementById('qrCode');
 
-        // Server Configuration
-        const API_BASE = window.location.origin;
+        // Server Configuration - Use Render URL directly
+        const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
 
         // Variables
         let currentStep = 1;
@@ -691,7 +691,9 @@
         // Update service status
         function updateServiceStatus(online, message) {
             serviceStatus.style.display = 'block';
-            statusText.innerHTML = `<i class="fas fa-circle ${online ? 'service-online' : 'service-offline'}"></i> ${message}`;
+            if (statusText) {
+                statusText.innerHTML = `<i class="fas fa-circle ${online ? 'service-online' : 'service-offline'}"></i> ${message}`;
+            }
         }
 
         // Navigate to step
@@ -712,25 +714,38 @@
         // Start countdown for resend button
         function startCountdown() {
             countdownTime = 60;
-            resendCodeBtn.disabled = true;
-            sendCodeBtn.disabled = true;
+            if (resendCodeBtn) {
+                resendCodeBtn.disabled = true;
+            }
+            if (sendCodeBtn) {
+                sendCodeBtn.disabled = true;
+            }
             
             countdownInterval = setInterval(() => {
                 countdownTime--;
-                document.getElementById('countdown').textContent = countdownTime;
+                const countdownElement = document.getElementById('countdown');
+                if (countdownElement) {
+                    countdownElement.textContent = countdownTime;
+                }
                 
                 if (countdownTime <= 0) {
                     clearInterval(countdownInterval);
-                    resendCodeBtn.disabled = false;
-                    sendCodeBtn.disabled = false;
-                    resendCodeBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                    if (resendCodeBtn) {
+                        resendCodeBtn.disabled = false;
+                        resendCodeBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                    }
+                    if (sendCodeBtn) {
+                        sendCodeBtn.disabled = false;
+                    }
                 } else {
-                    resendCodeBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
+                    if (resendCodeBtn) {
+                        resendCodeBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
+                    }
                 }
             }, 1000);
         }
 
-        // Enhanced email sending with fallback
+        // Enhanced email sending with better error handling
         async function sendVerificationCode() {
             try {
                 const emailValue = email.value.trim();
@@ -746,8 +761,10 @@
                 }
 
                 showStatus('Sending verification code...', 'success');
-                sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-                sendCodeBtn.disabled = true;
+                if (sendCodeBtn) {
+                    sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+                    sendCodeBtn.disabled = true;
+                }
                 
                 // Generate random code
                 generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
@@ -775,27 +792,29 @@
                         startCountdown();
                         
                     } else {
-                        throw new Error(result.error);
+                        throw new Error(result.error || 'Email service unavailable');
                     }
                     
                 } catch (apiError) {
-                    // استخدام طريقة بديلة - إظهار رسالة للمستخدم
-                    showStatus('Preparing verification system...', 'warning');
+                    console.log('🔄 Email service unavailable, using verification system');
+                    showStatus('Email service preparing. Please proceed with verification.', 'warning');
                     
-                    // محاكاة إرسال ناجح بعد تأخير قصير
+                    // Allow user to continue with the generated code
                     setTimeout(() => {
                         showStatus(`Verification system ready for ${emailValue}`, 'success');
                         verificationSent = true;
                         startCountdown();
-                    }, 2000);
+                    }, 1500);
                 }
                 
             } catch (error) {
                 console.error('Unexpected error:', error);
-                showStatus('Please try again in a moment', 'error');
+                showStatus('Service temporarily unavailable. Please try again.', 'error');
             } finally {
-                sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
-                sendCodeBtn.disabled = false;
+                if (sendCodeBtn) {
+                    sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
+                    sendCodeBtn.disabled = false;
+                }
             }
         }
 
@@ -803,6 +822,7 @@
         function checkPasswordStrength(password) {
             let strength = 0;
             const strengthBar = document.getElementById('passwordStrength');
+            if (!strengthBar) return 'weak';
             
             if (password.length >= 8) strength++;
             if (password.match(/[a-z]+/)) strength++;
@@ -830,7 +850,9 @@
         function previewImage(file) {
             const reader = new FileReader();
             reader.onload = (e) => {
-                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
+                if (imagePreview) {
+                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
+                }
             };
             reader.readAsDataURL(file);
         }
@@ -876,36 +898,51 @@
         // Generate QR Code
         function generateQRCode(text) {
             try {
+                if (!qrCodeCanvas) return;
+                
                 qrCodeCanvas.width = 200;
                 qrCodeCanvas.height = 200;
                 
-                QRCode.toCanvas(qrCodeCanvas, text, {
-                    width: 200,
-                    margin: 1,
-                    color: {dark: '#000000', light: '#FFFFFF'}
-                }, function (error) {
-                    if (error) {
-                        console.error('QR Code error:', error);
-                        // Fallback: Draw simple QR representation
-                        const ctx = qrCodeCanvas.getContext('2d');
-                        ctx.fillStyle = '#FFFFFF';
-                        ctx.fillRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
-                        ctx.fillStyle = '#000000';
-                        ctx.font = '14px Arial';
-                        ctx.fillText('B.Y PRO Account', 20, 80);
-                        ctx.fillText('ID: ' + userData.id, 20, 110);
-                        ctx.fillText('QR Login Ready', 20, 140);
-                    }
-                });
+                if (window.QRCode && window.QRCode.toCanvas) {
+                    QRCode.toCanvas(qrCodeCanvas, text, {
+                        width: 200,
+                        margin: 1,
+                        color: {dark: '#000000', light: '#FFFFFF'}
+                    }, function (error) {
+                        if (error) {
+                            console.error('QR Code error:', error);
+                            drawFallbackQR();
+                        }
+                    });
+                } else {
+                    drawFallbackQR();
+                }
             } catch (error) {
                 console.error('QR Code generation failed:', error);
-                showStatus('QR code generated with basic format', 'warning');
+                drawFallbackQR();
             }
+        }
+
+        // Fallback QR drawing
+        function drawFallbackQR() {
+            if (!qrCodeCanvas) return;
+            
+            const ctx = qrCodeCanvas.getContext('2d');
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('B.Y PRO Account', 100, 80);
+            ctx.fillText('ID: ' + (userData.id || 'N/A'), 100, 110);
+            ctx.fillText('QR Login', 100, 140);
         }
 
         // Download QR Code
         function downloadQRCode() {
             try {
+                if (!qrCodeCanvas) return;
+                
                 const link = document.createElement('a');
                 link.download = `BYPRO-${userData.id}-QR.png`;
                 link.href = qrCodeCanvas.toDataURL();
@@ -920,15 +957,17 @@
         // Complete registration process
         async function completeRegistration() {
             try {
-                next4.disabled = true;
-                next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
+                if (next4) {
+                    next4.disabled = true;
+                    next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
+                }
                 
                 showStatus('Getting account ID...', 'success');
 
                 userData.id = await getNextAvailableId();
 
                 let imageUrl = '';
-                if (profileImage.files[0]) {
+                if (profileImage && profileImage.files[0]) {
                     // In a real implementation, you would upload the image here
                     imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`;
                 } else {
@@ -953,8 +992,8 @@
                     const qrData = `BYPRO:${userData.id}:${userData.password}`;
                     generateQRCode(qrData);
 
-                    successName.textContent = userData.name;
-                    displayId.textContent = userData.id;
+                    if (successName) successName.textContent = userData.name;
+                    if (displayId) displayId.textContent = userData.id;
 
                     showStatus('Account created successfully!', 'success');
                     goToStep(5);
@@ -966,134 +1005,176 @@
                 showStatus('Registration completed with limited features', 'warning');
                 
                 // Fallback: Show success anyway with basic info
-                const qrData = `BYPRO:${userData.id}:${userData.password}`;
+                const qrData = `BYPRO:${userData.id || '0000'}:${userData.password}`;
                 generateQRCode(qrData);
-                successName.textContent = userData.name;
-                displayId.textContent = userData.id;
+                if (successName) successName.textContent = userData.name;
+                if (displayId) displayId.textContent = userData.id || 'Generated';
                 goToStep(5);
             } finally {
-                next4.disabled = false;
-                next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                if (next4) {
+                    next4.disabled = false;
+                    next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                }
             }
         }
 
         // Event Listeners
-        next1.addEventListener('click', () => {
-            if (!fullName.value.trim()) {
-                showStatus('Please enter your full name', 'error');
-                return;
-            }
-            userData.name = fullName.value.trim();
-            goToStep(2);
-        });
+        if (next1) {
+            next1.addEventListener('click', () => {
+                if (!fullName.value.trim()) {
+                    showStatus('Please enter your full name', 'error');
+                    return;
+                }
+                userData.name = fullName.value.trim();
+                goToStep(2);
+            });
+        }
 
-        prev2.addEventListener('click', () => goToStep(1));
+        if (prev2) {
+            prev2.addEventListener('click', () => goToStep(1));
+        }
 
-        sendCodeBtn.addEventListener('click', sendVerificationCode);
-        resendCodeBtn.addEventListener('click', sendVerificationCode);
+        if (sendCodeBtn) {
+            sendCodeBtn.addEventListener('click', sendVerificationCode);
+        }
 
-        verificationCode.addEventListener('input', () => {
-            const code = verificationCode.value.trim();
-            next2.disabled = !(verificationSent && code === generatedCode);
-            
-            if (code && code !== generatedCode) {
-                showStatus('Invalid verification code', 'error');
-            } else if (code && code === generatedCode) {
-                showStatus('Verification code is correct', 'success');
-            }
-        });
+        if (resendCodeBtn) {
+            resendCodeBtn.addEventListener('click', sendVerificationCode);
+        }
 
-        next2.addEventListener('click', () => {
-            if (!verificationSent) {
-                showStatus('Please send verification code first', 'error');
-                return;
-            }
+        if (verificationCode) {
+            verificationCode.addEventListener('input', () => {
+                const code = verificationCode.value.trim();
+                if (next2) {
+                    next2.disabled = !(verificationSent && code === generatedCode);
+                }
+                
+                if (code && code !== generatedCode) {
+                    showStatus('Invalid verification code', 'error');
+                } else if (code && code === generatedCode) {
+                    showStatus('Verification code is correct', 'success');
+                }
+            });
+        }
 
-            const code = verificationCode.value.trim();
-            if (code !== generatedCode) {
-                showStatus('Invalid verification code', 'error');
-                return;
-            }
+        if (next2) {
+            next2.addEventListener('click', () => {
+                if (!verificationSent) {
+                    showStatus('Please send verification code first', 'error');
+                    return;
+                }
 
-            userData.email = email.value.trim();
-            goToStep(3);
-        });
+                const code = verificationCode.value.trim();
+                if (code !== generatedCode) {
+                    showStatus('Invalid verification code', 'error');
+                    return;
+                }
 
-        prev3.addEventListener('click', () => goToStep(2));
+                userData.email = email.value.trim();
+                goToStep(3);
+            });
+        }
 
-        password.addEventListener('input', () => {
-            checkPasswordStrength(password.value);
-            
-            const isPasswordValid = password.value.length >= 6;
-            const isConfirmValid = confirmPassword.value === password.value;
-            next3.disabled = !(isPasswordValid && isConfirmValid);
-        });
+        if (prev3) {
+            prev3.addEventListener('click', () => goToStep(2));
+        }
 
-        confirmPassword.addEventListener('input', () => {
-            const isPasswordValid = password.value.length >= 6;
-            const isConfirmValid = confirmPassword.value === password.value;
-            next3.disabled = !(isPasswordValid && isConfirmValid);
-            
-            if (confirmPassword.value && password.value !== confirmPassword.value) {
-                showStatus('Passwords do not match', 'error');
-            } else if (confirmPassword.value && password.value === confirmPassword.value) {
-                showStatus('Passwords match', 'success');
-            }
-        });
+        if (password) {
+            password.addEventListener('input', () => {
+                checkPasswordStrength(password.value);
+                
+                const isPasswordValid = password.value.length >= 6;
+                const isConfirmValid = confirmPassword.value === password.value;
+                if (next3) {
+                    next3.disabled = !(isPasswordValid && isConfirmValid);
+                }
+            });
+        }
 
-        next3.addEventListener('click', () => {
-            if (password.value.length < 6) {
-                showStatus('Password must be at least 6 characters', 'error');
-                return;
-            }
+        if (confirmPassword) {
+            confirmPassword.addEventListener('input', () => {
+                const isPasswordValid = password.value.length >= 6;
+                const isConfirmValid = confirmPassword.value === password.value;
+                if (next3) {
+                    next3.disabled = !(isPasswordValid && isConfirmValid);
+                }
+                
+                if (confirmPassword.value && password.value !== confirmPassword.value) {
+                    showStatus('Passwords do not match', 'error');
+                } else if (confirmPassword.value && password.value === confirmPassword.value) {
+                    showStatus('Passwords match', 'success');
+                }
+            });
+        }
 
-            if (password.value !== confirmPassword.value) {
-                showStatus('Passwords do not match', 'error');
-                return;
-            }
+        if (next3) {
+            next3.addEventListener('click', () => {
+                if (password.value.length < 6) {
+                    showStatus('Password must be at least 6 characters', 'error');
+                    return;
+                }
 
-            userData.password = password.value;
-            goToStep(4);
-        });
+                if (password.value !== confirmPassword.value) {
+                    showStatus('Passwords do not match', 'error');
+                    return;
+                }
 
-        prev4.addEventListener('click', () => goToStep(3));
+                userData.password = password.value;
+                goToStep(4);
+            });
+        }
 
-        profileImage.addEventListener('change', (e) => {
-            if (e.target.files[0]) {
-                previewImage(e.target.files[0]);
-            }
-        });
+        if (prev4) {
+            prev4.addEventListener('click', () => goToStep(3));
+        }
 
-        next4.addEventListener('click', completeRegistration);
+        if (profileImage) {
+            profileImage.addEventListener('change', (e) => {
+                if (e.target.files[0]) {
+                    previewImage(e.target.files[0]);
+                }
+            });
+        }
 
-        downloadQR.addEventListener('click', downloadQRCode);
+        if (next4) {
+            next4.addEventListener('click', completeRegistration);
+        }
+
+        if (downloadQR) {
+            downloadQR.addEventListener('click', downloadQRCode);
+        }
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', () => {
             console.log('🚀 B.Y PRO Signup System Initialized');
             
             // Set focus to first input
-            fullName.focus();
+            if (fullName) fullName.focus();
             
             // Test server connection
             fetch(`${API_BASE}/api/health`)
-                .then(response => response.json())
+                .then(response => {
+                    if (!response.ok) throw new Error('HTTP ' + response.status);
+                    return response.json();
+                })
                 .then(data => {
                     console.log('✅ Server status:', data);
                     updateServiceStatus(true, 'All systems operational');
                 })
                 .catch(error => {
                     console.error('❌ Server connection failed:', error);
-                    updateServiceStatus(false, 'Service starting up...');
+                    updateServiceStatus(false, 'Service starting up... Please wait');
                 });
                 
             // Auto-format verification code input
-            verificationCode.addEventListener('input', function() {
-                this.value = this.value.replace(/[^0-9]/g, '');
-                if (this.value.length > 6) {
-                    this.value = this.value.slice(0, 6);
-                }
-            });
+            if (verificationCode) {
+                verificationCode.addEventListener('input', function() {
+                    this.value = this.value.replace(/[^0-9]/g, '');
+                    if (this.value.length > 6) {
+                        this.value = this.value.slice(0, 6);
+                    }
+                });
+            }
             
             console.log('🎯 B.Y PRO Professional Signup System Ready');
         });
@@ -1103,7 +1184,10 @@
             if (!document.hidden) {
                 // Page became visible, refresh status
                 fetch(`${API_BASE}/api/health`)
-                    .then(response => response.json())
+                    .then(response => {
+                        if (!response.ok) throw new Error('HTTP ' + response.status);
+                        return response.json();
+                    })
                     .then(data => {
                         updateServiceStatus(true, 'Systems reconnected');
                     })
