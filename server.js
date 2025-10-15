@@ -364,6 +364,115 @@ async function saveAllAccounts(accounts) {
   }
 }
 
+// ==================== NEW ACCOUNT MANAGEMENT FUNCTIONS ====================
+
+// دالة لتحديث حساب محدد
+async function updateAccount(accountId, updatedData) {
+  try {
+    console.log(`🔄 Updating account ${accountId} in Google Drive...`);
+    
+    const csvData = await readCSVFromDrive(FILE_ID);
+    let accounts = parseCSVToAccounts(csvData);
+    
+    const accountIndex = accounts.findIndex(acc => acc.id === accountId);
+    if (accountIndex === -1) {
+      throw new Error("Account not found");
+    }
+    
+    // تحديث البيانات
+    if (updatedData.name) accounts[accountIndex].name = updatedData.name;
+    if (updatedData.email) accounts[accountIndex].email = updatedData.email;
+    if (updatedData.ps) accounts[accountIndex].ps = updatedData.ps;
+    if (updatedData.image !== undefined) accounts[accountIndex].image = updatedData.image;
+    
+    // حفظ جميع الحسابات
+    await saveAllAccounts(accounts);
+    
+    console.log(`✅ Account ${accountId} updated successfully`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating account:', error.message);
+    throw error;
+  }
+}
+
+// دالة لحذف حساب
+async function deleteAccount(accountId) {
+  try {
+    console.log(`🗑️ Deleting account ${accountId} from Google Drive...`);
+    
+    const csvData = await readCSVFromDrive(FILE_ID);
+    let accounts = parseCSVToAccounts(csvData);
+    
+    const accountIndex = accounts.findIndex(acc => acc.id === accountId);
+    if (accountIndex === -1) {
+      throw new Error("Account not found");
+    }
+    
+    // إزالة الحساب
+    accounts.splice(accountIndex, 1);
+    
+    // حفظ الحسابات المتبقية
+    await saveAllAccounts(accounts);
+    
+    console.log(`✅ Account ${accountId} deleted successfully`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error deleting account:', error.message);
+    throw error;
+  }
+}
+
+// دالة للحصول على حساب محدد
+async function getAccountById(accountId) {
+  try {
+    const csvData = await readCSVFromDrive(FILE_ID);
+    const accounts = parseCSVToAccounts(csvData);
+    return accounts.find(acc => acc.id === accountId);
+  } catch (error) {
+    console.error('❌ Error getting account:', error.message);
+    throw error;
+  }
+}
+
+// دالة لتحديث ID لحساب
+async function updateAccountId(oldId, newId) {
+  try {
+    console.log(`🔄 Updating account ID from ${oldId} to ${newId}...`);
+    
+    const csvData = await readCSVFromDrive(FILE_ID);
+    let accounts = parseCSVToAccounts(csvData);
+    
+    const accountIndex = accounts.findIndex(acc => acc.id === oldId);
+    if (accountIndex === -1) {
+      throw new Error("Account not found");
+    }
+    
+    // التحقق من أن الـ ID الجديد غير مستخدم
+    const idExists = accounts.some(acc => acc.id === newId && acc.id !== oldId);
+    if (idExists) {
+      throw new Error("ID already exists");
+    }
+    
+    // تحديث الـ ID
+    accounts[accountIndex].id = newId;
+    
+    // تحديث صورة الحساب إذا كانت موجودة
+    if (accounts[accountIndex].image && accounts[accountIndex].image.includes(oldId)) {
+      accounts[accountIndex].image = accounts[accountIndex].image.replace(oldId, newId);
+    }
+    
+    // حفظ التغييرات
+    await saveAllAccounts(accounts);
+    
+    console.log(`✅ Account ID updated from ${oldId} to ${newId}`);
+    return true;
+  } catch (error) {
+    console.error('❌ Error updating account ID:', error.message);
+    throw error;
+  }
+}
+
 // ==================== ROUTES ====================
 
 // Serve static files
@@ -609,6 +718,152 @@ app.get('/api/accounts', async (req, res) => {
   } catch (error) {
     console.error('❌ Dashboard API Error:', error.message);
     res.status(500).json([]);
+  }
+});
+
+// ==================== NEW ACCOUNT MANAGEMENT ROUTES ====================
+
+// تحديث حساب محدد - NEW ROUTE
+app.put('/api/accounts/:id', async (req, res) => {
+  try {
+    const accountId = req.params.id;
+    const { name, email, password, image } = req.body;
+    
+    console.log(`🔄 Updating account: ${accountId}`);
+    
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        error: "Account ID is required"
+      });
+    }
+
+    const updatedData = {};
+    if (name) updatedData.name = name;
+    if (email) updatedData.email = email;
+    if (password) updatedData.ps = password;
+    if (image !== undefined) updatedData.image = image;
+
+    const result = await updateAccount(accountId, updatedData);
+    
+    if (result) {
+      res.json({
+        success: true,
+        message: "Account updated successfully",
+        accountId: accountId
+      });
+    } else {
+      throw new Error("Failed to update account");
+    }
+  } catch (error) {
+    console.error('❌ Error updating account:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Unable to update account"
+    });
+  }
+});
+
+// حذف حساب - NEW ROUTE
+app.delete('/api/accounts/:id', async (req, res) => {
+  try {
+    const accountId = req.params.id;
+    
+    console.log(`🗑️ Deleting account: ${accountId}`);
+    
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        error: "Account ID is required"
+      });
+    }
+
+    const result = await deleteAccount(accountId);
+    
+    if (result) {
+      res.json({
+        success: true,
+        message: "Account deleted successfully",
+        accountId: accountId
+      });
+    } else {
+      throw new Error("Failed to delete account");
+    }
+  } catch (error) {
+    console.error('❌ Error deleting account:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Unable to delete account"
+    });
+  }
+});
+
+// الحصول على حساب محدد - NEW ROUTE
+app.get('/api/accounts/:id', async (req, res) => {
+  try {
+    const accountId = req.params.id;
+    
+    const account = await getAccountById(accountId);
+    
+    if (account) {
+      res.json({
+        success: true,
+        account: {
+          id: account.id,
+          name: account.name,
+          email: account.email,
+          password: account.ps,
+          image: account.image
+        }
+      });
+    } else {
+      res.status(404).json({
+        success: false,
+        error: "Account not found"
+      });
+    }
+  } catch (error) {
+    console.error('❌ Error getting account:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Unable to get account"
+    });
+  }
+});
+
+// تحديث ID للحساب - NEW ROUTE
+app.put('/api/accounts/:oldId/update-id', async (req, res) => {
+  try {
+    const oldId = req.params.oldId;
+    const { newId } = req.body;
+    
+    console.log(`🔄 Updating account ID from ${oldId} to ${newId}`);
+    
+    if (!oldId || !newId) {
+      return res.status(400).json({
+        success: false,
+        error: "Both old ID and new ID are required"
+      });
+    }
+
+    const result = await updateAccountId(oldId, newId);
+    
+    if (result) {
+      res.json({
+        success: true,
+        message: "Account ID updated successfully",
+        oldId: oldId,
+        newId: newId
+      });
+    } else {
+      throw new Error("Failed to update account ID");
+    }
+  } catch (error) {
+    console.error('❌ Error updating account ID:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Unable to update account ID"
+    });
   }
 });
 
