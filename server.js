@@ -700,7 +700,7 @@ app.post('/api/generate-qr', async (req, res) => {
   }
 });
 
-// Upload image route
+// Upload image route - FIXED VERSION
 app.post('/api/upload-image', async (req, res) => {
   try {
     const { accountId, imageData } = req.body;
@@ -708,22 +708,49 @@ app.post('/api/upload-image', async (req, res) => {
     console.log(`🖼️ Image upload for account: ${accountId}`);
     
     if (!accountId) {
-      return res.json({
+      return res.status(400).json({
         success: false,
         error: "Account ID is required"
       });
     }
 
-    const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
+    // Update the account in Google Drive with the new image URL
+    try {
+      const csvData = await readCSVFromDrive(FILE_ID);
+      const accounts = parseCSVToAccounts(csvData);
+      
+      const account = accounts.find(acc => acc.id === accountId);
+      if (account) {
+        // Update the image URL for the account
+        account.image = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
+        
+        // Save the updated accounts back to Google Drive
+        await saveAllAccounts(accounts);
+        
+        console.log(`✅ Image URL updated for account ${accountId}`);
+        
+        res.json({
+          success: true,
+          imageUrl: account.image,
+          message: "Image URL updated successfully"
+        });
+      } else {
+        res.status(404).json({
+          success: false,
+          error: "Account not found"
+        });
+      }
+    } catch (driveError) {
+      console.error('❌ Error updating account image:', driveError);
+      res.status(500).json({
+        success: false,
+        error: "Failed to update account image in database"
+      });
+    }
     
-    res.json({
-      success: true,
-      imageUrl: imageUrl,
-      message: "Image URL generated successfully"
-    });
   } catch (error) {
     console.error('❌ Error uploading image:', error.message);
-    res.json({
+    res.status(500).json({
       success: false,
       error: "Image service temporarily unavailable"
     });
