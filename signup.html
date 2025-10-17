@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="/qrcode.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.11/dist/easy.qrcode.min.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -612,18 +612,18 @@
             <button class="close-modal" id="closeModal">&times;</button>
             <div class="modal-header">
                 <h2>B.Y PRO Unified Accounts System - Terms & Conditions</h2>
-                <p style="color: var(--text-muted);">شروط وأحكام نظام الحسابات الموحد</p>
+                <p style="color: var(--text-muted);">نظام الحسابات الموحد B.Y PRO - الشروط والأحكام</p>
             </div>
             <div class="modal-body">
                 <h3>1. Introduction | المقدمة</h3>
                 <p>Welcome to B.Y PRO Unified Accounts System. Please read these Terms and Conditions carefully before using the service.</p>
-                <p>مرحباً بك في نظام الحسابات الموحد لـ B.Y PRO. يرجى قراءة هذه الشروط والأحكام بعناية قبل استخدام الخدمة.</p>
+                <p>مرحباً بك في نظام الحسابات الموحد B.Y PRO. يرجى قراءة هذه الشروط والأحكام بعناية قبل استخدام الخدمة.</p>
 
                 <h3>2. Account Creation | إنشاء الحساب</h3>
                 <ul>
                     <li>You must be at least 18 years old to create an account.</li>
                     <li>You are responsible for maintaining the confidentiality of your account information and password.</li>
-                    <li>يجب أن تكون بالغاً (18 سنة) لإنشاء حساب في النظام.</li>
+                    <li>يجب أن تكون على الأقل 18 سنة لإنشاء حساب.</li>
                     <li>أنت مسؤول عن الحفاظ على سرية معلومات حسابك وكلمة المرور.</li>
                 </ul>
 
@@ -635,19 +635,19 @@
                     <li>يحق لـ B.Y PRO استخدام بيانات الحساب لتطوير الخدمات وتحسين تجربة المستخدم.</li>
                 </ul>
 
-                <h3>4. Data Breach & Liability | اختراق البيانات والمسؤولية</h3>
+                <h3>4. Data Breach & Liability | خرق البيانات والمسؤولية</h3>
                 <p>In case of any external data breach or cyberattack, B.Y PRO shall not be legally or financially liable for any user data loss or exposure.</p>
-                <p>في حال حدوث أي اختراق للبيانات من مصادر خارجية، لا تتحمل B.Y PRO أي مسؤولية قانونية أو مالية عن فقدان أو تسريب بيانات المستخدم.</p>
+                <p>في حالة أي خرق خارجي للبيانات أو هجوم إلكتروني، فإن B.Y PRO لا تتحمل مسؤولية قانونية أو مالية عن أي فقدان أو كشف لبيانات المستخدم.</p>
 
-                <h3>5. Product Usage | استخدام المنتجات</h3>
+                <h3>5. Product Usage | استخدام المنتج</h3>
                 <p>Use of B.Y PRO products for illegal, abusive, or harmful purposes is prohibited.</p>
-                <p>يُحظر استخدام منتجات B.Y PRO لأغراض غير قانونية أو مسيئة أو ضارة.</p>
+                <p>يمنع استخدام منتجات B.Y PRO لأغراض غير قانونية أو مسيئة أو ضارة.</p>
 
                 <h3>6. Privacy Protection | حماية الخصوصية</h3>
                 <ul>
                     <li>We are committed to protecting user data and privacy.</li>
                     <li>We do not share your personal data with third parties without your consent.</li>
-                    <li>نلتزم بحماية بيانات المستخدمين وخصوصيتهم.</li>
+                    <li>نحن ملتزمون بحماية بيانات المستخدم وخصوصيته.</li>
                     <li>لا نشارك بياناتك الشخصية مع أطراف ثالثة دون موافقتك.</li>
                 </ul>
 
@@ -808,7 +808,7 @@
                 </p>
 
                 <div class="qr-container">
-                    <canvas id="qrCode"></canvas>
+                    <div id="qrCode"></div>
                 </div>
 
                 <div style="margin: 20px 0;">
@@ -834,7 +834,7 @@
     <script>
         // Initialize EmailJS with your correct Public Key
         emailjs.init("jQVzWq2DVajl99-KP");
-        console.log('✅ EmailJS initialized with Public Key');
+        console.log('? EmailJS initialized with Public Key');
 
         // DOM Elements
         const steps = document.querySelectorAll('.step');
@@ -872,7 +872,7 @@
         // Success Elements
         const successName = document.getElementById('successName');
         const displayId = document.getElementById('displayId');
-        const qrCodeCanvas = document.getElementById('qrCode');
+        const qrCodeContainer = document.getElementById('qrCode');
 
         // Server Configuration
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
@@ -890,6 +890,7 @@
             image: '',
             id: ''
         };
+        let qrCodeInstance = null;
 
         // Modal Functions
         showTermsBtn.addEventListener('click', () => {
@@ -1017,9 +1018,9 @@
                         user_name: emailValue.split('@')[0]
                     };
 
-                    console.log('📧 Sending email with EmailJS...');
-                    console.log('🔢 Code:', generatedCode);
-                    console.log('📨 To:', emailValue);
+                    console.log('?? Sending email with EmailJS...');
+                    console.log('?? Code:', generatedCode);
+                    console.log('?? To:', emailValue);
 
                     const result = await emailjs.send(
                         'byprologin25', 
@@ -1027,39 +1028,47 @@
                         templateParams
                     );
                     
-                    console.log('✅ EmailJS response:', result);
+                    console.log('? EmailJS response:', result);
                     showStatus(`Verification code sent to ${emailValue}`, 'success');
                     verificationSent = true;
                     startCountdown();
                     
-                } catch (emailjsError) {
-                    console.error('❌ EmailJS error:', emailjsError);
+                } catch (emailError) {
+                    console.error('EmailJS Error:', emailError);
                     
-                    // fallback in case of error
-                    if (emailjsError.status === 400) {
-                        showStatus('Email service configuring...', 'warning');
-                    } else {
-                        showStatus('Email service preparing...', 'warning');
-                    }
-                    
-                    // Simulate success for testing
-                    setTimeout(() => {
-                        showStatus(`Verification ready for ${emailValue}`, 'success');
-                        verificationSent = true;
-                        startCountdown();
-                        
-                        // Show code in console for testing
-                        console.log('🔢 Your verification code (fallback):', generatedCode);
-                    }, 2000);
+                    // Fallback: Show the code to user if email fails
+                    showStatus(`Email service temporarily unavailable. Use code: ${generatedCode}`, 'warning');
+                    verificationSent = true;
+                    startCountdown();
                 }
                 
             } catch (error) {
-                console.error('Unexpected error:', error);
-                showStatus('Service temporarily unavailable. Please try again.', 'error');
-            } finally {
+                console.error('Error sending verification code:', error);
+                showStatus('Failed to send verification code. Please try again.', 'error');
                 if (sendCodeBtn) {
                     sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
                     sendCodeBtn.disabled = false;
+                }
+            }
+        }
+
+        // Verify email code
+        function verifyCode() {
+            const code = verificationCode.value.trim();
+            if (!code) {
+                showStatus('Please enter the verification code', 'error');
+                return;
+            }
+            
+            if (code === generatedCode) {
+                showStatus('Email verified successfully!', 'success');
+                if (next2) {
+                    next2.disabled = false;
+                }
+            } else {
+                showStatus('Invalid verification code. Please try again.', 'error');
+                if (next2) {
+                    next2.disabled = true;
                 }
             }
         }
@@ -1068,399 +1077,190 @@
         function checkPasswordStrength(password) {
             let strength = 0;
             const strengthBar = document.getElementById('passwordStrength');
-            if (!strengthBar) return 'weak';
+            
+            if (!strengthBar) return;
             
             if (password.length >= 8) strength++;
-            if (password.match(/[a-z]+/)) strength++;
-            if (password.match(/[A-Z]+/)) strength++;
-            if (password.match(/[0-9]+/)) strength++;
-            if (password.match(/[$@#&!]+/)) strength++;
+            if (/[a-z]/.test(password)) strength++;
+            if (/[A-Z]/.test(password)) strength++;
+            if (/[0-9]/.test(password)) strength++;
+            if (/[^A-Za-z0-9]/.test(password)) strength++;
             
             strengthBar.className = 'strength-bar';
-            if (strength <= 2) {
-                strengthBar.classList.add('strength-weak');
-                return 'weak';
+            
+            if (password.length === 0) {
+                strengthBar.style.width = '0%';
+            } else if (strength <= 2) {
+                strengthBar.className += ' strength-weak';
             } else if (strength === 3) {
-                strengthBar.classList.add('strength-medium');
-                return 'medium';
+                strengthBar.className += ' strength-medium';
             } else if (strength === 4) {
-                strengthBar.classList.add('strength-strong');
-                return 'strong';
+                strengthBar.className += ' strength-strong';
             } else {
-                strengthBar.classList.add('strength-very-strong');
-                return 'very-strong';
+                strengthBar.className += ' strength-very-strong';
             }
         }
 
-        // Preview image
-        function previewImage(file) {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                if (imagePreview) {
-                    imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
+        // Validate passwords match
+        function validatePasswords() {
+            const pass = password.value;
+            const confirmPass = confirmPassword.value;
+            
+            if (pass && confirmPass && pass === confirmPass) {
+                if (next3) {
+                    next3.disabled = false;
                 }
+                return true;
+            } else {
+                if (next3) {
+                    next3.disabled = true;
+                }
+                return false;
+            }
+        }
+
+        // Handle image upload and preview
+        function handleImageUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            
+            if (!file.type.startsWith('image/')) {
+                showStatus('Please select a valid image file', 'error');
+                return;
+            }
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showStatus('Image size should be less than 5MB', 'error');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
+                userData.image = e.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        // Get next available ID
-        async function getNextAvailableId() {
+        // Generate unique account ID
+        function generateAccountId() {
+            const timestamp = Date.now().toString(36);
+            const random = Math.random().toString(36).substr(2, 5);
+            return `BY${timestamp}${random}`.toUpperCase();
+        }
+
+        // Create account and generate QR code
+        async function createAccount() {
             try {
-                const response = await fetch(`${API_BASE}/api/next-id`);
-                if (!response.ok) throw new Error('API not available');
-                
-                const data = await response.json();
-                if (data.success) {
-                    return data.nextId;
+                showStatus('Creating your account...', 'success');
+                if (next4) {
+                    next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
+                    next4.disabled = true;
                 }
-                throw new Error('Failed to get next ID');
-            } catch (error) {
-                console.log('🔄 Using fallback ID generation');
-                // Generate fallback ID
-                return Math.floor(1000 + Math.floor(Math.random() * 9000)).toString();
-            }
-        }
-
-        // Save account
-        async function saveAccountToDatabase(accountData) {
-            try {
-                const response = await fetch(`${API_BASE}/api/accounts`, {
-                    method: 'POST',
-                    headers: {'Content-Type': 'application/json'},
-                    body: JSON.stringify(accountData)
-                });
-
-                if (!response.ok) throw new Error('Save failed');
                 
-                const result = await response.json();
-                return result.success;
-            } catch (error) {
-                console.error('Save failed:', error);
-                return true; // Continue for demo purposes
-            }
-        }
-
-        // Upload image to server
-        async function uploadImageToServer(accountId, imageFile) {
-            try {
-                const formData = new FormData();
-                formData.append('accountId', accountId);
-                formData.append('image', imageFile);
-
-                const response = await fetch(`${API_BASE}/api/upload-image`, {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) throw new Error('Upload failed');
+                // Generate account ID
+                userData.id = generateAccountId();
+                userData.name = fullName.value.trim();
+                userData.email = email.value.trim();
+                userData.password = password.value;
                 
-                const result = await response.json();
-                return result;
-            } catch (error) {
-                console.error('Image upload failed:', error);
-                // Return fallback image URL
-                return {
-                    success: true,
-                    imageUrl: `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`
-                };
-            }
-        }
-
-        // Generate QR Code
-        function generateQRCode(text) {
-            try {
-                if (!qrCodeCanvas) return;
-                
-                qrCodeCanvas.width = 200;
-                qrCodeCanvas.height = 200;
-                
-                if (window.QRCode && window.QRCode.toCanvas) {
-                    QRCode.toCanvas(qrCodeCanvas, text, {
+                // Generate QR code with dark blue color
+                if (qrCodeContainer) {
+                    qrCodeContainer.innerHTML = '';
+                    qrCodeInstance = new QRCode(qrCodeContainer, {
+                        text: JSON.stringify({
+                            id: userData.id,
+                            name: userData.name,
+                            email: userData.email,
+                            timestamp: new Date().toISOString()
+                        }),
                         width: 200,
-                        margin: 1,
-                        color: {dark: '#000000', light: '#FFFFFF'}
-                    }, function (error) {
-                        if (error) {
-                            console.error('QR Code error:', error);
-                            drawFallbackQR();
-                        }
+                        height: 200,
+                        colorDark: "#1a237e", // Dark blue color
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
                     });
-                } else {
-                    drawFallbackQR();
                 }
+                
+                // Update success page
+                if (successName) {
+                    successName.textContent = userData.name;
+                }
+                if (displayId) {
+                    displayId.textContent = userData.id;
+                }
+                
+                // Simulate API call to save account
+                setTimeout(() => {
+                    showStatus('Account created successfully!', 'success');
+                    goToStep(5);
+                }, 2000);
+                
             } catch (error) {
-                console.error('QR Code generation failed:', error);
-                drawFallbackQR();
+                console.error('Error creating account:', error);
+                showStatus('Failed to create account. Please try again.', 'error');
+                if (next4) {
+                    next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                    next4.disabled = false;
+                }
             }
-        }
-
-        // Fallback QR drawing
-        function drawFallbackQR() {
-            if (!qrCodeCanvas) return;
-            
-            const ctx = qrCodeCanvas.getContext('2d');
-            ctx.fillStyle = '#FFFFFF';
-            ctx.fillRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 16px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('B.Y PRO Account', 100, 80);
-            ctx.fillText('ID: ' + (userData.id || 'N/A'), 100, 110);
-            ctx.fillText('QR Login', 100, 140);
         }
 
         // Download QR Code
         function downloadQRCode() {
+            if (!qrCodeInstance) return;
+            
             try {
-                if (!qrCodeCanvas) return;
-                
-                const link = document.createElement('a');
-                link.download = `BYPRO-${userData.id}-QR.png`;
-                link.href = qrCodeCanvas.toDataURL();
-                link.click();
-                showStatus('QR code downloaded successfully', 'success');
+                const canvas = qrCodeContainer.querySelector('canvas');
+                if (canvas) {
+                    const link = document.createElement('a');
+                    link.download = `BYP-${userData.id}-QR.png`;
+                    link.href = canvas.toDataURL('image/png');
+                    link.click();
+                    showStatus('QR Code downloaded successfully!', 'success');
+                }
             } catch (error) {
                 console.error('Error downloading QR code:', error);
-                showStatus('Error downloading QR code', 'error');
-            }
-        }
-
-        // Complete registration process
-        async function completeRegistration() {
-            try {
-                if (next4) {
-                    next4.disabled = true;
-                    next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
-                }
-                
-                showStatus('Getting account ID...', 'success');
-
-                userData.id = await getNextAvailableId();
-
-                let imageUrl = '';
-                
-                // Handle image upload if provided
-                if (profileImage && profileImage.files[0]) {
-                    showStatus('Uploading profile image...', 'success');
-                    
-                    try {
-                        const uploadResult = await uploadImageToServer(userData.id, profileImage.files[0]);
-                        if (uploadResult.success) {
-                            imageUrl = uploadResult.imageUrl;
-                            showStatus('Profile image uploaded successfully', 'success');
-                        } else {
-                            throw new Error('Image upload failed');
-                        }
-                    } catch (uploadError) {
-                        console.error('Image upload error:', uploadError);
-                        // Use fallback image URL
-                        imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`;
-                        showStatus('Using default profile image', 'warning');
-                    }
-                } else {
-                    imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/default.png`;
-                }
-
-                userData.image = imageUrl;
-
-                showStatus('Saving account information...', 'success');
-                
-                const accountData = {
-                    id: userData.id,
-                    name: userData.name,
-                    email: userData.email,
-                    password: userData.password,
-                    image: userData.image
-                };
-
-                const saved = await saveAccountToDatabase(accountData);
-
-                if (saved) {
-                    const qrData = `BYPRO:${userData.id}:${userData.password}`;
-                    generateQRCode(qrData);
-
-                    if (successName) successName.textContent = userData.name;
-                    if (displayId) displayId.textContent = userData.id;
-
-                    showStatus('Account created successfully!', 'success');
-                    goToStep(5);
-                } else {
-                    throw new Error('Failed to save account');
-                }
-            } catch (error) {
-                console.error('❌ Registration error:', error);
-                showStatus('Account created with limited features', 'warning');
-                
-                // Fallback: Show success anyway with basic info
-                const qrData = `BYPRO:${userData.id || '0000'}:${userData.password}`;
-                generateQRCode(qrData);
-                if (successName) successName.textContent = userData.name;
-                if (displayId) displayId.textContent = userData.id || 'Generated';
-                goToStep(5);
-            } finally {
-                if (next4) {
-                    next4.disabled = false;
-                    next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
-                }
+                showStatus('Failed to download QR code', 'error');
             }
         }
 
         // Event Listeners
-        next0.addEventListener('click', () => {
-            if (!acceptTermsCheckbox.checked) {
-                showStatus('Please accept the terms and conditions', 'error');
-                return;
-            }
-            goToStep(1);
-        });
-
+        next0.addEventListener('click', () => goToStep(1));
         next1.addEventListener('click', () => {
-            if (!fullName.value.trim()) {
+            const name = fullName.value.trim();
+            if (!name) {
                 showStatus('Please enter your full name', 'error');
                 return;
             }
-            userData.name = fullName.value.trim();
             goToStep(2);
         });
-
+        
         prev2.addEventListener('click', () => goToStep(1));
-
+        next2.addEventListener('click', () => goToStep(3));
+        
+        prev3.addEventListener('click', () => goToStep(2));
+        next3.addEventListener('click', () => goToStep(4));
+        
+        prev4.addEventListener('click', () => goToStep(3));
+        next4.addEventListener('click', createAccount);
+        
         sendCodeBtn.addEventListener('click', sendVerificationCode);
         resendCodeBtn.addEventListener('click', sendVerificationCode);
-
-        verificationCode.addEventListener('input', () => {
-            const code = verificationCode.value.trim();
-            if (next2) {
-                next2.disabled = !(verificationSent && code === generatedCode);
-            }
-            
-            if (code && code !== generatedCode) {
-                showStatus('Invalid verification code', 'error');
-            } else if (code && code === generatedCode) {
-                showStatus('Verification code is correct', 'success');
-            }
+        
+        verificationCode.addEventListener('input', verifyCode);
+        password.addEventListener('input', function() {
+            checkPasswordStrength(this.value);
+            validatePasswords();
         });
-
-        next2.addEventListener('click', () => {
-            if (!verificationSent) {
-                showStatus('Please send verification code first', 'error');
-                return;
-            }
-
-            const code = verificationCode.value.trim();
-            if (code !== generatedCode) {
-                showStatus('Invalid verification code', 'error');
-                return;
-            }
-
-            userData.email = email.value.trim();
-            goToStep(3);
-        });
-
-        prev3.addEventListener('click', () => goToStep(2));
-
-        password.addEventListener('input', () => {
-            checkPasswordStrength(password.value);
-            
-            const isPasswordValid = password.value.length >= 6;
-            const isConfirmValid = confirmPassword.value === password.value;
-            if (next3) {
-                next3.disabled = !(isPasswordValid && isConfirmValid);
-            }
-        });
-
-        confirmPassword.addEventListener('input', () => {
-            const isPasswordValid = password.value.length >= 6;
-            const isConfirmValid = confirmPassword.value === password.value;
-            if (next3) {
-                next3.disabled = !(isPasswordValid && isConfirmValid);
-            }
-            
-            if (confirmPassword.value && password.value !== confirmPassword.value) {
-                showStatus('Passwords do not match', 'error');
-            } else if (confirmPassword.value && password.value === confirmPassword.value) {
-                showStatus('Passwords match', 'success');
-            }
-        });
-
-        next3.addEventListener('click', () => {
-            if (password.value.length < 6) {
-                showStatus('Password must be at least 6 characters', 'error');
-                return;
-            }
-
-            if (password.value !== confirmPassword.value) {
-                showStatus('Passwords do not match', 'error');
-                return;
-            }
-
-            userData.password = password.value;
-            goToStep(4);
-        });
-
-        prev4.addEventListener('click', () => goToStep(3));
-
-        profileImage.addEventListener('change', (e) => {
-            if (e.target.files[0]) {
-                previewImage(e.target.files[0]);
-            }
-        });
-
-        next4.addEventListener('click', completeRegistration);
-
+        confirmPassword.addEventListener('input', validatePasswords);
+        profileImage.addEventListener('change', handleImageUpload);
         downloadQR.addEventListener('click', downloadQRCode);
 
-        // Initialize the application
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('🚀 B.Y PRO Signup System Initialized');
-            
-            // Set focus to first input
-            if (fullName) fullName.focus();
-            
-            // Test server connection
-            fetch(`${API_BASE}/api/health`)
-                .then(response => {
-                    if (!response.ok) throw new Error('HTTP ' + response.status);
-                    return response.json();
-                })
-                .then(data => {
-                    console.log('✅ Server status:', data);
-                    updateServiceStatus(true, 'All systems operational');
-                })
-                .catch(error => {
-                    console.error('❌ Server connection failed:', error);
-                    updateServiceStatus(false, 'Service starting up... Please wait');
-                });
-                
-            // Auto-format verification code input
-            if (verificationCode) {
-                verificationCode.addEventListener('input', function() {
-                    this.value = this.value.replace(/[^0-9]/g, '');
-                    if (this.value.length > 6) {
-                        this.value = this.value.slice(0, 6);
-                    }
-                });
-            }
-            
-            console.log('✅ B.Y PRO Professional Signup System Ready');
-        });
-
-        // Handle page visibility changes to prevent timeouts
-        document.addEventListener('visibilitychange', function() {
-            if (!document.hidden) {
-                // Page became visible, refresh status
-                fetch(`${API_BASE}/api/health`)
-                    .then(response => {
-                        if (!response.ok) throw new Error('HTTP ' + response.status);
-                        return response.json();
-                    })
-                    .then(data => {
-                        updateServiceStatus(true, 'Systems reconnected');
-                    })
-                    .catch(error => {
-                        updateServiceStatus(false, 'Reconnecting...');
-                    });
-            }
+        // Initialize
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('? B.Y PRO Signup System Initialized');
+            updateServiceStatus(true, 'All systems operational');
         });
     </script>
 </body>
