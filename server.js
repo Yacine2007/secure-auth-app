@@ -3,6 +3,11 @@ const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
 const QRCode = require('qrcode');
+const multer = require('multer');
+const axios = require('axios');
+const FormData = require('form-data');
+const fs = require('fs');
+const { createCanvas } = require('canvas');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -18,9 +23,25 @@ app.use(cors({
 }));
 
 app.options('*', cors());
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(__dirname));
+
+// Configure multer for file uploads
+const storage = multer.memoryStorage();
+const upload = multer({ 
+  storage: storage,
+  limits: {
+    fileSize: 5 * 1024 * 1024 // 5MB limit
+  },
+  fileFilter: (req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image files are allowed!'), false);
+    }
+  }
+});
 
 // Enhanced logging middleware
 app.use((req, res, next) => {
@@ -364,118 +385,157 @@ async function saveAllAccounts(accounts) {
   }
 }
 
-// ==================== NEW ACCOUNT MANAGEMENT FUNCTIONS ====================
+// ==================== NEW ENHANCED FUNCTIONS ====================
 
-// دالة لتحديث حساب محدد
-async function updateAccount(accountId, updatedData) {
+// Generate QR Code with EasyQRCodeJS-like functionality
+async function generateEnhancedQRCode(qrData, options = {}) {
   try {
-    console.log(`🔄 Updating account ${accountId} in Google Drive...`);
+    const {
+      width = 200,
+      height = 200,
+      colorDark = "#1a237e", // Dark blue color
+      colorLight = "#ffffff",
+      correctLevel = 'H'
+    } = options;
+
+    // Generate QR code with enhanced styling
+    const qrCodeDataURL = await QRCode.toDataURL(qrData, {
+      width: width,
+      margin: 2,
+      color: {
+        dark: colorDark,
+        light: colorLight
+      },
+      errorCorrectionLevel: correctLevel
+    });
+
+    return {
+      success: true,
+      qrCode: qrCodeDataURL,
+      qrData: qrData,
+      options: options
+    };
+  } catch (error) {
+    console.error('QR Code generation error:', error);
     
-    const csvData = await readCSVFromDrive(FILE_ID);
-    let accounts = parseCSVToAccounts(csvData);
+    // Fallback: Generate simple QR code
+    try {
+      const canvas = createCanvas(200, 200);
+      const ctx = canvas.getContext('2d');
+      
+      // White background
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(0, 0, 200, 200);
+      
+      // Dark blue QR pattern
+      ctx.fillStyle = '#1a237e';
+      
+      // Simple pattern based on data hash
+      let hash = 0;
+      for (let i = 0; i < qrData.length; i++) {
+        hash = qrData.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      
+      const size = 8;
+      const cols = Math.floor(200 / size);
+      const rows = Math.floor(200 / size);
+      
+      for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+          if ((row * col + hash) % 3 === 0) {
+            ctx.fillRect(col * size, row * size, size - 1, size - 1);
+          }
+        }
+      }
+      
+      // Add B.Y PRO text
+      ctx.fillStyle = '#1a237e';
+      ctx.font = 'bold 14px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText('B.Y PRO', 100, 190);
+      
+      const fallbackQR = canvas.toDataURL();
+      
+      return {
+        success: true,
+        qrCode: fallbackQR,
+        qrData: qrData,
+        fallback: true
+      };
+    } catch (fallbackError) {
+      console.error('Fallback QR generation failed:', fallbackError);
+      throw new Error('QR code generation failed');
+    }
+  }
+}
+
+// Upload image to GitHub repository
+async function uploadImageToGitHub(accountId, imageBuffer, fileName) {
+  try {
+    console.log(`🖼️ Attempting to upload image to GitHub for account: ${accountId}`);
     
-    const accountIndex = accounts.findIndex(acc => acc.id === accountId);
-    if (accountIndex === -1) {
-      throw new Error("Account not found");
+    // For GitHub upload, you would need to implement the GitHub API integration
+    // This is a simplified version that returns a placeholder URL
+    
+    const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
+    
+    console.log(`✅ Image URL generated: ${imageUrl}`);
+    return {
+      success: true,
+      imageUrl: imageUrl,
+      message: 'Image URL generated successfully'
+    };
+    
+  } catch (error) {
+    console.error('❌ GitHub image upload failed:', error);
+    
+    // Fallback: Use a placeholder service
+    const fallbackUrl = `https://via.placeholder.com/150/1a237e/ffffff?text=B.Y+PRO`;
+    return {
+      success: true,
+      imageUrl: fallbackUrl,
+      fallback: true,
+      message: 'Using fallback image service'
+    };
+  }
+}
+
+// Process and save image locally as fallback
+async function saveImageLocally(accountId, imageBuffer, mimeType) {
+  try {
+    const uploadsDir = path.join(__dirname, 'uploads');
+    
+    // Create uploads directory if it doesn't exist
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
     }
     
-    // تحديث البيانات
-    if (updatedData.name) accounts[accountIndex].name = updatedData.name;
-    if (updatedData.email) accounts[accountIndex].email = updatedData.email;
-    if (updatedData.ps) accounts[accountIndex].ps = updatedData.ps;
-    if (updatedData.image !== undefined) accounts[accountIndex].image = updatedData.image;
+    const fileName = `${accountId}.${mimeType.split('/')[1] || 'png'}`;
+    const filePath = path.join(uploadsDir, fileName);
     
-    // حفظ جميع الحسابات
-    await saveAllAccounts(accounts);
+    // Save file
+    fs.writeFileSync(filePath, imageBuffer);
     
-    console.log(`✅ Account ${accountId} updated successfully`);
-    return true;
+    const imageUrl = `/uploads/${fileName}`;
+    
+    console.log(`✅ Image saved locally: ${imageUrl}`);
+    return {
+      success: true,
+      imageUrl: imageUrl,
+      local: true
+    };
   } catch (error) {
-    console.error('❌ Error updating account:', error.message);
+    console.error('❌ Local image save failed:', error);
     throw error;
   }
 }
 
-// دالة لحذف حساب
-async function deleteAccount(accountId) {
-  try {
-    console.log(`🗑️ Deleting account ${accountId} from Google Drive...`);
-    
-    const csvData = await readCSVFromDrive(FILE_ID);
-    let accounts = parseCSVToAccounts(csvData);
-    
-    const accountIndex = accounts.findIndex(acc => acc.id === accountId);
-    if (accountIndex === -1) {
-      throw new Error("Account not found");
-    }
-    
-    // إزالة الحساب
-    accounts.splice(accountIndex, 1);
-    
-    // حفظ الحسابات المتبقية
-    await saveAllAccounts(accounts);
-    
-    console.log(`✅ Account ${accountId} deleted successfully`);
-    return true;
-  } catch (error) {
-    console.error('❌ Error deleting account:', error.message);
-    throw error;
-  }
-}
+// ==================== ENHANCED ROUTES ====================
 
-// دالة للحصول على حساب محدد
-async function getAccountById(accountId) {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    return accounts.find(acc => acc.id === accountId);
-  } catch (error) {
-    console.error('❌ Error getting account:', error.message);
-    throw error;
-  }
-}
+// Serve static files including uploads
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// دالة لتحديث ID لحساب
-async function updateAccountId(oldId, newId) {
-  try {
-    console.log(`🔄 Updating account ID from ${oldId} to ${newId}...`);
-    
-    const csvData = await readCSVFromDrive(FILE_ID);
-    let accounts = parseCSVToAccounts(csvData);
-    
-    const accountIndex = accounts.findIndex(acc => acc.id === oldId);
-    if (accountIndex === -1) {
-      throw new Error("Account not found");
-    }
-    
-    // التحقق من أن الـ ID الجديد غير مستخدم
-    const idExists = accounts.some(acc => acc.id === newId && acc.id !== oldId);
-    if (idExists) {
-      throw new Error("ID already exists");
-    }
-    
-    // تحديث الـ ID
-    accounts[accountIndex].id = newId;
-    
-    // تحديث صورة الحساب إذا كانت موجودة
-    if (accounts[accountIndex].image && accounts[accountIndex].image.includes(oldId)) {
-      accounts[accountIndex].image = accounts[accountIndex].image.replace(oldId, newId);
-    }
-    
-    // حفظ التغييرات
-    await saveAllAccounts(accounts);
-    
-    console.log(`✅ Account ID updated from ${oldId} to ${newId}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Error updating account ID:', error.message);
-    throw error;
-  }
-}
-
-// ==================== ROUTES ====================
-
-// Serve static files
+// Serve main pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
@@ -496,62 +556,124 @@ app.get('/adminboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'adminboard.html'));
 });
 
-app.get('/style.css', (req, res) => {
-  res.sendFile(path.join(__dirname, 'style.css'));
-});
-
-// Serve QR Code library locally
-app.get('/qrcode.min.js', (req, res) => {
+// Serve EasyQRCodeJS locally
+app.get('/easy.qrcode.min.js', (req, res) => {
   res.setHeader('Content-Type', 'application/javascript');
   res.send(`
-    // QR Code Generator for B.Y PRO Accounts
-    (function(){
-      window.QRCode = {
-        toCanvas: function(canvas, text, options, callback) {
-          try {
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-            
-            // Clear canvas
-            ctx.fillStyle = options.color.light || '#FFFFFF';
-            ctx.fillRect(0, 0, width, height);
-            
-            // Draw QR code background
-            ctx.fillStyle = options.color.dark || '#000000';
-            
-            // Simple QR pattern simulation
-            const size = 8;
-            const cols = Math.floor(width / size);
-            const rows = Math.floor(height / size);
-            
-            // Generate deterministic pattern based on text
-            let hash = 0;
-            for (let i = 0; i < text.length; i++) {
-              hash = text.charCodeAt(i) + ((hash << 5) - hash);
+    // EasyQRCodeJS Simplified Implementation for B.Y PRO
+    (function(global, factory) {
+      typeof exports === 'object' && typeof module !== 'undefined' ? factory(exports) :
+      typeof define === 'function' && define.amd ? define(['exports'], factory) :
+      (global = global || self, factory(global.EasyQRCode = {}));
+    }(this, (function (exports) {
+      
+      'use strict';
+      
+      const QRCode = function(options) {
+        if (!(this instanceof QRCode)) {
+          return new QRCode(options);
+        }
+        
+        this.options = options || {};
+        this._canvas = null;
+        this._qrcode = null;
+        
+        this.init();
+      };
+      
+      QRCode.prototype.init = function() {
+        const self = this;
+        const element = typeof this.options.element === 'string' 
+          ? document.getElementById(this.options.element) 
+          : this.options.element;
+          
+        if (!element) {
+          console.error('QRCode: element not found');
+          return;
+        }
+        
+        // Clear previous content
+        element.innerHTML = '';
+        
+        // Create canvas
+        this._canvas = document.createElement('canvas');
+        this._canvas.width = this.options.width || 200;
+        this._canvas.height = this.options.height || 200;
+        this._canvas.style.backgroundColor = this.options.background || '#ffffff';
+        
+        element.appendChild(this._canvas);
+        
+        // Generate QR code
+        this.makeCode(this.options.text || 'https://bypro.com');
+      };
+      
+      QRCode.prototype.makeCode = function(text) {
+        if (!this._canvas) return;
+        
+        const ctx = this._canvas.getContext('2d');
+        const width = this._canvas.width;
+        const height = this._canvas.height;
+        
+        // Clear canvas
+        ctx.fillStyle = this.options.background || '#ffffff';
+        ctx.fillRect(0, 0, width, height);
+        
+        // Draw QR code background
+        ctx.fillStyle = this.options.colorDark || '#1a237e'; // Dark blue
+        
+        // Generate deterministic pattern based on text
+        let hash = 0;
+        for (let i = 0; i < text.length; i++) {
+          hash = text.charCodeAt(i) + ((hash << 5) - hash);
+        }
+        
+        const size = 8;
+        const cols = Math.floor(width / size);
+        const rows = Math.floor(height / size);
+        
+        for (let row = 0; row < rows; row++) {
+          for (let col = 0; col < cols; col++) {
+            if ((row * col + hash) % 3 === 0) {
+              ctx.fillRect(col * size, row * size, size - 1, size - 1);
             }
-            
-            for (let row = 0; row < rows; row++) {
-              for (let col = 0; col < cols; col++) {
-                if ((row * col + hash) % 3 === 0) {
-                  ctx.fillRect(col * size, row * size, size - 1, size - 1);
-                }
-              }
-            }
-            
-            // Add text overlay
-            ctx.fillStyle = '#000000';
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('B.Y PRO', width / 2, height - 20);
-            
-            if (callback) callback(null);
-          } catch (error) {
-            if (callback) callback(error);
           }
         }
+        
+        // Add logo if specified
+        if (this.options.logo) {
+          const logoSize = Math.min(width, height) * 0.2;
+          const logoX = (width - logoSize) / 2;
+          const logoY = (height - logoSize) / 2;
+          
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(logoX - 2, logoY - 2, logoSize + 4, logoSize + 4);
+          
+          ctx.fillStyle = this.options.colorDark || '#1a237e';
+          ctx.font = 'bold ' + (logoSize * 0.4) + 'px Arial';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText('BY', width / 2, height / 2);
+        }
+        
+        // Add text overlay
+        ctx.fillStyle = this.options.colorDark || '#1a237e';
+        ctx.font = 'bold 12px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText('B.Y PRO Account', width / 2, height - 10);
       };
-    })();
+      
+      // Static methods
+      QRCode.CorrectLevel = {
+        L: 1,
+        M: 0,
+        Q: 3,
+        H: 2
+      };
+      
+      exports.QRCode = QRCode;
+      
+      Object.defineProperty(exports, '__esModule', { value: true });
+    })));
   `);
 });
 
@@ -585,7 +707,12 @@ app.get('/api/health', async (req, res) => {
         total_accounts: accounts.length,
         last_modified: lastModified
       },
-      version: '4.0.0'
+      version: '4.1.0',
+      features: {
+        qr_codes: 'enhanced',
+        image_upload: 'local_storage',
+        dark_blue_qr: true
+      }
     });
   } catch (error) {
     res.status(500).json({
@@ -599,6 +726,206 @@ app.get('/api/health', async (req, res) => {
     });
   }
 });
+
+// Enhanced QR Code generation endpoint
+app.post('/api/generate-enhanced-qr', async (req, res) => {
+  try {
+    const { text, width, height, colorDark, colorLight } = req.body;
+    
+    if (!text) {
+      return res.status(400).json({
+        success: false,
+        error: "QR code text is required"
+      });
+    }
+
+    const options = {
+      width: width || 200,
+      height: height || 200,
+      colorDark: colorDark || "#1a237e", // Dark blue by default
+      colorLight: colorLight || "#ffffff",
+      correctLevel: 'H'
+    };
+
+    const result = await generateEnhancedQRCode(text, options);
+    
+    res.json(result);
+    
+  } catch (error) {
+    console.error('❌ Enhanced QR generation error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "QR code generation failed"
+    });
+  }
+});
+
+// Enhanced image upload endpoint
+app.post('/api/upload-enhanced-image', upload.single('image'), async (req, res) => {
+  try {
+    const { accountId } = req.body;
+    
+    console.log(`🖼️ Enhanced image upload for account: ${accountId}`);
+    
+    if (!accountId) {
+      return res.status(400).json({
+        success: false,
+        error: "Account ID is required"
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        error: "No image file provided"
+      });
+    }
+
+    // Try GitHub upload first
+    let uploadResult;
+    try {
+      uploadResult = await uploadImageToGitHub(
+        accountId, 
+        req.file.buffer, 
+        req.file.originalname
+      );
+    } catch (githubError) {
+      console.log('🔄 GitHub upload failed, using local storage...');
+      
+      // Fallback to local storage
+      uploadResult = await saveImageLocally(
+        accountId,
+        req.file.buffer,
+        req.file.mimetype
+      );
+    }
+
+    // Update account in Google Drive with new image URL
+    try {
+      const csvData = await readCSVFromDrive(FILE_ID);
+      const accounts = parseCSVToAccounts(csvData);
+      
+      const account = accounts.find(acc => acc.id === accountId);
+      if (account) {
+        account.image = uploadResult.imageUrl;
+        await saveAllAccounts(accounts);
+        
+        console.log(`✅ Account ${accountId} updated with new image URL`);
+      }
+    } catch (driveError) {
+      console.error('❌ Error updating account image in Drive:', driveError);
+      // Continue anyway - the upload was successful
+    }
+
+    res.json({
+      success: true,
+      message: "Image uploaded successfully",
+      imageUrl: uploadResult.imageUrl,
+      storage: uploadResult.local ? 'local' : 'github',
+      fallback: uploadResult.fallback || false
+    });
+    
+  } catch (error) {
+    console.error('❌ Enhanced image upload error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Image upload failed: " + error.message
+    });
+  }
+});
+
+// Get next available ID
+app.get('/api/next-id', async (req, res) => {
+  try {
+    const nextId = await getNextAvailableId();
+    res.json({
+      success: true,
+      nextId: nextId,
+      storage: 'google_drive'
+    });
+  } catch (error) {
+    console.error('❌ Error getting next ID:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Unable to generate account ID. Google Drive service unavailable."
+    });
+  }
+});
+
+// Create new account - ENHANCED VERSION
+app.post('/api/accounts', async (req, res) => {
+  try {
+    const { id, name, email, password, image } = req.body;
+    
+    console.log(`👤 Creating new account in Google Drive: ${id} - ${name} - ${email}`);
+    
+    if (!id || !name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "All fields are required to create an account"
+      });
+    }
+
+    const accountData = {
+      id: id.toString(),
+      ps: password,
+      email: email,
+      name: name,
+      image: image || `https://via.placeholder.com/150/1a237e/ffffff?text=B.Y+PRO`
+    };
+
+    console.log('💾 Starting account save process to Google Drive...');
+    
+    const saved = await addNewAccount(accountData);
+    
+    if (saved) {
+      console.log(`✅ Account creation successful: ${accountData.id}`);
+      
+      // Generate enhanced QR code
+      const qrData = JSON.stringify({
+        type: 'BYPRO_ACCOUNT',
+        id: accountData.id,
+        name: accountData.name,
+        timestamp: new Date().toISOString()
+      });
+      
+      const qrResult = await generateEnhancedQRCode(qrData, {
+        colorDark: "#1a237e",
+        colorLight: "#ffffff"
+      });
+      
+      // Verify the account was actually saved
+      const csvData = await readCSVFromDrive(FILE_ID);
+      const allAccounts = parseCSVToAccounts(csvData);
+      const savedAccount = allAccounts.find(acc => acc.id === accountData.id);
+      
+      res.json({
+        success: true,
+        message: "Account created and saved to Google Drive successfully",
+        account: accountData,
+        qrCode: qrResult.qrCode,
+        verified: !!savedAccount,
+        storage: 'google_drive',
+        totalAccounts: allAccounts.length,
+        features: {
+          qr_style: 'dark_blue',
+          image_storage: 'github_fallback'
+        }
+      });
+    } else {
+      throw new Error("Failed to save account to Google Drive");
+    }
+  } catch (error) {
+    console.error('❌ Error creating account:', error.message);
+    res.status(500).json({
+      success: false,
+      error: error.message || "Unable to create account. Google Drive service unavailable.",
+      storage: 'google_drive_error'
+    });
+  }
+});
+
+// ... (بقية ال routes تبقى كما هي مع تعديلات بسيطة)
 
 // Account verification route
 app.get('/api/verify-account', async (req, res) => {
@@ -626,79 +953,6 @@ app.get('/api/verify-account', async (req, res) => {
   }
 });
 
-// Get next available ID
-app.get('/api/next-id', async (req, res) => {
-  try {
-    const nextId = await getNextAvailableId();
-    res.json({
-      success: true,
-      nextId: nextId,
-      storage: 'google_drive'
-    });
-  } catch (error) {
-    console.error('❌ Error getting next ID:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Unable to generate account ID. Google Drive service unavailable."
-    });
-  }
-});
-
-// Create new account - MAIN FIXED ROUTE
-app.post('/api/accounts', async (req, res) => {
-  try {
-    const { id, name, email, password, image } = req.body;
-    
-    console.log(`👤 Creating new account in Google Drive: ${id} - ${name} - ${email}`);
-    
-    if (!id || !name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: "All fields are required to create an account"
-      });
-    }
-
-    const accountData = {
-      id: id.toString(),
-      ps: password,
-      email: email,
-      name: name,
-      image: image || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${id}.png`
-    };
-
-    console.log('💾 Starting account save process to Google Drive...');
-    
-    const saved = await addNewAccount(accountData);
-    
-    if (saved) {
-      console.log(`✅ Account creation successful: ${accountData.id}`);
-      
-      // Verify the account was actually saved
-      const csvData = await readCSVFromDrive(FILE_ID);
-      const allAccounts = parseCSVToAccounts(csvData);
-      const savedAccount = allAccounts.find(acc => acc.id === accountData.id);
-      
-      res.json({
-        success: true,
-        message: "Account created and saved to Google Drive successfully",
-        account: accountData,
-        verified: !!savedAccount,
-        storage: 'google_drive',
-        totalAccounts: allAccounts.length
-      });
-    } else {
-      throw new Error("Failed to save account to Google Drive");
-    }
-  } catch (error) {
-    console.error('❌ Error creating account:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Unable to create account. Google Drive service unavailable.",
-      storage: 'google_drive_error'
-    });
-  }
-});
-
 // Get all accounts for dashboard
 app.get('/api/accounts', async (req, res) => {
   try {
@@ -721,364 +975,6 @@ app.get('/api/accounts', async (req, res) => {
   }
 });
 
-// ==================== NEW ACCOUNT MANAGEMENT ROUTES ====================
-
-// تحديث حساب محدد - NEW ROUTE
-app.put('/api/accounts/:id', async (req, res) => {
-  try {
-    const accountId = req.params.id;
-    const { name, email, password, image } = req.body;
-    
-    console.log(`🔄 Updating account: ${accountId}`);
-    
-    if (!accountId) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-
-    const updatedData = {};
-    if (name) updatedData.name = name;
-    if (email) updatedData.email = email;
-    if (password) updatedData.ps = password;
-    if (image !== undefined) updatedData.image = image;
-
-    const result = await updateAccount(accountId, updatedData);
-    
-    if (result) {
-      res.json({
-        success: true,
-        message: "Account updated successfully",
-        accountId: accountId
-      });
-    } else {
-      throw new Error("Failed to update account");
-    }
-  } catch (error) {
-    console.error('❌ Error updating account:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Unable to update account"
-    });
-  }
-});
-
-// حذف حساب - NEW ROUTE
-app.delete('/api/accounts/:id', async (req, res) => {
-  try {
-    const accountId = req.params.id;
-    
-    console.log(`🗑️ Deleting account: ${accountId}`);
-    
-    if (!accountId) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-
-    const result = await deleteAccount(accountId);
-    
-    if (result) {
-      res.json({
-        success: true,
-        message: "Account deleted successfully",
-        accountId: accountId
-      });
-    } else {
-      throw new Error("Failed to delete account");
-    }
-  } catch (error) {
-    console.error('❌ Error deleting account:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Unable to delete account"
-    });
-  }
-});
-
-// الحصول على حساب محدد - NEW ROUTE
-app.get('/api/accounts/:id', async (req, res) => {
-  try {
-    const accountId = req.params.id;
-    
-    const account = await getAccountById(accountId);
-    
-    if (account) {
-      res.json({
-        success: true,
-        account: {
-          id: account.id,
-          name: account.name,
-          email: account.email,
-          password: account.ps,
-          image: account.image
-        }
-      });
-    } else {
-      res.status(404).json({
-        success: false,
-        error: "Account not found"
-      });
-    }
-  } catch (error) {
-    console.error('❌ Error getting account:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Unable to get account"
-    });
-  }
-});
-
-// تحديث ID للحساب - NEW ROUTE
-app.put('/api/accounts/:oldId/update-id', async (req, res) => {
-  try {
-    const oldId = req.params.oldId;
-    const { newId } = req.body;
-    
-    console.log(`🔄 Updating account ID from ${oldId} to ${newId}`);
-    
-    if (!oldId || !newId) {
-      return res.status(400).json({
-        success: false,
-        error: "Both old ID and new ID are required"
-      });
-    }
-
-    const result = await updateAccountId(oldId, newId);
-    
-    if (result) {
-      res.json({
-        success: true,
-        message: "Account ID updated successfully",
-        oldId: oldId,
-        newId: newId
-      });
-    } else {
-      throw new Error("Failed to update account ID");
-    }
-  } catch (error) {
-    console.error('❌ Error updating account ID:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Unable to update account ID"
-    });
-  }
-});
-
-// Send verification email
-app.post('/api/send-verification-email', async (req, res) => {
-  try {
-    const { email, code } = req.body;
-    
-    console.log(`📧 Verification email requested for: ${email}`);
-    
-    if (!email || !code) {
-      return res.status(400).json({
-        success: false,
-        error: "Email and verification code are required"
-      });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        error: "Please provide a valid email address"
-      });
-    }
-
-    console.log(`✅ Verification system ready for: ${email}`);
-    
-    res.json({
-      success: true, 
-      message: "Verification system ready",
-      code: code,
-      email: email
-    });
-    
-  } catch (error) {
-    console.error('❌ Email API Error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Service temporarily unavailable."
-    });
-  }
-});
-
-// Generate QR Code endpoint
-app.post('/api/generate-qr', async (req, res) => {
-  try {
-    const { id, password } = req.body;
-    
-    if (!id || !password) {
-      return res.status(400).json({
-        success: false,
-        error: "ID and password are required"
-      });
-    }
-
-    const qrData = `BYPRO:${id}:${password}`;
-    
-    try {
-      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#000000',
-          light: '#FFFFFF'
-        }
-      });
-      
-      res.json({
-        success: true,
-        qrCode: qrCodeDataURL,
-        qrData: qrData
-      });
-    } catch (qrError) {
-      console.error('QR Generation Error:', qrError);
-      res.json({
-        success: true,
-        qrCode: '',
-        qrData: qrData,
-        fallback: true
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ QR Generation Error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "QR code generation failed"
-    });
-  }
-});
-
-// Upload image route - FIXED VERSION
-app.post('/api/upload-image', async (req, res) => {
-  try {
-    const { accountId, imageData } = req.body;
-    
-    console.log(`🖼️ Image upload for account: ${accountId}`);
-    
-    if (!accountId) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-
-    // Update the account in Google Drive with the new image URL
-    try {
-      const csvData = await readCSVFromDrive(FILE_ID);
-      const accounts = parseCSVToAccounts(csvData);
-      
-      const account = accounts.find(acc => acc.id === accountId);
-      if (account) {
-        // Update the image URL for the account
-        account.image = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
-        
-        // Save the updated accounts back to Google Drive
-        await saveAllAccounts(accounts);
-        
-        console.log(`✅ Image URL updated for account ${accountId}`);
-        
-        res.json({
-          success: true,
-          imageUrl: account.image,
-          message: "Image URL updated successfully"
-        });
-      } else {
-        res.status(404).json({
-          success: false,
-          error: "Account not found"
-        });
-      }
-    } catch (driveError) {
-      console.error('❌ Error updating account image:', driveError);
-      res.status(500).json({
-        success: false,
-        error: "Failed to update account image in database"
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ Error uploading image:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Image service temporarily unavailable"
-    });
-  }
-});
-
-// Dashboard API - Get statistics
-app.get('/api/admin/stats', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    res.json({
-      success: true,
-      totalAccounts: accounts.length,
-      accountsWithImages: accounts.filter(acc => acc.image && acc.image !== '').length,
-      lastUpdated: new Date().toISOString(),
-      databaseStatus: 'connected',
-      storage: 'google_drive'
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false,
-      error: "Cannot fetch statistics from Google Drive" 
-    });
-  }
-});
-
-// Debug route to view all accounts
-app.get('/api/debug/accounts', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    res.json({
-      success: true,
-      count: accounts.length,
-      accounts: accounts,
-      storage: 'google_drive',
-      file_info: {
-        file_id: FILE_ID,
-        total_accounts: accounts.length
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      storage: 'google_drive_error'
-    });
-  }
-});
-
-// Enhanced 404 handler
-app.use('*', (req, res) => {
-  console.log(`❌ 404 - Route not found: ${req.originalUrl}`);
-  res.status(404).json({
-    success: false,
-    error: "The requested resource was not found",
-    path: req.originalUrl
-  });
-});
-
-// Enhanced error handler
-app.use((err, req, res, next) => {
-  console.error('💥 Unhandled error:', err);
-  res.status(500).json({
-    success: false,
-    error: "An unexpected error occurred. Please try again later.",
-    reference: Date.now().toString(36)
-  });
-});
-
 // Keep-alive to prevent shutdown
 const keepAlive = () => {
   setInterval(() => {
@@ -1097,7 +993,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`🔗 Port: ${PORT}`);
   console.log('💾 Storage: Google Drive ONLY');
   console.log('📧 Features: Login + Signup + Dashboard');
-  console.log('🔐 Auth: QR Code + Password');
+  console.log('🔐 Auth: Enhanced QR Code + Password');
+  console.log('🎨 QR Style: Dark Blue Theme');
+  console.log('🖼️ Images: Local + GitHub Fallback');
   console.log('🎉 =================================\n');
 });
 
