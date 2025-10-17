@@ -982,75 +982,7 @@
             }, 1000);
         }
 
-        // Enhanced email sending with EmailJS
-        async function sendVerificationCode() {
-            try {
-                const emailValue = email.value.trim();
-                if (!emailValue) {
-                    showStatus('Please enter your email address', 'error');
-                    return;
-                }
-                
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(emailValue)) {
-                    showStatus('Please enter a valid email address', 'error');
-                    return;
-                }
 
-                showStatus('Sending verification code...', 'success');
-                if (sendCodeBtn) {
-                    sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-                    sendCodeBtn.disabled = true;
-                }
-                
-                // Generate random code
-                generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-                
-                try {
-                    // Use EmailJS to send email
-                    const templateParams = {
-                        to_email: emailValue,
-                        email: emailValue,
-                        code: generatedCode,
-                        timestamp: new Date().toLocaleString(),
-                        expiry_time: new Date(Date.now() + 10 * 60 * 1000).toLocaleString(),
-                        current_year: new Date().getFullYear(),
-                        user_name: emailValue.split('@')[0]
-                    };
-
-                    console.log('?? Sending email with EmailJS...');
-                    console.log('?? Code:', generatedCode);
-                    console.log('?? To:', emailValue);
-
-                    const result = await emailjs.send(
-                        'byprologin25', 
-                        'template_p86s0np', 
-                        templateParams
-                    );
-                    
-                    console.log('? EmailJS response:', result);
-                    showStatus(`Verification code sent to ${emailValue}`, 'success');
-                    verificationSent = true;
-                    startCountdown();
-                    
-                } catch (emailError) {
-                    console.error('EmailJS Error:', emailError);
-                    
-                    // Fallback: Show the code to user if email fails
-                    showStatus(`Email service temporarily unavailable. Use code: ${generatedCode}`, 'warning');
-                    verificationSent = true;
-                    startCountdown();
-                }
-                
-            } catch (error) {
-                console.error('Error sending verification code:', error);
-                showStatus('Failed to send verification code. Please try again.', 'error');
-                if (sendCodeBtn) {
-                    sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
-                    sendCodeBtn.disabled = false;
-                }
-            }
-        }
 
         // Verify email code
         function verifyCode() {
@@ -1263,5 +1195,63 @@
             updateServiceStatus(true, 'All systems operational');
         });
     </script>
+
+<script>
+// بدلاً من EmailJS، استخدم الـ API الجديد
+async function sendVerificationCode() {
+    try {
+        const emailValue = email.value.trim();
+        if (!emailValue) {
+            showStatus('Please enter your email address', 'error');
+            return;
+        }
+        
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(emailValue)) {
+            showStatus('Please enter a valid email address', 'error');
+            return;
+        }
+
+        showStatus('Sending verification code...', 'success');
+        if (sendCodeBtn) {
+            sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+            sendCodeBtn.disabled = true;
+        }
+        
+        // Use the new API endpoint
+        const response = await fetch(`${API_BASE}/api/send-verification-code`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ email: emailValue })
+        });
+
+        const result = await response.json();
+        
+        if (result.success) {
+            generatedCode = result.code; // Store the code
+            showStatus(result.message, 'success');
+            verificationSent = true;
+            startCountdown();
+            
+            // Show code in console for testing
+            console.log('📧 Your verification code:', generatedCode);
+        } else {
+            showStatus(result.error || 'Failed to send verification code', 'error');
+        }
+        
+    } catch (error) {
+        console.error('Error sending verification code:', error);
+        showStatus('Failed to send verification code. Please try again.', 'error');
+    } finally {
+        if (sendCodeBtn) {
+            sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
+            sendCodeBtn.disabled = false;
+        }
+    }
+}
+</script>    
 </body>
 </html>
+
