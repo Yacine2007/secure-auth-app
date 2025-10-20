@@ -9,7 +9,7 @@
     <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/easyqrcodejs@4.4.11/dist/easy.qrcode.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -876,7 +876,7 @@
     const qrCodeContainer = document.getElementById('qrCode');
 
     // Server Configuration
-    const API_BASE = window.location.origin; // Use same origin as the page
+    const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
 
     // Variables
     let currentStep = 0;
