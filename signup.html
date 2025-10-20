@@ -831,284 +831,431 @@
         </div>
     </div>
 
-    <script>
-        // Initialize EmailJS with your correct Public Key
-        emailjs.init("jQVzWq2DVajl99-KP");
-        console.log('? EmailJS initialized with Public Key');
 
-        // DOM Elements
-        const steps = document.querySelectorAll('.step');
-        const progressSteps = document.querySelectorAll('.progress-step');
-        const statusMessage = document.getElementById('statusMessage');
-        const serviceStatus = document.getElementById('serviceStatus');
-        const statusText = document.getElementById('statusText');
-        const termsModal = document.getElementById('termsModal');
-        const showTermsBtn = document.getElementById('showTerms');
-        const closeModalBtn = document.getElementById('closeModal');
-        const acceptTermsCheckbox = document.getElementById('acceptTerms');
+<script>
+    // Initialize EmailJS with your correct Public Key
+    emailjs.init("jQVzWq2DVajl99-KP");
+    console.log('? EmailJS initialized with Public Key');
 
-        // Form Elements
-        const fullName = document.getElementById('fullName');
-        const email = document.getElementById('email');
-        const verificationCode = document.getElementById('verificationCode');
-        const password = document.getElementById('password');
-        const confirmPassword = document.getElementById('confirmPassword');
-        const profileImage = document.getElementById('profileImage');
-        const imagePreview = document.getElementById('imagePreview');
+    // DOM Elements
+    const steps = document.querySelectorAll('.step');
+    const progressSteps = document.querySelectorAll('.progress-step');
+    const statusMessage = document.getElementById('statusMessage');
+    const serviceStatus = document.getElementById('serviceStatus');
+    const statusText = document.getElementById('statusText');
+    const termsModal = document.getElementById('termsModal');
+    const showTermsBtn = document.getElementById('showTerms');
+    const closeModalBtn = document.getElementById('closeModal');
+    const acceptTermsCheckbox = document.getElementById('acceptTerms');
 
-        // Buttons
-        const next0 = document.getElementById('next0');
-        const next1 = document.getElementById('next1');
-        const prev2 = document.getElementById('prev2');
-        const next2 = document.getElementById('next2');
-        const prev3 = document.getElementById('prev3');
-        const next3 = document.getElementById('next3');
-        const prev4 = document.getElementById('prev4');
-        const next4 = document.getElementById('next4');
-        const sendCodeBtn = document.getElementById('sendCodeBtn');
-        const resendCodeBtn = document.getElementById('resendCodeBtn');
-        const downloadQR = document.getElementById('downloadQR');
+    // Form Elements
+    const fullName = document.getElementById('fullName');
+    const email = document.getElementById('email');
+    const verificationCode = document.getElementById('verificationCode');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirmPassword');
+    const profileImage = document.getElementById('profileImage');
+    const imagePreview = document.getElementById('imagePreview');
 
-        // Success Elements
-        const successName = document.getElementById('successName');
-        const displayId = document.getElementById('displayId');
-        const qrCodeContainer = document.getElementById('qrCode');
+    // Buttons
+    const next0 = document.getElementById('next0');
+    const next1 = document.getElementById('next1');
+    const prev2 = document.getElementById('prev2');
+    const next2 = document.getElementById('next2');
+    const prev3 = document.getElementById('prev3');
+    const next3 = document.getElementById('next3');
+    const prev4 = document.getElementById('prev4');
+    const next4 = document.getElementById('next4');
+    const sendCodeBtn = document.getElementById('sendCodeBtn');
+    const resendCodeBtn = document.getElementById('resendCodeBtn');
+    const downloadQR = document.getElementById('downloadQR');
 
-        // Server Configuration
-        const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
+    // Success Elements
+    const successName = document.getElementById('successName');
+    const displayId = document.getElementById('displayId');
+    const qrCodeContainer = document.getElementById('qrCode');
 
-        // Variables
-        let currentStep = 0;
-        let verificationSent = false;
-        let generatedCode = '';
-        let countdownInterval;
-        let countdownTime = 60;
-        let userData = {
-            name: '',
-            email: '',
-            password: '',
-            image: '',
-            id: ''
-        };
-        let qrCodeInstance = null;
+    // Server Configuration
+    const API_BASE = window.location.origin; // Use same origin as the page
 
-        // Modal Functions
-        showTermsBtn.addEventListener('click', () => {
-            termsModal.style.display = 'flex';
-        });
+    // Variables
+    let currentStep = 0;
+    let verificationSent = false;
+    let generatedCode = '';
+    let countdownInterval;
+    let countdownTime = 60;
+    let userData = {
+        name: '',
+        email: '',
+        password: '',
+        image: '',
+        id: ''
+    };
+    let qrCodeInstance = null;
 
-        closeModalBtn.addEventListener('click', () => {
+    // Modal Functions
+    showTermsBtn.addEventListener('click', () => {
+        termsModal.style.display = 'flex';
+    });
+
+    closeModalBtn.addEventListener('click', () => {
+        termsModal.style.display = 'none';
+    });
+
+    termsModal.addEventListener('click', (e) => {
+        if (e.target === termsModal) {
             termsModal.style.display = 'none';
-        });
+        }
+    });
 
-        termsModal.addEventListener('click', (e) => {
-            if (e.target === termsModal) {
-                termsModal.style.display = 'none';
+    // Terms Acceptance
+    acceptTermsCheckbox.addEventListener('change', () => {
+        next0.disabled = !acceptTermsCheckbox.checked;
+    });
+
+    // Show status message
+    function showStatus(message, type) {
+        statusMessage.textContent = message;
+        statusMessage.className = `status-message status-${type}`;
+        statusMessage.style.display = 'block';
+        
+        setTimeout(() => {
+            statusMessage.style.display = 'none';
+        }, 5000);
+    }
+
+    // Update service status
+    function updateServiceStatus(online, message) {
+        serviceStatus.style.display = 'block';
+        if (statusText) {
+            statusText.innerHTML = `<i class="fas fa-circle ${online ? 'service-online' : 'service-offline'}"></i> ${message}`;
+        }
+    }
+
+    // Navigate to step
+    function goToStep(step) {
+        steps.forEach(s => s.classList.remove('active'));
+        progressSteps.forEach(p => {
+            p.classList.remove('active');
+            if (parseInt(p.textContent) <= step) {
+                p.classList.add('completed');
             }
         });
 
-        // Terms Acceptance
-        acceptTermsCheckbox.addEventListener('change', () => {
-            next0.disabled = !acceptTermsCheckbox.checked;
-        });
+        document.getElementById(`step${step}-content`).classList.add('active');
+        if (document.getElementById(`step${step}`)) {
+            document.getElementById(`step${step}`).classList.add('active');
+        }
+        currentStep = step;
+    }
 
-        // Show status message
-        function showStatus(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message status-${type}`;
-            statusMessage.style.display = 'block';
+    // Start countdown for resend button
+    function startCountdown() {
+        countdownTime = 60;
+        if (resendCodeBtn) {
+            resendCodeBtn.disabled = true;
+        }
+        if (sendCodeBtn) {
+            sendCodeBtn.disabled = true;
+        }
+        
+        countdownInterval = setInterval(() => {
+            countdownTime--;
+            const countdownElement = document.getElementById('countdown');
+            if (countdownElement) {
+                countdownElement.textContent = countdownTime;
+            }
             
-            setTimeout(() => {
-                statusMessage.style.display = 'none';
-            }, 5000);
-        }
-
-        // Update service status
-        function updateServiceStatus(online, message) {
-            serviceStatus.style.display = 'block';
-            if (statusText) {
-                statusText.innerHTML = `<i class="fas fa-circle ${online ? 'service-online' : 'service-offline'}"></i> ${message}`;
-            }
-        }
-
-        // Navigate to step
-        function goToStep(step) {
-            steps.forEach(s => s.classList.remove('active'));
-            progressSteps.forEach(p => {
-                p.classList.remove('active');
-                if (parseInt(p.textContent) <= step) {
-                    p.classList.add('completed');
+            if (countdownTime <= 0) {
+                clearInterval(countdownInterval);
+                if (resendCodeBtn) {
+                    resendCodeBtn.disabled = false;
+                    resendCodeBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
                 }
-            });
-
-            document.getElementById(`step${step}-content`).classList.add('active');
-            if (document.getElementById(`step${step}`)) {
-                document.getElementById(`step${step}`).classList.add('active');
+                if (sendCodeBtn) {
+                    sendCodeBtn.disabled = false;
+                }
+            } else {
+                if (resendCodeBtn) {
+                    resendCodeBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
+                }
             }
-            currentStep = step;
-        }
+        }, 1000);
+    }
 
-        // Start countdown for resend button
-        function startCountdown() {
-            countdownTime = 60;
-            if (resendCodeBtn) {
-                resendCodeBtn.disabled = true;
+    // Send verification code using the API
+    async function sendVerificationCode() {
+        try {
+            const emailValue = email.value.trim();
+            if (!emailValue) {
+                showStatus('Please enter your email address', 'error');
+                return;
             }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailValue)) {
+                showStatus('Please enter a valid email address', 'error');
+                return;
+            }
+
+            showStatus('Sending verification code...', 'success');
             if (sendCodeBtn) {
+                sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
                 sendCodeBtn.disabled = true;
             }
             
-            countdownInterval = setInterval(() => {
-                countdownTime--;
-                const countdownElement = document.getElementById('countdown');
-                if (countdownElement) {
-                    countdownElement.textContent = countdownTime;
-                }
+            // Use the API endpoint
+            const response = await fetch(`/api/send-verification-code`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email: emailValue })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                generatedCode = result.code; // Store the code
+                showStatus(result.message, 'success');
+                verificationSent = true;
+                startCountdown();
                 
-                if (countdownTime <= 0) {
-                    clearInterval(countdownInterval);
-                    if (resendCodeBtn) {
-                        resendCodeBtn.disabled = false;
-                        resendCodeBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
-                    }
-                    if (sendCodeBtn) {
-                        sendCodeBtn.disabled = false;
-                    }
-                } else {
-                    if (resendCodeBtn) {
-                        resendCodeBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
-                    }
+                // Show code for testing
+                console.log('📧 Your verification code:', generatedCode);
+                if (result.fallback) {
+                    showStatus(`Verification code: ${generatedCode} (Email service unavailable, using test mode)`, 'warning');
                 }
-            }, 1000);
+            } else {
+                showStatus(result.error || 'Failed to send verification code', 'error');
+            }
+            
+        } catch (error) {
+            console.error('Error sending verification code:', error);
+            showStatus('Failed to send verification code. Please try again.', 'error');
+        } finally {
+            if (sendCodeBtn) {
+                sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
+                sendCodeBtn.disabled = false;
+            }
         }
+    }
 
-
-
-        // Verify email code
-        function verifyCode() {
+    // Verify email code using API
+    async function verifyCode() {
+        try {
             const code = verificationCode.value.trim();
+            const emailValue = email.value.trim();
+            
             if (!code) {
                 showStatus('Please enter the verification code', 'error');
                 return;
             }
+
+            if (!emailValue) {
+                showStatus('Email is required for verification', 'error');
+                return;
+            }
+
+            showStatus('Verifying code...', 'success');
             
-            if (code === generatedCode) {
+            const response = await fetch(`/api/verify-code`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    email: emailValue,
+                    code: code 
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
                 showStatus('Email verified successfully!', 'success');
                 if (next2) {
                     next2.disabled = false;
                 }
             } else {
-                showStatus('Invalid verification code. Please try again.', 'error');
+                showStatus(result.error || 'Invalid verification code', 'error');
                 if (next2) {
                     next2.disabled = true;
                 }
             }
+            
+        } catch (error) {
+            console.error('Error verifying code:', error);
+            showStatus('Verification service unavailable. Please try again.', 'error');
         }
+    }
 
-        // Check password strength
-        function checkPasswordStrength(password) {
-            let strength = 0;
-            const strengthBar = document.getElementById('passwordStrength');
+    // Check password strength
+    function checkPasswordStrength(password) {
+        let strength = 0;
+        const strengthBar = document.getElementById('passwordStrength');
+        
+        if (!strengthBar) return;
+        
+        if (password.length >= 8) strength++;
+        if (/[a-z]/.test(password)) strength++;
+        if (/[A-Z]/.test(password)) strength++;
+        if (/[0-9]/.test(password)) strength++;
+        if (/[^A-Za-z0-9]/.test(password)) strength++;
+        
+        strengthBar.className = 'strength-bar';
+        
+        if (password.length === 0) {
+            strengthBar.style.width = '0%';
+        } else if (strength <= 2) {
+            strengthBar.className += ' strength-weak';
+        } else if (strength === 3) {
+            strengthBar.className += ' strength-medium';
+        } else if (strength === 4) {
+            strengthBar.className += ' strength-strong';
+        } else {
+            strengthBar.className += ' strength-very-strong';
+        }
+    }
+
+    // Validate passwords match
+    function validatePasswords() {
+        const pass = password.value;
+        const confirmPass = confirmPassword.value;
+        
+        if (pass && confirmPass && pass === confirmPass) {
+            if (next3) {
+                next3.disabled = false;
+            }
+            return true;
+        } else {
+            if (next3) {
+                next3.disabled = true;
+            }
+            return false;
+        }
+    }
+
+    // Handle image upload and preview
+    function handleImageUpload(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+            showStatus('Please select a valid image file', 'error');
+            return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+            showStatus('Image size should be less than 5MB', 'error');
+            return;
+        }
+        
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
+            userData.image = e.target.result;
+        };
+        reader.readAsDataURL(file);
+    }
+
+    // Get next available ID from server
+    async function getNextAccountId() {
+        try {
+            const response = await fetch('/api/next-id');
+            const result = await response.json();
             
-            if (!strengthBar) return;
-            
-            if (password.length >= 8) strength++;
-            if (/[a-z]/.test(password)) strength++;
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
-            
-            strengthBar.className = 'strength-bar';
-            
-            if (password.length === 0) {
-                strengthBar.style.width = '0%';
-            } else if (strength <= 2) {
-                strengthBar.className += ' strength-weak';
-            } else if (strength === 3) {
-                strengthBar.className += ' strength-medium';
-            } else if (strength === 4) {
-                strengthBar.className += ' strength-strong';
+            if (result.success) {
+                return result.nextId;
             } else {
-                strengthBar.className += ' strength-very-strong';
+                // Fallback ID generation
+                return (1000 + Math.floor(Math.random() * 9000)).toString();
             }
+        } catch (error) {
+            console.error('Error getting next ID:', error);
+            // Fallback ID generation
+            return (1000 + Math.floor(Math.random() * 9000)).toString();
         }
+    }
 
-        // Validate passwords match
-        function validatePasswords() {
-            const pass = password.value;
-            const confirmPass = confirmPassword.value;
-            
-            if (pass && confirmPass && pass === confirmPass) {
-                if (next3) {
-                    next3.disabled = false;
-                }
-                return true;
-            } else {
-                if (next3) {
-                    next3.disabled = true;
-                }
-                return false;
-            }
-        }
-
-        // Handle image upload and preview
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!file.type.startsWith('image/')) {
-                showStatus('Please select a valid image file', 'error');
-                return;
+    // Create account and generate QR code
+    async function createAccount() {
+        try {
+            showStatus('Creating your account...', 'success');
+            if (next4) {
+                next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
+                next4.disabled = true;
             }
             
-            if (file.size > 5 * 1024 * 1024) {
-                showStatus('Image size should be less than 5MB', 'error');
-                return;
-            }
+            // Get next account ID from server
+            const accountId = await getNextAccountId();
             
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
-                userData.image = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
+            // Prepare account data
+            userData.id = accountId;
+            userData.name = fullName.value.trim();
+            userData.email = email.value.trim();
+            userData.password = password.value;
 
-        // Generate unique account ID
-        function generateAccountId() {
-            const timestamp = Date.now().toString(36);
-            const random = Math.random().toString(36).substr(2, 5);
-            return `BY${timestamp}${random}`.toUpperCase();
-        }
-
-        // Create account and generate QR code
-        async function createAccount() {
-            try {
-                showStatus('Creating your account...', 'success');
-                if (next4) {
-                    next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
-                    next4.disabled = true;
-                }
+            // Prepare image data if available
+            let imageUrl = '';
+            if (userData.image) {
+                // Upload image to server
+                const uploadResponse = await fetch('/api/upload-image', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        accountId: userData.id,
+                        imageData: userData.image
+                    })
+                });
                 
-                // Generate account ID
-                userData.id = generateAccountId();
-                userData.name = fullName.value.trim();
-                userData.email = email.value.trim();
-                userData.password = password.value;
-                
-                // Generate QR code with dark blue color
-                if (qrCodeContainer) {
+                const uploadResult = await uploadResponse.json();
+                if (uploadResult.success) {
+                    imageUrl = uploadResult.imageUrl;
+                }
+            }
+
+            // Create account on server
+            const response = await fetch('/api/accounts', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    password: userData.password,
+                    image: imageUrl || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                // Generate QR code
+                if (qrCodeContainer && result.qrCode) {
+                    qrCodeContainer.innerHTML = '';
+                    const qrImg = document.createElement('img');
+                    qrImg.src = result.qrCode;
+                    qrImg.alt = 'Account QR Code';
+                    qrImg.style.width = '200px';
+                    qrImg.style.height = '200px';
+                    qrCodeContainer.appendChild(qrImg);
+                } else if (qrCodeContainer) {
+                    // Fallback QR generation
                     qrCodeContainer.innerHTML = '';
                     qrCodeInstance = new QRCode(qrCodeContainer, {
                         text: JSON.stringify({
                             id: userData.id,
                             name: userData.name,
-                            email: userData.email,
                             timestamp: new Date().toISOString()
                         }),
                         width: 200,
                         height: 200,
-                        colorDark: "#1a237e", // Dark blue color
+                        colorDark: "#1a237e",
                         colorLight: "#ffffff",
                         correctLevel: QRCode.CorrectLevel.H
                     });
@@ -1122,136 +1269,120 @@
                     displayId.textContent = userData.id;
                 }
                 
-                // Simulate API call to save account
-                setTimeout(() => {
-                    showStatus('Account created successfully!', 'success');
-                    goToStep(5);
-                }, 2000);
+                showStatus('Account created successfully!', 'success');
+                goToStep(5);
                 
-            } catch (error) {
-                console.error('Error creating account:', error);
-                showStatus('Failed to create account. Please try again.', 'error');
-                if (next4) {
-                    next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
-                    next4.disabled = false;
-                }
+            } else {
+                throw new Error(result.error || 'Failed to create account');
             }
-        }
-
-        // Download QR Code
-        function downloadQRCode() {
-            if (!qrCodeInstance) return;
             
-            try {
-                const canvas = qrCodeContainer.querySelector('canvas');
-                if (canvas) {
-                    const link = document.createElement('a');
-                    link.download = `BYP-${userData.id}-QR.png`;
-                    link.href = canvas.toDataURL('image/png');
-                    link.click();
-                    showStatus('QR Code downloaded successfully!', 'success');
-                }
-            } catch (error) {
-                console.error('Error downloading QR code:', error);
-                showStatus('Failed to download QR code', 'error');
+        } catch (error) {
+            console.error('Error creating account:', error);
+            showStatus(error.message || 'Failed to create account. Please try again.', 'error');
+        } finally {
+            if (next4) {
+                next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                next4.disabled = false;
             }
-        }
-
-        // Event Listeners
-        next0.addEventListener('click', () => goToStep(1));
-        next1.addEventListener('click', () => {
-            const name = fullName.value.trim();
-            if (!name) {
-                showStatus('Please enter your full name', 'error');
-                return;
-            }
-            goToStep(2);
-        });
-        
-        prev2.addEventListener('click', () => goToStep(1));
-        next2.addEventListener('click', () => goToStep(3));
-        
-        prev3.addEventListener('click', () => goToStep(2));
-        next3.addEventListener('click', () => goToStep(4));
-        
-        prev4.addEventListener('click', () => goToStep(3));
-        next4.addEventListener('click', createAccount);
-        
-        sendCodeBtn.addEventListener('click', sendVerificationCode);
-        resendCodeBtn.addEventListener('click', sendVerificationCode);
-        
-        verificationCode.addEventListener('input', verifyCode);
-        password.addEventListener('input', function() {
-            checkPasswordStrength(this.value);
-            validatePasswords();
-        });
-        confirmPassword.addEventListener('input', validatePasswords);
-        profileImage.addEventListener('change', handleImageUpload);
-        downloadQR.addEventListener('click', downloadQRCode);
-
-        // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('? B.Y PRO Signup System Initialized');
-            updateServiceStatus(true, 'All systems operational');
-        });
-    </script>
-
-<script>
-// بدلاً من EmailJS، استخدم الـ API الجديد
-async function sendVerificationCode() {
-    try {
-        const emailValue = email.value.trim();
-        if (!emailValue) {
-            showStatus('Please enter your email address', 'error');
-            return;
-        }
-        
-        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-        if (!emailRegex.test(emailValue)) {
-            showStatus('Please enter a valid email address', 'error');
-            return;
-        }
-
-        showStatus('Sending verification code...', 'success');
-        if (sendCodeBtn) {
-            sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-            sendCodeBtn.disabled = true;
-        }
-        
-        // Use the new API endpoint
-        const response = await fetch(`${API_BASE}/api/send-verification-code`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ email: emailValue })
-        });
-
-        const result = await response.json();
-        
-        if (result.success) {
-            generatedCode = result.code; // Store the code
-            showStatus(result.message, 'success');
-            verificationSent = true;
-            startCountdown();
-            
-            // Show code in console for testing
-            console.log('📧 Your verification code:', generatedCode);
-        } else {
-            showStatus(result.error || 'Failed to send verification code', 'error');
-        }
-        
-    } catch (error) {
-        console.error('Error sending verification code:', error);
-        showStatus('Failed to send verification code. Please try again.', 'error');
-    } finally {
-        if (sendCodeBtn) {
-            sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
-            sendCodeBtn.disabled = false;
         }
     }
-}
-</script>    
+
+    // Download QR Code
+    function downloadQRCode() {
+        try {
+            const canvas = qrCodeContainer.querySelector('canvas');
+            if (canvas) {
+                const link = document.createElement('a');
+                link.download = `BYP-${userData.id}-QR.png`;
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+                showStatus('QR Code downloaded successfully!', 'success');
+            } else {
+                // If no canvas, try to download the image
+                const img = qrCodeContainer.querySelector('img');
+                if (img) {
+                    const link = document.createElement('a');
+                    link.download = `BYP-${userData.id}-QR.png`;
+                    link.href = img.src;
+                    link.click();
+                    showStatus('QR Code downloaded successfully!', 'success');
+                } else {
+                    showStatus('No QR code available to download', 'error');
+                }
+            }
+        } catch (error) {
+            console.error('Error downloading QR code:', error);
+            showStatus('Failed to download QR code', 'error');
+        }
+    }
+
+    // Check service health
+    async function checkServiceHealth() {
+        try {
+            const response = await fetch('/api/health');
+            const result = await response.json();
+            
+            if (result.status === 'operational') {
+                updateServiceStatus(true, `All systems operational - ${result.services.total_accounts} accounts`);
+            } else {
+                updateServiceStatus(false, 'Service experiencing issues');
+            }
+        } catch (error) {
+            console.error('Health check failed:', error);
+            updateServiceStatus(false, 'Service unavailable - check connection');
+        }
+    }
+
+    // Event Listeners
+    next0.addEventListener('click', () => goToStep(1));
+    
+    next1.addEventListener('click', () => {
+        const name = fullName.value.trim();
+        if (!name) {
+            showStatus('Please enter your full name', 'error');
+            return;
+        }
+        userData.name = name;
+        goToStep(2);
+    });
+    
+    prev2.addEventListener('click', () => goToStep(1));
+    next2.addEventListener('click', () => goToStep(3));
+    
+    prev3.addEventListener('click', () => goToStep(2));
+    next3.addEventListener('click', () => goToStep(4));
+    
+    prev4.addEventListener('click', () => goToStep(3));
+    next4.addEventListener('click', createAccount);
+    
+    sendCodeBtn.addEventListener('click', sendVerificationCode);
+    resendCodeBtn.addEventListener('click', sendVerificationCode);
+    
+    verificationCode.addEventListener('input', function() {
+        // Auto-verify when 6 digits are entered
+        if (this.value.length === 6) {
+            verifyCode();
+        }
+    });
+    
+    password.addEventListener('input', function() {
+        checkPasswordStrength(this.value);
+        validatePasswords();
+    });
+    
+    confirmPassword.addEventListener('input', validatePasswords);
+    profileImage.addEventListener('change', handleImageUpload);
+    downloadQR.addEventListener('click', downloadQRCode);
+
+    // Initialize
+    document.addEventListener('DOMContentLoaded', function() {
+        console.log('🚀 B.Y PRO Signup System Initialized');
+        checkServiceHealth();
+        
+        // Check health every 30 seconds
+        setInterval(checkServiceHealth, 30000);
+    });
+</script>
+
 </body>
 </html>
-
