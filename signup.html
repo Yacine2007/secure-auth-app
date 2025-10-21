@@ -831,6 +831,8 @@
         </div>
     </div>
 
+
+
 <script>
     // DOM Elements
     const steps = document.querySelectorAll('.step');
@@ -870,13 +872,13 @@
     const displayId = document.getElementById('displayId');
     const qrCodeContainer = document.getElementById('qrCode');
 
-    // Server Configuration - FIXED URL
-    const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
+    // Server Configuration
+    const API_BASE = window.location.origin.includes('github.io') 
+        ? 'https://b-y-pro-acounts-login.onrender.com' 
+        : window.location.origin;
 
     // Variables
     let currentStep = 0;
-    let verificationSent = false;
-    let generatedCode = '';
     let countdownInterval;
     let countdownTime = 60;
     let userData = {
@@ -977,7 +979,7 @@
         }, 1000);
     }
 
-    // Send verification code using the API
+    // Send verification code using the API - SECURE VERSION
     async function sendVerificationCode() {
         try {
             const emailValue = email.value.trim();
@@ -992,13 +994,12 @@
                 return;
             }
 
-            showStatus('Sending verification code...', 'success');
+            showStatus('Sending verification code to your email...', 'success');
             if (sendCodeBtn) {
                 sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
                 sendCodeBtn.disabled = true;
             }
             
-            // Use the correct API endpoint with FULL URL
             const response = await fetch(`${API_BASE}/api/send-verification-code`, {
                 method: 'POST',
                 headers: {
@@ -1007,41 +1008,18 @@
                 body: JSON.stringify({ email: emailValue })
             });
 
-            console.log('Response status:', response.status);
-            
-            if (!response.ok) {
-                throw new Error(`Server returned ${response.status}`);
-            }
-
             const result = await response.json();
-            console.log('API Response:', result);
             
             if (result.success) {
-                generatedCode = result.code; // Store the code
-                showStatus(result.message, 'success');
-                verificationSent = true;
+                showStatus('Verification code sent to your email! Check your inbox.', 'success');
                 startCountdown();
-                
-                // Show code for testing
-                console.log('📧 Your verification code:', generatedCode);
-                if (result.fallback) {
-                    showStatus(`Email service unavailable. Use this code: ${generatedCode}`, 'warning');
-                } else {
-                    showStatus('Verification code sent to your email!', 'success');
-                }
             } else {
                 showStatus(result.error || 'Failed to send verification code', 'error');
             }
             
         } catch (error) {
             console.error('Error sending verification code:', error);
-            
-            // Fallback: generate code locally for testing
-            generatedCode = Math.floor(100000 + Math.random() * 900000).toString();
-            showStatus(`Server unavailable. Use this test code: ${generatedCode}`, 'warning');
-            verificationSent = true;
-            startCountdown();
-            
+            showStatus('Email service temporarily unavailable. Please try again later.', 'error');
         } finally {
             if (sendCodeBtn) {
                 sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Code';
@@ -1050,24 +1028,47 @@
         }
     }
 
-    // Verify email code
-    function verifyCode() {
-        const code = verificationCode.value.trim();
-        if (!code) {
-            showStatus('Please enter the verification code', 'error');
-            return;
-        }
-        
-        if (code === generatedCode) {
-            showStatus('Email verified successfully!', 'success');
-            if (next2) {
-                next2.disabled = false;
+    // Verify email code using server - SECURE VERSION
+    async function verifyCode() {
+        try {
+            const code = verificationCode.value.trim();
+            const emailValue = email.value.trim();
+            
+            if (!code || code.length !== 6) {
+                showStatus('Please enter the 6-digit verification code', 'error');
+                return;
             }
-        } else {
-            showStatus('Invalid verification code. Please try again.', 'error');
-            if (next2) {
-                next2.disabled = true;
+
+            showStatus('Verifying code...', 'success');
+            
+            const response = await fetch(`${API_BASE}/api/verify-code`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    email: emailValue,
+                    code: code 
+                })
+            });
+
+            const result = await response.json();
+            
+            if (result.success) {
+                showStatus('Email verified successfully!', 'success');
+                if (next2) {
+                    next2.disabled = false;
+                }
+            } else {
+                showStatus(result.error || 'Invalid verification code', 'error');
+                if (next2) {
+                    next2.disabled = true;
+                }
             }
+            
+        } catch (error) {
+            console.error('Error verifying code:', error);
+            showStatus('Verification service unavailable. Please try again.', 'error');
         }
     }
 
@@ -1140,11 +1141,23 @@
         reader.readAsDataURL(file);
     }
 
-    // Generate account ID locally
-    function generateAccountId() {
-        const timestamp = Date.now().toString(36);
-        const random = Math.random().toString(36).substr(2, 5);
-        return `BY${timestamp}${random}`.toUpperCase();
+    // Get next available ID from server
+    async function getNextAccountId() {
+        try {
+            const response = await fetch(`${API_BASE}/api/next-id`);
+            const result = await response.json();
+            
+            if (result.success) {
+                return result.nextId;
+            } else {
+                // Fallback ID generation
+                return (1000 + Math.floor(Math.random() * 9000)).toString();
+            }
+        } catch (error) {
+            console.error('Error getting next ID:', error);
+            // Fallback ID generation
+            return (1000 + Math.floor(Math.random() * 9000)).toString();
+        }
     }
 
     // Create account and generate QR code
@@ -1156,68 +1169,100 @@
                 next4.disabled = true;
             }
             
-            // Generate account ID
-            userData.id = generateAccountId();
+            // Get next account ID from server
+            const accountId = await getNextAccountId();
+            
+            // Prepare account data
+            userData.id = accountId;
             userData.name = fullName.value.trim();
             userData.email = email.value.trim();
             userData.password = password.value;
 
-            // Create simple QR code without external library
-            if (qrCodeContainer) {
-                qrCodeContainer.innerHTML = `
-                    <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
-                        <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
-                            B.Y PRO Account<br>
-                            ID: ${userData.id}<br>
-                            Name: ${userData.name}
-                        </div>
-                        <div style="margin-top:10px;font-size:12px;color:#666;">
-                            Scan for quick login
-                        </div>
-                    </div>
-                `;
-            }
-            
-            // Try to save account to server
-            try {
-                const response = await fetch(`${API_BASE}/api/accounts`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        id: userData.id,
-                        name: userData.name,
-                        email: userData.email,
-                        password: userData.password,
-                        image: userData.image || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`
-                    })
-                });
-
-                if (response.ok) {
-                    const result = await response.json();
-                    if (result.success) {
-                        showStatus('Account saved to server successfully!', 'success');
+            // Prepare image data if available
+            let imageUrl = '';
+            if (userData.image) {
+                try {
+                    const uploadResponse = await fetch(`${API_BASE}/api/upload-image`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({
+                            accountId: userData.id,
+                            imageData: userData.image
+                        })
+                    });
+                    
+                    const uploadResult = await uploadResponse.json();
+                    if (uploadResult.success) {
+                        imageUrl = uploadResult.imageUrl;
                     }
+                } catch (uploadError) {
+                    console.error('Image upload failed:', uploadError);
                 }
-            } catch (serverError) {
-                console.log('Server save failed, but account created locally');
             }
+
+            // Create account on server
+            const response = await fetch(`${API_BASE}/api/accounts`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    id: userData.id,
+                    name: userData.name,
+                    email: userData.email,
+                    password: userData.password,
+                    image: imageUrl || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`
+                })
+            });
+
+            const result = await response.json();
             
-            // Update success page
-            if (successName) {
-                successName.textContent = userData.name;
+            if (result.success) {
+                // Generate QR code
+                if (qrCodeContainer && result.qrCode) {
+                    qrCodeContainer.innerHTML = '';
+                    const qrImg = document.createElement('img');
+                    qrImg.src = result.qrCode;
+                    qrImg.alt = 'Account QR Code';
+                    qrImg.style.width = '200px';
+                    qrImg.style.height = '200px';
+                    qrCodeContainer.appendChild(qrImg);
+                } else if (qrCodeContainer) {
+                    // Fallback QR display
+                    qrCodeContainer.innerHTML = `
+                        <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
+                            <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
+                                B.Y PRO Account<br>
+                                ID: ${userData.id}<br>
+                                Name: ${userData.name}
+                            </div>
+                            <div style="margin-top:10px;font-size:12px;color:#666;">
+                                Scan for quick login
+                            </div>
+                        </div>
+                    `;
+                }
+                
+                // Update success page
+                if (successName) {
+                    successName.textContent = userData.name;
+                }
+                if (displayId) {
+                    displayId.textContent = userData.id;
+                }
+                
+                showStatus('Account created successfully!', 'success');
+                goToStep(5);
+                
+            } else {
+                throw new Error(result.error || 'Failed to create account');
             }
-            if (displayId) {
-                displayId.textContent = userData.id;
-            }
-            
-            showStatus('Account created successfully!', 'success');
-            goToStep(5);
             
         } catch (error) {
             console.error('Error creating account:', error);
-            showStatus('Failed to create account. Please try again.', 'error');
+            showStatus(error.message || 'Failed to create account. Please try again.', 'error');
         } finally {
             if (next4) {
                 next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
@@ -1228,31 +1273,44 @@
 
     // Download QR Code
     function downloadQRCode() {
-        showStatus('QR code download feature requires server connection', 'warning');
-        
-        // Create a simple text file with account info instead
-        const accountInfo = `
+        try {
+            const canvas = qrCodeContainer.querySelector('canvas');
+            const img = qrCodeContainer.querySelector('img');
+            
+            if (img) {
+                const link = document.createElement('a');
+                link.download = `BYP-${userData.id}-QR.png`;
+                link.href = img.src;
+                link.click();
+                showStatus('QR Code downloaded successfully!', 'success');
+            } else {
+                // Create account info file as fallback
+                const accountInfo = `
 B.Y PRO Account Information
 ============================
 Account ID: ${userData.id}
 Full Name: ${userData.name}
 Email: ${userData.email}
-Password: ${userData.password}
 ============================
 Created: ${new Date().toLocaleString()}
 
 Keep this information secure!
-        `;
-        
-        const blob = new Blob([accountInfo], { type: 'text/plain' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `BYP-${userData.id}-INFO.txt`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-        
-        showStatus('Account information downloaded as text file', 'success');
+                `;
+                
+                const blob = new Blob([accountInfo], { type: 'text/plain' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = `BYP-${userData.id}-INFO.txt`;
+                link.href = url;
+                link.click();
+                URL.revokeObjectURL(url);
+                
+                showStatus('Account information downloaded as text file', 'success');
+            }
+        } catch (error) {
+            console.error('Error downloading QR code:', error);
+            showStatus('Failed to download QR code', 'error');
+        }
     }
 
     // Check service health
@@ -1267,13 +1325,13 @@ Keep this information secure!
             const result = await response.json();
             
             if (result.status === 'operational') {
-                updateServiceStatus(true, `Server connected - ${result.services.total_accounts} accounts`);
+                updateServiceStatus(true, `Server connected - System operational`);
             } else {
                 updateServiceStatus(false, 'Server has issues');
             }
         } catch (error) {
             console.error('Health check failed:', error);
-            updateServiceStatus(false, 'Server offline - using local mode');
+            updateServiceStatus(false, 'Server offline - Please check connection');
         }
     }
 
@@ -1322,8 +1380,12 @@ Keep this information secure!
     document.addEventListener('DOMContentLoaded', function() {
         console.log('🚀 B.Y PRO Signup System Initialized');
         checkServiceHealth();
+        
+        // Check health every 30 seconds
+        setInterval(checkServiceHealth, 30000);
     });
 </script>
+
 
 </body>
 </html>
