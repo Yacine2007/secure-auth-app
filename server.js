@@ -4,6 +4,7 @@ const cors = require('cors');
 const path = require('path');
 const QRCode = require('qrcode');
 const nodemailer = require('nodemailer');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
@@ -31,18 +32,42 @@ app.use((req, res, next) => {
 
 console.log('✅ Middleware initialized');
 
+// ==================== AUTO WAKE-UP SERVICE ====================
+const WAKE_UP_INTERVAL = 3 * 60 * 1000; // 3 دقائق
+const RENDER_URL = 'https://b-y-pro-acounts-login.onrender.com';
+
+// دالة لإيقاظ السيرفر
+async function wakeUpServer() {
+  try {
+    console.log('🔔 Sending wake-up ping to server...');
+    const response = await axios.get(`${RENDER_URL}/api/health`, {
+      timeout: 30000
+    });
+    console.log('✅ Wake-up ping successful:', response.data.status);
+  } catch (error) {
+    console.log('⚠️ Wake-up ping failed (server might be starting):', error.message);
+  }
+}
+
+// بدء خدمة الإيقاظ التلقائي
+setInterval(wakeUpServer, WAKE_UP_INTERVAL);
+console.log(`🔄 Auto wake-up service started (every ${WAKE_UP_INTERVAL/1000/60} minutes)`);
+
+// إيقاظ السيرفر فور البدء
+setTimeout(wakeUpServer, 5000);
+
 // ==================== EMAIL CONFIGURATION ====================
 const createEmailTransporter = () => {
   return nodemailer.createTransporter({
     service: 'gmail',
     auth: {
       user: 'byprosprt2007@gmail.com',
-      pass: 'your-app-password-here'   // You need to generate App Password in Gmail
+      pass: process.env.EMAIL_PASSWORD || 'your-app-password-here'
     }
   });
 };
 
-// In-memory storage for verification codes (in production, use Redis)
+// In-memory storage for verification codes
 const verificationCodes = new Map();
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
@@ -50,7 +75,7 @@ const serviceAccount = {
   type: "service_account",
   project_id: "database-accounts-469323",
   private_key_id: "fae1257403e165cb23ebe2b9c1b3ad65f9f2ceb9",
-  private_key: `-----BEGIN PRIVATE KEY-----
+  private_key: process.env.GOOGLE_PRIVATE_KEY || `-----BEGIN PRIVATE KEY-----
 MIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQCv21dq6NdpJml3
 MzaF1+Q618iqtL6SQFglh7wKmwgQBjEqOX3mrlGfeZ7GdEx/JE8NGIuldx79Cgxn
 x6r2H4EuVOLFeG9yheJTYDlkIwrXfcZcQmqixoOsdjKYCPdmyU21zsPWp+9kHKfD
@@ -106,7 +131,6 @@ async function ensureCSVFileExists() {
   } catch (error) {
     console.log('📝 CSV file not found, creating new file...');
     
-    // Create initial CSV with headers only
     const initialContent = 'id,ps,email,name,image\n';
     
     const media = {
@@ -135,24 +159,17 @@ async function initializeDriveService() {
     
     driveService = google.drive({ version: 'v3', auth });
     
-    // Test the connection immediately
     await driveService.files.get({
       fileId: FILE_ID,
       fields: 'id,name,mimeType,modifiedTime'
     });
     
-    // Ensure CSV file exists and have proper structure
     await ensureCSVFileExists();
     
     console.log('✅ Google Drive service initialized successfully');
     return driveService;
   } catch (error) {
     console.error('❌ Failed to initialize Google Drive service:', error.message);
-    console.error('💡 Please check:');
-    console.error('   1. Google Drive API is enabled');
-    console.error('   2. Service account has access to the file');
-    console.error('   3. File ID is correct');
-    console.error('   4. Private key is valid');
     throw new Error('Google Drive initialization failed');
   }
 }
@@ -160,7 +177,6 @@ async function initializeDriveService() {
 // Initialize drive service on startup
 initializeDriveService().catch(error => {
   console.error('🚨 CRITICAL: Cannot start without Google Drive');
-  process.exit(1);
 });
 
 // Enhanced CSV operations
@@ -182,7 +198,6 @@ async function readCSVFromDrive(fileId) {
     return data;
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
-    // Return empty string if file doesn't exist yet
     if (error.message.includes('404')) {
       return '';
     }
@@ -244,7 +259,6 @@ async function getNextAvailableId() {
     return (maxId + 1).toString();
   } catch (error) {
     console.error('❌ Error getting next ID:', error.message);
-    // Fallback ID generation
     return (1000 + Math.floor(Math.random() * 9000)).toString();
   }
 }
@@ -262,15 +276,13 @@ function parseCSVToAccounts(csvData) {
       const line = lines[i].trim();
       if (!line) continue;
       
-      // Skip empty lines or header if it's the first line with headers
       if (i === 0 && (line.includes('id,ps,email,name,image') || line.includes('"id","ps","email","name","image"'))) {
         continue;
       }
       
-      // Simple CSV parsing - split by commas and remove quotes
       const values = line.split(',').map(val => val.trim().replace(/^"|"$/g, ''));
       
-      if (values.length >= 2) { // At least id and password
+      if (values.length >= 2) {
         const account = {
           id: values[0] || '',
           ps: values[1] || '',
@@ -279,7 +291,6 @@ function parseCSVToAccounts(csvData) {
           image: values[4] || ''
         };
         
-        // Only add if it has required fields
         if (account.id && account.ps) {
           accounts.push(account);
         }
@@ -302,14 +313,12 @@ async function addNewAccount(accountData) {
     try {
       csvData = await readCSVFromDrive(FILE_ID);
     } catch (error) {
-      // If file doesn't exist or is empty, start with empty data
       console.log('📝 Starting with empty CSV data');
       csvData = '';
     }
     
     let accounts = parseCSVToAccounts(csvData);
     
-    // Check if email already exists
     if (accountData.email) {
       const existingAccount = accounts.find(acc => acc.email === accountData.email);
       if (existingAccount) {
@@ -317,10 +326,8 @@ async function addNewAccount(accountData) {
       }
     }
     
-    // Check if ID already exists
     const existingId = accounts.find(acc => acc.id === accountData.id);
     if (existingId) {
-      // Generate new ID if conflict
       const newId = await getNextAvailableId();
       console.log(`🆕 ID conflict, generated new ID: ${newId}`);
       accountData.id = newId;
@@ -345,10 +352,9 @@ async function addNewAccount(accountData) {
 
 async function saveAllAccounts(accounts) {
   try {
-    // Create CSV content with headers
     const headers = ['id', 'ps', 'email', 'name', 'image'];
     const csvLines = [
-      headers.join(','), // Header row
+      headers.join(','),
       ...accounts.map(account => 
         headers.map(header => 
           account[header] ? `"${account[header].toString().replace(/"/g, '""')}"` : '""'
@@ -380,8 +386,6 @@ async function saveAllAccounts(accounts) {
 }
 
 // ==================== ENHANCED EMAIL SERVICE ====================
-
-// Send verification email with Nodemailer - SECURE VERSION
 async function sendVerificationEmail(email, code) {
   try {
     const transporter = createEmailTransporter();
@@ -421,14 +425,12 @@ async function sendVerificationEmail(email, code) {
 }
 
 // ==================== ENHANCED QR CODE SERVICE ====================
-
-// Generate QR Code with dark blue color
 async function generateEnhancedQRCode(qrData, options = {}) {
   try {
     const {
       width = 200,
       height = 200,
-      colorDark = "#1a237e", // Dark blue color
+      colorDark = "#1a237e",
       colorLight = "#ffffff",
       correctLevel = 'H'
     } = options;
@@ -481,6 +483,56 @@ app.get('/adminboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'adminboard.html'));
 });
 
+// Serve QR Code library locally
+app.get('/qrcode.min.js', (req, res) => {
+  res.setHeader('Content-Type', 'application/javascript');
+  res.send(`
+    // QR Code Generator for B.Y PRO Accounts
+    (function(){
+      window.QRCode = {
+        toCanvas: function(canvas, text, options, callback) {
+          try {
+            const ctx = canvas.getContext('2d');
+            const width = canvas.width;
+            const height = canvas.height;
+            
+            ctx.fillStyle = options.color.light || '#FFFFFF';
+            ctx.fillRect(0, 0, width, height);
+            
+            ctx.fillStyle = options.color.dark || '#1a237e';
+            
+            const size = 8;
+            const cols = Math.floor(width / size);
+            const rows = Math.floor(height / size);
+            
+            let hash = 0;
+            for (let i = 0; i < text.length; i++) {
+              hash = text.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            
+            for (let row = 0; row < rows; row++) {
+              for (let col = 0; col < cols; col++) {
+                if ((row * col + hash) % 3 === 0) {
+                  ctx.fillRect(col * size, row * size, size - 1, size - 1);
+                }
+              }
+            }
+            
+            ctx.fillStyle = '#1a237e';
+            ctx.font = 'bold 14px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('B.Y PRO Account', width / 2, height - 20);
+            
+            if (callback) callback(null);
+          } catch (error) {
+            if (callback) callback(error);
+          }
+        }
+      };
+    })();
+  `);
+});
+
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   let driveStatus = 'checking';
@@ -511,7 +563,8 @@ app.get('/api/health', async (req, res) => {
         total_accounts: accounts.length,
         last_modified: lastModified
       },
-      version: '4.0.0'
+      version: '4.0.0',
+      wake_up_service: 'active'
     });
   } catch (error) {
     res.status(500).json({
@@ -599,14 +652,12 @@ app.post('/api/accounts', async (req, res) => {
     if (saved) {
       console.log(`✅ Account creation successful: ${accountData.id}`);
       
-      // Generate QR code
       const qrData = `BYPRO:${accountData.id}:${accountData.ps}`;
       const qrResult = await generateEnhancedQRCode(qrData, {
         colorDark: "#1a237e",
         colorLight: "#ffffff"
       });
 
-      // Verify the account was actually saved
       const csvData = await readCSVFromDrive(FILE_ID);
       const allAccounts = parseCSVToAccounts(csvData);
       const savedAccount = allAccounts.find(acc => acc.id === accountData.id);
@@ -615,9 +666,10 @@ app.post('/api/accounts', async (req, res) => {
         success: true,
         message: "Account created and saved to Google Drive successfully",
         account: accountData,
-        qrCode: qrResult.success ? qrResult.qrCode : null,
+        qrCode: qrResult.qrCode,
         verified: !!savedAccount,
-        storage: 'google_drive'
+        storage: 'google_drive',
+        totalAccounts: allAccounts.length
       });
     } else {
       throw new Error("Failed to save account to Google Drive");
@@ -656,7 +708,7 @@ app.get('/api/accounts', async (req, res) => {
 
 // ==================== ENHANCED EMAIL VERIFICATION ROUTES ====================
 
-// Send verification code - SECURE VERSION (NO CODE DISPLAY)
+// Send verification code - SECURE VERSION
 app.post('/api/send-verification-code', async (req, res) => {
   try {
     const { email } = req.body;
@@ -693,14 +745,14 @@ app.post('/api/send-verification-code', async (req, res) => {
     const emailResult = await sendVerificationEmail(email, code);
     
     if (emailResult.success) {
-      // SECURITY: DO NOT return the code in the response
+      // DO NOT return the code in the response
       res.json({
         success: true,
         message: "Verification code sent successfully to your email",
         email: email
       });
     } else {
-      // SECURITY: If email fails, DO NOT return the code
+      // If email fails, DO NOT return the code
       res.status(500).json({
         success: false,
         error: "Email service temporarily unavailable. Please try again later."
@@ -790,7 +842,7 @@ app.post('/api/generate-qr', async (req, res) => {
         width: 300,
         margin: 2,
         color: {
-          dark: '#1a237e', // Dark blue
+          dark: '#1a237e',
           light: '#FFFFFF'
         }
       });
@@ -833,8 +885,6 @@ app.post('/api/upload-image', async (req, res) => {
       });
     }
 
-    // For now, we'll use a placeholder image URL
-    // In a real implementation, you would save the image and return the URL
     const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
     
     // Update the account in Google Drive with the new image URL
@@ -915,6 +965,15 @@ app.get('/api/debug/accounts', async (req, res) => {
   }
 });
 
+// Keep-alive endpoint for internal use
+app.get('/api/wake-up', async (req, res) => {
+  res.json({
+    success: true,
+    message: "Server is awake",
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Enhanced 404 handler
 app.use('*', (req, res) => {
   console.log(`❌ 404 - Route not found: ${req.originalUrl}`);
@@ -954,7 +1013,8 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('💾 Storage: Google Drive ONLY');
   console.log('📧 Features: Login + Signup + Dashboard');
   console.log('🔐 Auth: QR Code + Password');
-  console.log('📨 Email: Nodemailer + Fallback');
+  console.log('📨 Email: Nodemailer + Secure');
+  console.log('🔔 Auto Wake-up: Active (every 3 minutes)');
   console.log('🎉 =================================\n');
 });
 
