@@ -36,7 +36,7 @@ const createEmailTransporter = () => {
   return nodemailer.createTransporter({
     service: 'gmail',
     auth: {
-      user: 'byprosprt2007@gmail.com', // Replace with your email
+      user: 'byprosprt2007@gmail.com',
       pass: 'your-app-password-here'   // You need to generate App Password in Gmail
     }
   });
@@ -381,7 +381,7 @@ async function saveAllAccounts(accounts) {
 
 // ==================== ENHANCED EMAIL SERVICE ====================
 
-// Send verification email with Nodemailer
+// Send verification email with Nodemailer - SECURE VERSION
 async function sendVerificationEmail(email, code) {
   try {
     const transporter = createEmailTransporter();
@@ -481,61 +481,6 @@ app.get('/adminboard.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'adminboard.html'));
 });
 
-// Serve QR Code library locally
-app.get('/qrcode.min.js', (req, res) => {
-  res.setHeader('Content-Type', 'application/javascript');
-  res.send(`
-    // QR Code Generator for B.Y PRO Accounts
-    (function(){
-      window.QRCode = {
-        toCanvas: function(canvas, text, options, callback) {
-          try {
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-            
-            // Clear canvas
-            ctx.fillStyle = options.color.light || '#FFFFFF';
-            ctx.fillRect(0, 0, width, height);
-            
-            // Draw QR code background
-            ctx.fillStyle = options.color.dark || '#1a237e';
-            
-            // Simple QR pattern simulation
-            const size = 8;
-            const cols = Math.floor(width / size);
-            const rows = Math.floor(height / size);
-            
-            // Generate deterministic pattern based on text
-            let hash = 0;
-            for (let i = 0; i < text.length; i++) {
-              hash = text.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            
-            for (let row = 0; row < rows; row++) {
-              for (let col = 0; col < cols; col++) {
-                if ((row * col + hash) % 3 === 0) {
-                  ctx.fillRect(col * size, row * size, size - 1, size - 1);
-                }
-              }
-            }
-            
-            // Add text overlay
-            ctx.fillStyle = '#1a237e';
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('B.Y PRO Account', width / 2, height - 20);
-            
-            if (callback) callback(null);
-          } catch (error) {
-            if (callback) callback(error);
-          }
-        }
-      };
-    })();
-  `);
-});
-
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   let driveStatus = 'checking';
@@ -581,7 +526,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// Account verification route - FIXED
+// Account verification route
 app.get('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.query;
@@ -625,7 +570,7 @@ app.get('/api/next-id', async (req, res) => {
   }
 });
 
-// Create new account - MAIN FIXED ROUTE
+// Create new account
 app.post('/api/accounts', async (req, res) => {
   try {
     const { id, name, email, password, image } = req.body;
@@ -655,7 +600,7 @@ app.post('/api/accounts', async (req, res) => {
       console.log(`✅ Account creation successful: ${accountData.id}`);
       
       // Generate QR code
-      const qrData = `BYPRO:${accountData.id}:${accountData.password}`;
+      const qrData = `BYPRO:${accountData.id}:${accountData.ps}`;
       const qrResult = await generateEnhancedQRCode(qrData, {
         colorDark: "#1a237e",
         colorLight: "#ffffff"
@@ -670,10 +615,9 @@ app.post('/api/accounts', async (req, res) => {
         success: true,
         message: "Account created and saved to Google Drive successfully",
         account: accountData,
-        qrCode: qrResult.qrCode,
+        qrCode: qrResult.success ? qrResult.qrCode : null,
         verified: !!savedAccount,
-        storage: 'google_drive',
-        totalAccounts: allAccounts.length
+        storage: 'google_drive'
       });
     } else {
       throw new Error("Failed to save account to Google Drive");
@@ -712,7 +656,7 @@ app.get('/api/accounts', async (req, res) => {
 
 // ==================== ENHANCED EMAIL VERIFICATION ROUTES ====================
 
-// Send verification code - FIXED
+// Send verification code - SECURE VERSION (NO CODE DISPLAY)
 app.post('/api/send-verification-code', async (req, res) => {
   try {
     const { email } = req.body;
@@ -749,20 +693,17 @@ app.post('/api/send-verification-code', async (req, res) => {
     const emailResult = await sendVerificationEmail(email, code);
     
     if (emailResult.success) {
+      // SECURITY: DO NOT return the code in the response
       res.json({
         success: true,
-        message: "Verification code sent successfully",
-        code: code, // For testing - remove in production
+        message: "Verification code sent successfully to your email",
         email: email
       });
     } else {
-      // If email fails, still return success but with the code for testing
-      res.json({
-        success: true,
-        message: "Email service temporarily unavailable. Use this code for testing: " + code,
-        code: code,
-        email: email,
-        fallback: true
+      // SECURITY: If email fails, DO NOT return the code
+      res.status(500).json({
+        success: false,
+        error: "Email service temporarily unavailable. Please try again later."
       });
     }
     
@@ -775,7 +716,7 @@ app.post('/api/send-verification-code', async (req, res) => {
   }
 });
 
-// Verify code - FIXED
+// Verify code - SECURE VERSION
 app.post('/api/verify-code', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -878,7 +819,7 @@ app.post('/api/generate-qr', async (req, res) => {
   }
 });
 
-// Upload image route - SIMPLIFIED
+// Upload image route
 app.post('/api/upload-image', async (req, res) => {
   try {
     const { accountId, imageData } = req.body;
