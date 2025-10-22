@@ -45,6 +45,9 @@ const createEmailTransporter = () => {
 // In-memory storage for verification codes
 const verificationCodes = new Map();
 
+// ==================== RULES SYSTEM ====================
+const acceptedRules = new Set();
+
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
 const serviceAccount = {
   type: "service_account",
@@ -106,7 +109,6 @@ async function ensureCSVFileExists() {
   } catch (error) {
     console.log('📝 CSV file not found, creating new file...');
     
-    // Create initial CSV with headers only
     const initialContent = 'id,ps,email,name,image\n';
     
     const media = {
@@ -135,13 +137,11 @@ async function initializeDriveService() {
     
     driveService = google.drive({ version: 'v3', auth });
     
-    // Test the connection immediately
     await driveService.files.get({
       fileId: FILE_ID,
       fields: 'id,name,mimeType,modifiedTime'
     });
     
-    // Ensure CSV file exists and have proper structure
     await ensureCSVFileExists();
     
     console.log('✅ Google Drive service initialized successfully');
@@ -182,7 +182,6 @@ async function readCSVFromDrive(fileId) {
     return data;
   } catch (error) {
     console.error('❌ Error reading CSV from Drive:', error.message);
-    // Return empty string if file doesn't exist yet
     if (error.message.includes('404')) {
       return '';
     }
@@ -244,7 +243,6 @@ async function getNextAvailableId() {
     return (maxId + 1).toString();
   } catch (error) {
     console.error('❌ Error getting next ID:', error.message);
-    // Fallback ID generation
     return (1000 + Math.floor(Math.random() * 9000)).toString();
   }
 }
@@ -262,15 +260,13 @@ function parseCSVToAccounts(csvData) {
       const line = lines[i].trim();
       if (!line) continue;
       
-      // Skip empty lines or header if it's the first line with headers
       if (i === 0 && (line.includes('id,ps,email,name,image') || line.includes('"id","ps","email","name","image"'))) {
         continue;
       }
       
-      // Simple CSV parsing - split by commas and remove quotes
       const values = line.split(',').map(val => val.trim().replace(/^"|"$/g, ''));
       
-      if (values.length >= 2) { // At least id and password
+      if (values.length >= 2) {
         const account = {
           id: values[0] || '',
           ps: values[1] || '',
@@ -279,7 +275,6 @@ function parseCSVToAccounts(csvData) {
           image: values[4] || ''
         };
         
-        // Only add if it has required fields
         if (account.id && account.ps) {
           accounts.push(account);
         }
@@ -302,14 +297,12 @@ async function addNewAccount(accountData) {
     try {
       csvData = await readCSVFromDrive(FILE_ID);
     } catch (error) {
-      // If file doesn't exist or is empty, start with empty data
       console.log('📝 Starting with empty CSV data');
       csvData = '';
     }
     
     let accounts = parseCSVToAccounts(csvData);
     
-    // Check if email already exists
     if (accountData.email) {
       const existingAccount = accounts.find(acc => acc.email === accountData.email);
       if (existingAccount) {
@@ -317,10 +310,8 @@ async function addNewAccount(accountData) {
       }
     }
     
-    // Check if ID already exists
     const existingId = accounts.find(acc => acc.id === accountData.id);
     if (existingId) {
-      // Generate new ID if conflict
       const newId = await getNextAvailableId();
       console.log(`🆕 ID conflict, generated new ID: ${newId}`);
       accountData.id = newId;
@@ -345,10 +336,9 @@ async function addNewAccount(accountData) {
 
 async function saveAllAccounts(accounts) {
   try {
-    // Create CSV content with headers
     const headers = ['id', 'ps', 'email', 'name', 'image'];
     const csvLines = [
-      headers.join(','), // Header row
+      headers.join(','),
       ...accounts.map(account => 
         headers.map(header => 
           account[header] ? `"${account[header].toString().replace(/"/g, '""')}"` : '""'
@@ -380,8 +370,6 @@ async function saveAllAccounts(accounts) {
 }
 
 // ==================== ENHANCED EMAIL SERVICE ====================
-
-// Send verification email with Nodemailer - FIXED VERSION
 async function sendVerificationEmail(email, code) {
   try {
     const transporter = createEmailTransporter();
@@ -421,14 +409,12 @@ async function sendVerificationEmail(email, code) {
 }
 
 // ==================== ENHANCED QR CODE SERVICE ====================
-
-// Generate QR Code with dark blue color
 async function generateEnhancedQRCode(qrData, options = {}) {
   try {
     const {
       width = 200,
       height = 200,
-      colorDark = "#1a237e", // Dark blue color
+      colorDark = "#1a237e",
       colorLight = "#ffffff",
       correctLevel = 'H'
     } = options;
@@ -494,19 +480,15 @@ app.get('/qrcode.min.js', (req, res) => {
             const width = canvas.width;
             const height = canvas.height;
             
-            // Clear canvas
             ctx.fillStyle = options.color.light || '#FFFFFF';
             ctx.fillRect(0, 0, width, height);
             
-            // Draw QR code background
             ctx.fillStyle = options.color.dark || '#1a237e';
             
-            // Simple QR pattern simulation
             const size = 8;
             const cols = Math.floor(width / size);
             const rows = Math.floor(height / size);
             
-            // Generate deterministic pattern based on text
             let hash = 0;
             for (let i = 0; i < text.length; i++) {
               hash = text.charCodeAt(i) + ((hash << 5) - hash);
@@ -520,7 +502,6 @@ app.get('/qrcode.min.js', (req, res) => {
               }
             }
             
-            // Add text overlay
             ctx.fillStyle = '#1a237e';
             ctx.font = 'bold 14px Arial';
             ctx.textAlign = 'center';
@@ -534,6 +515,489 @@ app.get('/qrcode.min.js', (req, res) => {
       };
     })();
   `);
+});
+
+// ==================== RULES SYSTEM ROUTES ====================
+
+// مسار التحقق من قبول القوانين
+app.get('/api/check-rules', async (req, res) => {
+  try {
+    const { userId } = req.query;
+    
+    if (!userId) {
+      return res.json({
+        success: false,
+        error: "User ID is required"
+      });
+    }
+
+    const hasAccepted = acceptedRules.has(userId);
+    
+    res.json({
+      success: true,
+      accepted: hasAccepted,
+      userId: userId,
+      message: hasAccepted ? "Rules already accepted" : "Rules not accepted yet"
+    });
+    
+  } catch (error) {
+    console.error('❌ Error checking rules:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Rules service unavailable"
+    });
+  }
+});
+
+// مسار قبول القوانين
+app.post('/api/accept-rules', async (req, res) => {
+  try {
+    const { userId } = req.body;
+    
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: "User ID is required"
+      });
+    }
+
+    acceptedRules.add(userId);
+    
+    console.log(`✅ User ${userId} accepted the rules`);
+    
+    res.json({
+      success: true,
+      message: "Rules accepted successfully",
+      userId: userId
+    });
+    
+  } catch (error) {
+    console.error('❌ Error accepting rules:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Unable to accept rules"
+    });
+  }
+});
+
+// مسار الحصول على محتوى القوانين
+app.get('/api/rules-content', async (req, res) => {
+  try {
+    const rulesContent = {
+      title: "UltraSpace Usage Rules",
+      subtitle: "Please read and follow our platform rules to ensure a safe and enjoyable experience for everyone",
+      rules: [
+        {
+          icon: "fa-user-check",
+          title: "Free Registration",
+          content: "<strong>Registration is free</strong> and available to everyone, without any subscription or hidden fees. Adherence to real identity and accurate information is required."
+        },
+        {
+          icon: "fa-comments",
+          title: "Unlimited Messaging", 
+          content: "<strong>Text messaging</strong> is unlimited for all users. You can send and receive an unlimited number of messages daily with complete freedom."
+        },
+        {
+          icon: "fa-photo-film",
+          title: "Media Sharing",
+          content: "<strong>Allowed media:</strong> Images, videos, and audio recordings can be sent provided that their total size does not exceed <strong>25 MB per day</strong> per user."
+        },
+        {
+          icon: "fa-database",
+          title: "Personal Storage",
+          content: "Each user has personal storage space used only for saving private data, and is automatically monitored to prevent server overload."
+        },
+        {
+          icon: "fa-clock", 
+          title: "Daily Activity",
+          content: "<strong>Daily activity:</strong> It is recommended not to publish more than <strong>10 posts daily</strong> to avoid flooding the platform."
+        },
+        {
+          icon: "fa-ban",
+          title: "Content Restrictions", 
+          content: "Publishing or exchanging any <strong>offensive, illegal, or indecent content</strong> is prohibited. Violators risk immediate account suspension."
+        },
+        {
+          icon: "fa-shield-halved",
+          title: "Privacy & Security",
+          content: "<strong>Privacy and security:</strong> The platform adheres to the highest standards of data protection, and no personal information is shared without user consent."
+        },
+        {
+          icon: "fa-scale-unbalanced",
+          title: "Equality & Respect",
+          content: "<strong>Equality and respect:</strong> All members must be treated with full respect, regardless of nationality, opinions, or personal background."
+        },
+        {
+          icon: "fa-server",
+          title: "Resource Management",
+          content: "<strong>Resource management:</strong> To ensure fast performance, space usage is periodically monitored. Inactive accounts may be removed after 6 months."
+        }
+      ],
+      footer: "© 2025 UltraSpace — All rights reserved"
+    };
+
+    res.json({
+      success: true,
+      content: rulesContent
+    });
+    
+  } catch (error) {
+    console.error('❌ Error getting rules content:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "Unable to load rules content"
+    });
+  }
+});
+
+// مسار صفحة القوانين كـ popup
+app.get('/rules-popup', (req, res) => {
+  const htmlContent = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UltraSpace Rules</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Cairo', sans-serif;
+            background: radial-gradient(circle at top, #0d1b2a 0%, #000814 100%);
+            color: #e0e6ed;
+            line-height: 1.6;
+            padding: 20px;
+            margin: 0;
+            min-height: 100vh;
+        }
+
+        .rules-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            border: 2px solid #4da3ff;
+            overflow: hidden;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            background: rgba(13, 27, 42, 0.9);
+            padding: 25px;
+            border-bottom: 1px solid rgba(77, 163, 255, 0.3);
+            text-align: center;
+        }
+
+        .logo-container {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .logo-container img {
+            height: 50px;
+            border-radius: 10px;
+        }
+
+        .logo-container h1 {
+            color: #4da3ff;
+            font-size: 2rem;
+            margin: 0;
+        }
+
+        .subtitle {
+            color: #9bb4d0;
+            font-size: 1.1rem;
+            margin-top: 10px;
+        }
+
+        .rules-content {
+            padding: 25px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+
+        .rules-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 20px;
+            margin-bottom: 25px;
+        }
+
+        .rule-card {
+            background: rgba(255, 255, 255, 0.05);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(77, 163, 255, 0.2);
+            transition: all 0.3s ease;
+        }
+
+        .rule-card:hover {
+            transform: translateY(-2px);
+            border-color: #4da3ff;
+            box-shadow: 0 5px 15px rgba(77, 163, 255, 0.2);
+        }
+
+        .rule-header {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .rule-icon {
+            color: #4da3ff;
+            font-size: 1.4rem;
+            margin-top: 2px;
+        }
+
+        .rule-title {
+            color: #79b8ff;
+            font-size: 1.2rem;
+            font-weight: 600;
+            margin: 0;
+        }
+
+        .rule-content {
+            color: #e0e6ed;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin: 0;
+        }
+
+        .rule-content strong {
+            color: #79b8ff;
+        }
+
+        .footer {
+            background: rgba(13, 27, 42, 0.9);
+            padding: 20px;
+            border-top: 1px solid rgba(77, 163, 255, 0.3);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .accept-btn {
+            background: linear-gradient(135deg, #4da3ff, #3a8be6);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            font-family: 'Cairo', sans-serif;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .accept-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(77, 163, 255, 0.3);
+        }
+
+        .copyright {
+            color: #9bb4d0;
+            font-size: 0.9rem;
+        }
+
+        /* Scrollbar Styling */
+        .rules-content::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .rules-content::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+
+        .rules-content::-webkit-scrollbar-thumb {
+            background: #4da3ff;
+            border-radius: 3px;
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            .rules-container {
+                max-width: 100%;
+            }
+            
+            .rules-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .logo-container h1 {
+                font-size: 1.6rem;
+            }
+            
+            .rules-content {
+                padding: 20px;
+            }
+            
+            .footer {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="rules-container">
+        <div class="header">
+            <div class="logo-container">
+                <img src="https://raw.githubusercontent.com/Yacine2007/UltraSpace/main/logo/favicon.png" alt="UltraSpace Logo">
+                <h1>UltraSpace Usage Rules</h1>
+            </div>
+            <p class="subtitle">Please read and follow our platform rules to ensure a safe and enjoyable experience for everyone</p>
+        </div>
+        
+        <div class="rules-content">
+            <div class="rules-grid">
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-user-check rule-icon"></i>
+                        <h3 class="rule-title">Free Registration</h3>
+                    </div>
+                    <p class="rule-content"><strong>Registration is free</strong> and available to everyone, without any subscription or hidden fees. Adherence to real identity and accurate information is required.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-comments rule-icon"></i>
+                        <h3 class="rule-title">Unlimited Messaging</h3>
+                    </div>
+                    <p class="rule-content"><strong>Text messaging</strong> is unlimited for all users. You can send and receive an unlimited number of messages daily with complete freedom.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-photo-film rule-icon"></i>
+                        <h3 class="rule-title">Media Sharing</h3>
+                    </div>
+                    <p class="rule-content"><strong>Allowed media:</strong> Images, videos, and audio recordings can be sent provided that their total size does not exceed <strong>25 MB per day</strong> per user.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-database rule-icon"></i>
+                        <h3 class="rule-title">Personal Storage</h3>
+                    </div>
+                    <p class="rule-content">Each user has personal storage space used only for saving private data, and is automatically monitored to prevent server overload.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-clock rule-icon"></i>
+                        <h3 class="rule-title">Daily Activity</h3>
+                    </div>
+                    <p class="rule-content"><strong>Daily activity:</strong> It is recommended not to publish more than <strong>10 posts daily</strong> to avoid flooding the platform.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-ban rule-icon"></i>
+                        <h3 class="rule-title">Content Restrictions</h3>
+                    </div>
+                    <p class="rule-content">Publishing or exchanging any <strong>offensive, illegal, or indecent content</strong> is prohibited. Violators risk immediate account suspension.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-shield-halved rule-icon"></i>
+                        <h3 class="rule-title">Privacy & Security</h3>
+                    </div>
+                    <p class="rule-content"><strong>Privacy and security:</strong> The platform adheres to the highest standards of data protection, and no personal information is shared without user consent.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-scale-unbalanced rule-icon"></i>
+                        <h3 class="rule-title">Equality & Respect</h3>
+                    </div>
+                    <p class="rule-content"><strong>Equality and respect:</strong> All members must be treated with full respect, regardless of nationality, opinions, or personal background.</p>
+                </div>
+                
+                <div class="rule-card">
+                    <div class="rule-header">
+                        <i class="fas fa-server rule-icon"></i>
+                        <h3 class="rule-title">Resource Management</h3>
+                    </div>
+                    <p class="rule-content"><strong>Resource management:</strong> To ensure fast performance, space usage is periodically monitored. Inactive accounts may be removed after 6 months.</p>
+                </div>
+            </div>
+            
+            <div style="background: rgba(77, 163, 255, 0.1); border: 1px solid rgba(77, 163, 255, 0.3); border-radius: 12px; padding: 15px; text-align: center;">
+                <p style="margin: 0; color: #9bb4d0; font-size: 0.9rem;">
+                    <strong>Note:</strong> By clicking "Accept & Continue", you agree to abide by these rules and terms of service.
+                </p>
+            </div>
+        </div>
+        
+        <div class="footer">
+            <button class="accept-btn" onclick="acceptRules()">
+                <i class="fas fa-check-circle"></i> Accept & Continue
+            </button>
+            <span class="copyright">© 2025 UltraSpace — All rights reserved</span>
+        </div>
+    </div>
+
+    <script>
+        function acceptRules() {
+            // إرسال طلب قبول القوانين إلى النافذة الأصلية
+            if (window.opener) {
+                window.opener.postMessage({ type: 'RULES_ACCEPTED', userId: getUserIdFromURL() }, '*');
+            }
+            
+            // إغلاق النافذة
+            setTimeout(() => {
+                window.close();
+            }, 500);
+        }
+
+        function getUserIdFromURL() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('userId');
+        }
+
+        // إضافة تأثيرات عند التمرير
+        const ruleCards = document.querySelectorAll('.rule-card');
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, { threshold: 0.1 });
+
+        ruleCards.forEach(card => {
+            card.style.opacity = '0';
+            card.style.transform = 'translateY(20px)';
+            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(card);
+        });
+    </script>
+</body>
+</html>`;
+  
+  res.send(htmlContent);
 });
 
 // Health check endpoint
@@ -566,7 +1030,8 @@ app.get('/api/health', async (req, res) => {
         total_accounts: accounts.length,
         last_modified: lastModified
       },
-      version: '4.0.0'
+      version: '4.0.0',
+      rules_system: 'active'
     });
   } catch (error) {
     res.status(500).json({
@@ -625,7 +1090,7 @@ app.get('/api/next-id', async (req, res) => {
   }
 });
 
-// Create new account - MAIN FIXED ROUTE
+// Create new account - MAIN ROUTE
 app.post('/api/accounts', async (req, res) => {
   try {
     const { id, name, email, password, image } = req.body;
@@ -654,14 +1119,12 @@ app.post('/api/accounts', async (req, res) => {
     if (saved) {
       console.log(`✅ Account creation successful: ${accountData.id}`);
       
-      // Generate QR code
       const qrData = `BYPRO:${accountData.id}:${accountData.ps}`;
       const qrResult = await generateEnhancedQRCode(qrData, {
         colorDark: "#1a237e",
         colorLight: "#ffffff"
       });
 
-      // Verify the account was actually saved
       const csvData = await readCSVFromDrive(FILE_ID);
       const allAccounts = parseCSVToAccounts(csvData);
       const savedAccount = allAccounts.find(acc => acc.id === accountData.id);
@@ -673,7 +1136,9 @@ app.post('/api/accounts', async (req, res) => {
         qrCode: qrResult.qrCode,
         verified: !!savedAccount,
         storage: 'google_drive',
-        totalAccounts: allAccounts.length
+        totalAccounts: allAccounts.length,
+        show_rules: true, // إشارة لعرض القوانين
+        rules_url: `/rules-popup?userId=${accountData.id}`
       });
     } else {
       throw new Error("Failed to save account to Google Drive");
@@ -712,7 +1177,7 @@ app.get('/api/accounts', async (req, res) => {
 
 // ==================== ENHANCED EMAIL VERIFICATION ROUTES ====================
 
-// Send verification code - FIXED VERSION
+// Send verification code
 app.post('/api/send-verification-code', async (req, res) => {
   try {
     const { email } = req.body;
@@ -734,18 +1199,15 @@ app.post('/api/send-verification-code', async (req, res) => {
       });
     }
 
-    // Generate verification code
     const code = Math.floor(100000 + Math.random() * 900000).toString();
     
-    // Store code in memory (with 10-minute expiry)
     verificationCodes.set(email, {
       code: code,
-      expires: Date.now() + 10 * 60 * 1000 // 10 minutes
+      expires: Date.now() + 10 * 60 * 1000
     });
 
     console.log(`✅ Generated verification code for ${email}: ${code}`);
 
-    // Try to send email
     const emailResult = await sendVerificationEmail(email, code);
     
     if (emailResult.success) {
@@ -755,8 +1217,6 @@ app.post('/api/send-verification-code', async (req, res) => {
         email: email
       });
     } else {
-      // If email fails, return error without exposing the code
-      console.error('❌ Email service failed:', emailResult.error);
       res.status(500).json({
         success: false,
         error: "Email service temporarily unavailable. Please try again later."
@@ -772,7 +1232,7 @@ app.post('/api/send-verification-code', async (req, res) => {
   }
 });
 
-// Verify code - FIXED
+// Verify code
 app.post('/api/verify-code', async (req, res) => {
   try {
     const { email, code } = req.body;
@@ -810,7 +1270,6 @@ app.post('/api/verify-code', async (req, res) => {
       });
     }
 
-    // Code is valid - remove it from storage
     verificationCodes.delete(email);
     
     res.json({
@@ -889,10 +1348,8 @@ app.post('/api/upload-image', async (req, res) => {
       });
     }
 
-    // For now, we'll use a placeholder image URL
     const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
     
-    // Update the account in Google Drive with the new image URL
     try {
       const csvData = await readCSVFromDrive(FILE_ID);
       const accounts = parseCSVToAccounts(csvData);
@@ -1010,6 +1467,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('📧 Features: Login + Signup + Dashboard');
   console.log('🔐 Auth: QR Code + Password');
   console.log('📨 Email: Nodemailer + Fixed');
+  console.log('⚖️ Rules System: Active');
   console.log('🎉 =================================\n');
 });
 
@@ -1027,6 +1485,9 @@ async function verifyAccountCredentials(id, password) {
     });
     
     if (account) {
+      // التحقق من قبول القوانين
+      const hasAcceptedRules = acceptedRules.has(account.id);
+      
       return {
         success: true,
         account: {
@@ -1035,7 +1496,9 @@ async function verifyAccountCredentials(id, password) {
           email: account.email || `${account.id}@bypro.com`,
           image: account.image || ''
         },
-        storage: 'google_drive'
+        storage: 'google_drive',
+        accepted_rules: hasAcceptedRules,
+        rules_url: hasAcceptedRules ? null : `/rules-popup?userId=${account.id}`
       };
     } else {
       return {
