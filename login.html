@@ -546,13 +546,65 @@
         let currentMethod = 'qr';
         let isOnline = false;
 
+        // نظام postMessage لنقل بيانات المستخدم
+        function sendUserDataToParent(userData) {
+            try {
+                // إرسال بيانات المستخدم إلى الصفحة الرئيسية
+                window.parent.postMessage({
+                    type: 'USER_AUTHENTICATED',
+                    userData: userData,
+                    timestamp: Date.now()
+                }, '*');
+                console.log('📨 User data sent to parent via postMessage');
+            } catch (error) {
+                console.error('❌ Failed to send user data to parent:', error);
+            }
+        }
+
+        // نظام تخزين بديل للـ iframe
+        function saveUserDataSafely(userData) {
+            try {
+                // المحاولة الأولى: localStorage
+                localStorage.setItem('bypro_user', JSON.stringify(userData));
+                console.log('✅ User data saved to localStorage');
+                return true;
+            } catch (error) {
+                console.log('❌ localStorage blocked, using sessionStorage');
+                try {
+                    // المحاولة الثانية: sessionStorage
+                    sessionStorage.setItem('bypro_user', JSON.stringify(userData));
+                    console.log('✅ User data saved to sessionStorage');
+                    return true;
+                } catch (error2) {
+                    console.log('❌ All storage blocked, using memory only');
+                    // سيتم الاعتماد فقط على postMessage
+                    return false;
+                }
+            }
+        }
+
         // Check if user is already logged in
         function checkLoginStatus() {
-            const userData = localStorage.getItem('bypro_user');
+            let userData = null;
+            
+            // البحث عن البيانات في جميع وسائل التخزين
+            try {
+                userData = localStorage.getItem('bypro_user');
+            } catch (error) {
+                try {
+                    userData = sessionStorage.getItem('bypro_user');
+                } catch (error2) {
+                    console.log('❌ All storage methods blocked');
+                }
+            }
+
             if (userData) {
                 try {
                     const user = JSON.parse(userData);
                     console.log('🔍 Found saved user data:', user);
+                    
+                    // إرسال البيانات إلى الصفحة الرئيسية إذا كان المستخدم مسجلاً
+                    sendUserDataToParent(user);
                     
                     // تحميل البيانات في الحقول إذا كان في وضع التسجيل اليدوي
                     if (user.id && user.password) {
@@ -565,7 +617,13 @@
                     return true;
                 } catch (e) {
                     console.error('❌ Error parsing saved user data:', e);
-                    localStorage.removeItem('bypro_user');
+                    // تنظيف البيانات التالفة
+                    try {
+                        localStorage.removeItem('bypro_user');
+                        sessionStorage.removeItem('bypro_user');
+                    } catch (error) {
+                        // تجاهل الأخطاء في التنظيف
+                    }
                 }
             }
             return false;
@@ -588,9 +646,9 @@
             
             // إعادة تحميل الصفحة بعد 5 ثواني
             setTimeout(() => {
-			console.log('🔄 Refreshing page...');
-			window.location.href = window.location.href;
-			}, 5000);
+                console.log('🔄 Refreshing page...');
+                window.location.href = window.location.href;
+            }, 5000);
         }
 
         // Show login form
@@ -775,7 +833,7 @@
                         userImage = account?.image || '';
                     }
 
-                    // حفظ بيانات المستخدم في localStorage
+                    // حفظ بيانات المستخدم
                     const userData = {
                         id: result.account.id,
                         name: result.account.name,
@@ -783,10 +841,15 @@
                         password: password,
                         image: userImage,
                         loginTime: new Date().toISOString(),
-                        lastLogin: new Date().toISOString()
+                        lastLogin: new Date().toISOString(),
+                        source: 'bypro_login'
                     };
                     
-                    localStorage.setItem('bypro_user', JSON.stringify(userData));
+                    // حفظ البيانات بجميع الطرق الممكنة
+                    saveUserDataSafely(userData);
+                    
+                    // إرسال البيانات إلى الصفحة الرئيسية
+                    sendUserDataToParent(userData);
                     
                     showStatus('Login successful!', 'success');
                     updateConnectionStatus(true);
@@ -874,6 +937,22 @@
             }
         }
 
+        // إضافة مستمع للرسائل من الصفحة الرئيسية (اختياري)
+        window.addEventListener('message', function(event) {
+            // يمكن إضافة وظائف للاستجابة لطلبات من الصفحة الرئيسية
+            if (event.data && event.data.type === 'GET_USER_DATA') {
+                const userData = localStorage.getItem('bypro_user') || sessionStorage.getItem('bypro_user');
+                if (userData) {
+                    try {
+                        const user = JSON.parse(userData);
+                        sendUserDataToParent(user);
+                    } catch (error) {
+                        console.error('Error parsing user data for response:', error);
+                    }
+                }
+            }
+        });
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Initializing login page...');
@@ -894,4 +973,3 @@
     </script>
 </body>
 </html>
-
