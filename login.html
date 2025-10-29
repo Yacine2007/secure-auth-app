@@ -548,32 +548,119 @@
         // Variables
         let currentMethod = 'qr';
         let isOnline = false;
+        let currentUser = null;
+
+        // ========== Safe Storage for iframe ==========
+        const safeStorage = {
+            // Try localStorage, fallback to sessionStorage, then memory
+            setItem: (key, value) => {
+                try {
+                    localStorage.setItem(key, JSON.stringify(value));
+                    console.log('💾 Saved to localStorage');
+                    return true;
+                } catch (e) {
+                    console.log('⚠️ localStorage blocked, trying sessionStorage');
+                    try {
+                        sessionStorage.setItem(key, JSON.stringify(value));
+                        console.log('💾 Saved to sessionStorage');
+                        return true;
+                    } catch (e2) {
+                        console.log('⚠️ All storage blocked, using memory');
+                        // Store in memory only
+                        window[key] = value;
+                        return false;
+                    }
+                }
+            },
+
+            getItem: (key) => {
+                try {
+                    const item = localStorage.getItem(key);
+                    return item ? JSON.parse(item) : null;
+                } catch (e) {
+                    try {
+                        const item = sessionStorage.getItem(key);
+                        return item ? JSON.parse(item) : null;
+                    } catch (e2) {
+                        return window[key] || null;
+                    }
+                }
+            },
+
+            removeItem: (key) => {
+                try {
+                    localStorage.removeItem(key);
+                } catch (e) {
+                    try {
+                        sessionStorage.removeItem(key);
+                    } catch (e2) {
+                        delete window[key];
+                    }
+                }
+            }
+        };
 
         // ========== FIRST: Check if user is already logged in ==========
         function checkExistingLogin() {
             console.log('🔍 Checking for existing login...');
             
             try {
-                const userData = localStorage.getItem('bypro_user');
+                // First try to get from parent window via postMessage
+                requestUserDataFromParent();
+                
+                // Also check local storage
+                const userData = safeStorage.getItem('bypro_user');
                 
                 if (userData) {
-                    const user = JSON.parse(userData);
-                    console.log('✅ Found existing user:', user);
+                    console.log('✅ Found existing user in storage:', userData);
                     
-                    if (user.id && user.password) {
-                        showLoggedInState(user);
+                    if (userData.id && userData.password) {
+                        currentUser = userData;
+                        showLoggedInState(userData);
                         return true;
                     } else {
                         console.log('❌ Invalid user data structure');
-                        localStorage.removeItem('bypro_user');
+                        safeStorage.removeItem('bypro_user');
                     }
                 }
             } catch (error) {
                 console.error('❌ Error checking existing login:', error);
-                localStorage.removeItem('bypro_user');
             }
             
             return false;
+        }
+
+        // ========== Request user data from parent window ==========
+        function requestUserDataFromParent() {
+            if (window.parent !== window) {
+                console.log('📨 Requesting user data from parent...');
+                window.parent.postMessage({
+                    type: 'GET_USER_DATA_REQUEST',
+                    timestamp: Date.now()
+                }, '*');
+            }
+        }
+
+        // ========== Setup message listener for parent communication ==========
+        function setupParentMessageListener() {
+            window.addEventListener('message', function(event) {
+                console.log('📨 Message from parent:', event.data);
+                
+                // Handle user data response from parent
+                if (event.data && event.data.type === 'USER_DATA_RESPONSE') {
+                    console.log('✅ Received user data from parent:', event.data.userData);
+                    if (event.data.userData) {
+                        currentUser = event.data.userData;
+                        showLoggedInState(event.data.userData);
+                    }
+                }
+                
+                // Handle logout command from parent
+                if (event.data && event.data.type === 'FORCE_LOGOUT') {
+                    console.log('🚪 Logout requested by parent');
+                    logout();
+                }
+            });
         }
 
         // ========== Show logged in state ==========
@@ -591,7 +678,7 @@
                 userAvatar.innerHTML = '<i class="fas fa-user-check"></i>';
             }
             
-            // Send message to parent window if in iframe
+            // Send login success message to parent
             sendLoginSuccessMessage(user);
         }
 
@@ -615,7 +702,11 @@
         function logout() {
             console.log('🚪 Logging out...');
             
-            localStorage.removeItem('bypro_user');
+            // Clear all storage
+            safeStorage.removeItem('bypro_user');
+            currentUser = null;
+            
+            // Reset UI
             loggedInInfo.style.display = 'none';
             loginSection.style.display = 'block';
             
@@ -624,7 +715,7 @@
             passwordInput.value = '';
             qrFileInput.value = '';
             
-            // Send logout message
+            // Send logout message to parent
             try {
                 if (window.parent !== window) {
                     window.parent.postMessage({
@@ -757,7 +848,7 @@
             }
         }
 
-        // ========== LAST: Verify login credentials and SAVE to localStorage ==========
+        // ========== LAST: Verify login credentials and SAVE ==========
         async function verifyLogin(id, password) {
             if (!id || !password) {
                 showStatus('ID and password are required', 'error');
@@ -807,7 +898,7 @@
                         userImage = account?.image || '';
                     }
 
-                    // ========== SAVE USER DATA TO LOCALSTORAGE ==========
+                    // ========== SAVE USER DATA ==========
                     const userData = {
                         id: result.account.id,
                         name: result.account.name,
@@ -819,9 +910,14 @@
                         source: 'bypro_login'
                     };
                     
-                    // Save to localStorage
-                    localStorage.setItem('bypro_user', JSON.stringify(userData));
-                    console.log('💾 User data saved to localStorage');
+                    // Try to save locally
+                    const savedLocally = safeStorage.setItem('bypro_user', userData);
+                    
+                    if (!savedLocally) {
+                        console.log('💡 Storage not available, relying on parent window');
+                    }
+                    
+                    currentUser = userData;
                     
                     showStatus('Login successful!', 'success');
                     updateConnectionStatus(true);
@@ -913,7 +1009,10 @@
         document.addEventListener('DOMContentLoaded', async () => {
             console.log('🚀 Initializing login page...');
             
-            // FIRST: Check if user is already logged in
+            // Setup parent message listener first
+            setupParentMessageListener();
+            
+            // Check if user is already logged in
             const isLoggedIn = checkExistingLogin();
             
             if (!isLoggedIn) {
@@ -927,8 +1026,9 @@
             }
         });
 
-        // Make logout function globally available
+        // Make functions globally available
         window.logout = logout;
+        window.getCurrentUser = () => currentUser;
     </script>
 </body>
 </html>
