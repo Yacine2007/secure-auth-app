@@ -458,8 +458,11 @@
             <h3>Welcome back, <span id="userName">User</span>!</h3>
             <div class="success-message">
                 <i class="fas fa-check-circle"></i>
-                <span>You are successfully logged</span>
+                <span>You are successfully logged in</span>
             </div>
+            <button class="login-btn" onclick="logout()" style="margin-top: 20px; background: var(--danger-color);">
+                <i class="fas fa-sign-out-alt"></i> Logout
+            </button>
         </div>
 
         <!-- Login Methods -->
@@ -546,125 +549,104 @@
         let currentMethod = 'qr';
         let isOnline = false;
 
-        // نظام postMessage لنقل بيانات المستخدم
-        function sendUserDataToParent(userData) {
-            try {
-                // إرسال بيانات المستخدم إلى الصفحة الرئيسية
-                window.parent.postMessage({
-                    type: 'USER_AUTHENTICATED',
-                    userData: userData,
-                    timestamp: Date.now()
-                }, '*');
-                console.log('📨 User data sent to parent via postMessage');
-            } catch (error) {
-                console.error('❌ Failed to send user data to parent:', error);
-            }
-        }
-
-        // نظام تخزين بديل للـ iframe
-        function saveUserDataSafely(userData) {
-            try {
-                // المحاولة الأولى: localStorage
-                localStorage.setItem('bypro_user', JSON.stringify(userData));
-                console.log('✅ User data saved to localStorage');
-                return true;
-            } catch (error) {
-                console.log('❌ localStorage blocked, using sessionStorage');
-                try {
-                    // المحاولة الثانية: sessionStorage
-                    sessionStorage.setItem('bypro_user', JSON.stringify(userData));
-                    console.log('✅ User data saved to sessionStorage');
-                    return true;
-                } catch (error2) {
-                    console.log('❌ All storage blocked, using memory only');
-                    // سيتم الاعتماد فقط على postMessage
-                    return false;
-                }
-            }
-        }
-
-        // Check if user is already logged in
-        function checkLoginStatus() {
-            let userData = null;
+        // ========== FIRST: Check if user is already logged in ==========
+        function checkExistingLogin() {
+            console.log('🔍 Checking for existing login...');
             
-            // البحث عن البيانات في جميع وسائل التخزين
             try {
-                userData = localStorage.getItem('bypro_user');
-            } catch (error) {
-                try {
-                    userData = sessionStorage.getItem('bypro_user');
-                } catch (error2) {
-                    console.log('❌ All storage methods blocked');
-                }
-            }
-
-            if (userData) {
-                try {
+                const userData = localStorage.getItem('bypro_user');
+                
+                if (userData) {
                     const user = JSON.parse(userData);
-                    console.log('🔍 Found saved user data:', user);
+                    console.log('✅ Found existing user:', user);
                     
-                    // إرسال البيانات إلى الصفحة الرئيسية إذا كان المستخدم مسجلاً
-                    sendUserDataToParent(user);
-                    
-                    // تحميل البيانات في الحقول إذا كان في وضع التسجيل اليدوي
                     if (user.id && user.password) {
-                        userIdInput.value = user.id;
-                        passwordInput.value = user.password;
-                    }
-                    
-                    // عرض حالة تسجيل الدخول
-                    showLoggedInState(user);
-                    return true;
-                } catch (e) {
-                    console.error('❌ Error parsing saved user data:', e);
-                    // تنظيف البيانات التالفة
-                    try {
+                        showLoggedInState(user);
+                        return true;
+                    } else {
+                        console.log('❌ Invalid user data structure');
                         localStorage.removeItem('bypro_user');
-                        sessionStorage.removeItem('bypro_user');
-                    } catch (error) {
-                        // تجاهل الأخطاء في التنظيف
                     }
                 }
+            } catch (error) {
+                console.error('❌ Error checking existing login:', error);
+                localStorage.removeItem('bypro_user');
             }
+            
             return false;
         }
 
-        // Show logged in state
+        // ========== Show logged in state ==========
         function showLoggedInState(user) {
+            console.log('🎉 Showing logged in state for:', user.name || user.id);
+            
             loginSection.style.display = 'none';
             loggedInInfo.style.display = 'block';
             userNameSpan.textContent = user.name || `User ${user.id}`;
             
-            // عرض صورة المستخدم إذا كانت موجودة
+            // Show user avatar if available
             if (user.image) {
                 userAvatar.innerHTML = `<img src="${user.image}?t=${Date.now()}" alt="User Avatar" onerror="handleImageError(this)">`;
             } else {
                 userAvatar.innerHTML = '<i class="fas fa-user-check"></i>';
             }
             
-            console.log('✅ User logged in:', user);
+            // Send message to parent window if in iframe
+            sendLoginSuccessMessage(user);
+        }
+
+        // ========== Send login success message ==========
+        function sendLoginSuccessMessage(user) {
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'USER_AUTHENTICATED',
+                        userData: user,
+                        timestamp: Date.now()
+                    }, '*');
+                    console.log('📨 Sent login success message to parent');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not send message to parent');
+            }
+        }
+
+        // ========== Logout function ==========
+        function logout() {
+            console.log('🚪 Logging out...');
             
-            // إعادة تحميل الصفحة بعد 5 ثواني
-            setTimeout(() => {
-                console.log('🔄 Refreshing page...');
-                window.location.href = window.location.href;
-            }, 5000);
-        }
-
-        // Show login form
-        function showLoginForm() {
-            loginSection.style.display = 'block';
+            localStorage.removeItem('bypro_user');
             loggedInInfo.style.display = 'none';
+            loginSection.style.display = 'block';
+            
+            // Clear form fields
+            userIdInput.value = '';
+            passwordInput.value = '';
+            qrFileInput.value = '';
+            
+            // Send logout message
+            try {
+                if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'USER_LOGGED_OUT',
+                        timestamp: Date.now()
+                    }, '*');
+                }
+            } catch (error) {
+                console.log('⚠️ Could not send logout message');
+            }
+            
+            showStatus('You have been logged out', 'success');
         }
 
-        // Handle image loading errors
+        // ========== Handle image loading errors ==========
         function handleImageError(img) {
-            console.log('Image loading error, using default avatar');
+            console.log('🖼️ Image loading error, using default avatar');
             const parent = img.parentElement;
             parent.innerHTML = '<i class="fas fa-user-check"></i>';
         }
 
-        // Update connection status
+        // ========== Update connection status ==========
         function updateConnectionStatus(online) {
             isOnline = online;
             if (online) {
@@ -681,25 +663,18 @@
             }
         }
 
-        // Show status message
+        // ========== Show status message ==========
         function showStatus(message, type) {
             statusMessage.textContent = message;
             statusMessage.className = `status-message status-${type}`;
             statusMessage.style.display = 'block';
-            
-            if (type === 'error') {
-                statusMessage.classList.add('shake');
-                setTimeout(() => {
-                    statusMessage.classList.remove('shake');
-                }, 500);
-            }
             
             setTimeout(() => {
                 statusMessage.style.display = 'none';
             }, 5000);
         }
 
-        // Switch between login methods
+        // ========== Switch between login methods ==========
         methodBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 methodBtns.forEach(b => b.classList.remove('active'));
@@ -718,7 +693,7 @@
             });
         });
 
-        // Process uploaded QR code image - التسجيل المباشر
+        // ========== Process uploaded QR code image ==========
         qrFileInput.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (file) {
@@ -758,9 +733,9 @@
             }
         });
 
-        // Process QR code data
+        // ========== Process QR code data ==========
         function processQRCode(data) {
-            console.log('QR Code detected:', data);
+            console.log('📱 QR Code detected:', data);
             
             if (data.startsWith('BYPRO:')) {
                 const parts = data.split(':');
@@ -782,17 +757,16 @@
             }
         }
 
-        // Verify login credentials
+        // ========== LAST: Verify login credentials and SAVE to localStorage ==========
         async function verifyLogin(id, password) {
             if (!id || !password) {
                 showStatus('ID and password are required', 'error');
                 return;
             }
 
-            // إظهار حالة التحميل في واجهة QR
+            // Show loading state
             if (currentMethod === 'qr') {
                 const fileLabel = document.querySelector('.file-label');
-                const originalHTML = fileLabel.innerHTML;
                 fileLabel.innerHTML = '<div class="loading-spinner"></div> Verifying...';
                 fileLabel.style.opacity = '0.7';
                 fileLabel.style.cursor = 'not-allowed';
@@ -813,7 +787,7 @@
                     mode: 'cors'
                 });
 
-                console.log('📥 Response status:', response.status, response.statusText);
+                console.log('📥 Response status:', response.status);
 
                 if (!response.ok) {
                     throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
@@ -823,7 +797,7 @@
                 console.log('📦 Response data:', result);
 
                 if (result.success) {
-                    // الحصول على البيانات الكاملة للحساب
+                    // Get full account data
                     const accountsResponse = await fetch(`${API_BASE}/api/debug/accounts`);
                     const accountsData = await accountsResponse.json();
                     
@@ -833,7 +807,7 @@
                         userImage = account?.image || '';
                     }
 
-                    // حفظ بيانات المستخدم
+                    // ========== SAVE USER DATA TO LOCALSTORAGE ==========
                     const userData = {
                         id: result.account.id,
                         name: result.account.name,
@@ -845,16 +819,14 @@
                         source: 'bypro_login'
                     };
                     
-                    // حفظ البيانات بجميع الطرق الممكنة
-                    saveUserDataSafely(userData);
-                    
-                    // إرسال البيانات إلى الصفحة الرئيسية
-                    sendUserDataToParent(userData);
+                    // Save to localStorage
+                    localStorage.setItem('bypro_user', JSON.stringify(userData));
+                    console.log('💾 User data saved to localStorage');
                     
                     showStatus('Login successful!', 'success');
                     updateConnectionStatus(true);
                     
-                    // عرض حالة تسجيل الدخول
+                    // Show logged in state
                     showLoggedInState(userData);
                     
                 } else {
@@ -869,13 +841,13 @@
                     showStatus('Login error: ' + error.message, 'error');
                 }
             } finally {
-                // إعادة تعيين واجهة QR
+                // Reset UI
                 if (currentMethod === 'qr') {
                     const fileLabel = document.querySelector('.file-label');
                     fileLabel.innerHTML = '<i class="fas fa-upload"></i> Upload QR Code Image';
                     fileLabel.style.opacity = '1';
                     fileLabel.style.cursor = 'pointer';
-                    qrFileInput.value = ''; // مسح الملف المختار
+                    qrFileInput.value = '';
                 } else {
                     loginBtn.disabled = false;
                     loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
@@ -883,7 +855,7 @@
             }
         }
 
-        // Manual login
+        // ========== Manual login ==========
         loginBtn.addEventListener('click', () => {
             const id = userIdInput.value.trim();
             const password = passwordInput.value.trim();
@@ -903,7 +875,7 @@
             verifyLogin(id, password);
         });
 
-        // Allow Enter key in manual form
+        // ========== Allow Enter key in manual form ==========
         [userIdInput, passwordInput].forEach(input => {
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -912,12 +884,12 @@
             });
         });
 
-        // Input validation
+        // ========== Input validation ==========
         userIdInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
         });
 
-        // Test server connection
+        // ========== Test server connection ==========
         async function testServerConnection() {
             try {
                 console.log('🔄 Testing server connection...');
@@ -937,39 +909,26 @@
             }
         }
 
-        // إضافة مستمع للرسائل من الصفحة الرئيسية (اختياري)
-        window.addEventListener('message', function(event) {
-            // يمكن إضافة وظائف للاستجابة لطلبات من الصفحة الرئيسية
-            if (event.data && event.data.type === 'GET_USER_DATA') {
-                const userData = localStorage.getItem('bypro_user') || sessionStorage.getItem('bypro_user');
-                if (userData) {
-                    try {
-                        const user = JSON.parse(userData);
-                        sendUserDataToParent(user);
-                    } catch (error) {
-                        console.error('Error parsing user data for response:', error);
-                    }
+        // ========== Initialize ==========
+        document.addEventListener('DOMContentLoaded', async () => {
+            console.log('🚀 Initializing login page...');
+            
+            // FIRST: Check if user is already logged in
+            const isLoggedIn = checkExistingLogin();
+            
+            if (!isLoggedIn) {
+                // If not logged in, test connection
+                await testServerConnection();
+                
+                // Focus on ID field if in manual mode
+                if (currentMethod === 'manual') {
+                    setTimeout(() => userIdInput.focus(), 300);
                 }
             }
         });
 
-        // Initialize
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 Initializing login page...');
-            
-            // التحقق أولاً إذا كان المستخدم مسجلاً مسبقاً
-            const isLoggedIn = checkLoginStatus();
-            
-            if (!isLoggedIn) {
-                // اختبار الاتصال فقط إذا لم يكن مسجلاً
-                await testServerConnection();
-            }
-            
-            // التركيز على حقل ID إذا كان في وضع التسجيل اليدوي
-            if (currentMethod === 'manual') {
-                setTimeout(() => userIdInput.focus(), 300);
-            }
-        });
+        // Make logout function globally available
+        window.logout = logout;
     </script>
 </body>
 </html>
