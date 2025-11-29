@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>B.Y PRO Accounts - Login</title>
+    <title>B.Y PRO Accounts - Login</title>
     <link rel="icon" type="image/png" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="shortcut icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
@@ -526,6 +526,11 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     
     <script>
+        // ========== نظام الاتصال مع المشاريع الأخرى ==========
+        
+        // معرف فريد للتطبيق (يجب تغييره لكل مشروع)
+        const APP_ID = 'bypro_login_system';
+        
         // DOM Elements
         const loginSection = document.getElementById('loginSection');
         const loggedInInfo = document.getElementById('loggedInInfo');
@@ -600,6 +605,39 @@
             }
         };
 
+        // ========== إرسال حالة المستخدم للمشاريع الأخرى ==========
+        function broadcastUserStatus(userData, isLoggedIn) {
+            // تخزين الحالة محلياً
+            safeStorage.setItem('bypro_user_status', {
+                user: userData,
+                isLoggedIn: isLoggedIn,
+                timestamp: Date.now(),
+                appId: APP_ID
+            });
+            
+            // إرسال للوالد (إذا كان في iframe)
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'BYPRO_USER_STATUS',
+                    user: userData,
+                    isLoggedIn: isLoggedIn,
+                    timestamp: Date.now(),
+                    source: 'bypro_login'
+                }, '*');
+            }
+            
+            // إرسال للنوافذ الأخرى في نفس النطاق
+            window.dispatchEvent(new CustomEvent('byproUserStatus', {
+                detail: {
+                    user: userData,
+                    isLoggedIn: isLoggedIn,
+                    timestamp: Date.now()
+                }
+            }));
+            
+            console.log('📢 تم بث حالة المستخدم:', { user: userData, isLoggedIn });
+        }
+
         // ========== FIRST: Check if user is already logged in ==========
         function checkExistingLogin() {
             console.log('🔍 Checking for existing login...');
@@ -610,8 +648,9 @@
                 
                 // Also check local storage
                 const userData = safeStorage.getItem('bypro_user');
+                const userStatus = safeStorage.getItem('bypro_user_status');
                 
-                if (userData) {
+                if (userData && userStatus && userStatus.isLoggedIn) {
                     console.log('✅ Found existing user in storage:', userData);
                     
                     if (userData.id && userData.password) {
@@ -621,6 +660,7 @@
                     } else {
                         console.log('❌ Invalid user data structure');
                         safeStorage.removeItem('bypro_user');
+                        safeStorage.removeItem('bypro_user_status');
                     }
                 }
             } catch (error) {
@@ -660,6 +700,27 @@
                     console.log('🚪 Logout requested by parent');
                     logout();
                 }
+                
+                // Handle status requests from other projects
+                if (event.data && event.data.type === 'GET_USER_STATUS') {
+                    console.log('📊 Status request received');
+                    const status = {
+                        isLoggedIn: currentUser !== null,
+                        user: currentUser,
+                        timestamp: Date.now()
+                    };
+                    event.source.postMessage({
+                        type: 'USER_STATUS_RESPONSE',
+                        ...status
+                    }, event.origin);
+                }
+                
+                // Handle login requests from other projects
+                if (event.data && event.data.type === 'REQUEST_LOGIN') {
+                    console.log('🔐 Login request received');
+                    // يمكنك تخصيص هذا الجزء حسب احتياجاتك
+                    showStatus('Login requested by external application', 'warning');
+                }
             });
         }
 
@@ -680,6 +741,9 @@
             
             // Send login success message to parent
             sendLoginSuccessMessage(user);
+            
+            // Broadcast user status to other projects
+            broadcastUserStatus(user, true);
         }
 
         // ========== Send login success message ==========
@@ -704,6 +768,7 @@
             
             // Clear all storage
             safeStorage.removeItem('bypro_user');
+            safeStorage.removeItem('bypro_user_status');
             currentUser = null;
             
             // Reset UI
@@ -726,6 +791,9 @@
             } catch (error) {
                 console.log('⚠️ Could not send logout message');
             }
+            
+            // Broadcast logout status to other projects
+            broadcastUserStatus(null, false);
             
             showStatus('You have been logged out', 'success');
         }
@@ -1029,6 +1097,17 @@
         // Make functions globally available
         window.logout = logout;
         window.getCurrentUser = () => currentUser;
+        window.byproAuth = {
+            getUserStatus: () => ({
+                isLoggedIn: currentUser !== null,
+                user: currentUser
+            }),
+            requestLogin: () => {
+                // يمكنك تخصيص هذا حسب احتياجاتك
+                showStatus('Login requested externally', 'warning');
+            },
+            logout: logout
+        };
     </script>
 </body>
 </html>
