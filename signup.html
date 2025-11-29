@@ -9,48 +9,6 @@
     <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-    
-    <!-- Firebase SDK -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { getAuth, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
-        import { getFirestore, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-        import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-storage.js";
-
-        const firebaseConfig = {
-            apiKey: "AIzaSyDPq31h2NL-smN1iLbe6aJjViBRy8KfNyE",
-            authDomain: "byprosignup.firebaseapp.com",
-            projectId: "byprosignup",
-            storageBucket: "byprosignup.firebasestorage.app",
-            messagingSenderId: "448459715090",
-            appId: "1:448459715090:web:0debabda733f69a3625ecb",
-            measurementId: "G-8B861SP8Q3"
-        };
-
-        // Initialize Firebase
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
-        const storage = getStorage(app);
-
-        // Make Firebase available globally
-        window.firebase = { 
-            app, auth, db, storage, 
-            sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink,
-            doc, setDoc, ref, uploadBytes, getDownloadURL 
-        };
-        
-        console.log('🔥 Firebase initialized successfully');
-        
-        // Check Firebase connection
-        setTimeout(() => {
-            if (auth) {
-                document.getElementById('firebaseStatus').className = 'status-indicator online';
-                document.getElementById('firebaseStatus').title = 'Firebase Connected';
-            }
-        }, 1000);
-    </script>
-
     <style>
         :root {
             --primary-color: #3498db;
@@ -82,40 +40,6 @@
             align-items: center;
             padding: 20px;
             line-height: 1.6;
-            position: relative;
-        }
-
-        /* Status Indicator */
-        .status-indicator {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            z-index: 1000;
-            border: 2px solid var(--card-bg);
-        }
-
-        .status-indicator.online {
-            background: var(--success-color);
-            box-shadow: 0 0 10px var(--success-color);
-        }
-
-        .status-indicator.offline {
-            background: var(--danger-color);
-            box-shadow: 0 0 10px var(--danger-color);
-        }
-
-        .status-indicator.connecting {
-            background: var(--warning-color);
-            box-shadow: 0 0 10px var(--warning-color);
-            animation: pulse 1.5s infinite;
-        }
-
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
         }
 
         .signup-container {
@@ -127,7 +51,6 @@
             border: 1px solid var(--border-color);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
-            position: relative;
         }
 
         .logo {
@@ -236,30 +159,29 @@
             background-color: rgba(0, 0, 0, 0.5);
         }
 
-        .email-verification {
-            background: rgba(52, 152, 219, 0.1);
-            padding: 15px;
-            border-radius: 8px;
+        .verification-code {
+            display: flex;
+            gap: 10px;
             margin-bottom: 15px;
-            border: 1px solid var(--primary-color);
         }
 
-        .email-verification p {
-            font-size: 0.9rem;
-            color: var(--text-muted);
-            margin: 0;
+        .verification-code input {
+            flex: 1;
+            text-align: center;
+            font-size: 1.2rem;
+            letter-spacing: 8px;
+            font-weight: bold;
         }
 
         .resend-btn {
             background: transparent;
             color: var(--primary-color);
             border: 1px solid var(--primary-color);
-            padding: 12px 16px;
+            padding: 8px 16px;
             border-radius: var(--border-radius);
             cursor: pointer;
             font-size: 0.9rem;
             transition: all 0.3s ease;
-            width: 100%;
         }
 
         .resend-btn:hover {
@@ -487,6 +409,27 @@
         .strength-strong { background: var(--success-color); width: 75%; }
         .strength-very-strong { background: var(--success-color); width: 100%; }
 
+        .service-status {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 10px 15px;
+            border-radius: var(--border-radius);
+            margin: 10px 0;
+            border: 1px solid var(--primary-color);
+            font-size: 0.9rem;
+        }
+
+        .service-status i {
+            margin-right: 8px;
+        }
+
+        .service-online {
+            color: var(--success-color);
+        }
+
+        .service-offline {
+            color: var(--warning-color);
+        }
+
         /* Terms & Conditions Styles */
         .terms-link {
             color: var(--primary-color);
@@ -598,6 +541,20 @@
             color: var(--primary-color);
         }
 
+        .otp-info {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            border: 1px solid var(--primary-color);
+        }
+
+        .otp-info p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0;
+        }
+
         @media (max-width: 768px) {
             .signup-container {
                 padding: 30px 20px;
@@ -607,6 +564,10 @@
 
             .logo h1 {
                 font-size: 1.8rem;
+            }
+
+            .verification-code {
+                flex-direction: column;
             }
 
             .image-preview {
@@ -658,9 +619,6 @@
     </style>
 </head>
 <body>
-    <!-- Firebase Status Indicator -->
-    <div id="firebaseStatus" class="status-indicator connecting" title="Connecting to Firebase..."></div>
-
     <!-- Terms & Conditions Modal -->
     <div class="modal-overlay" id="termsModal">
         <div class="modal-content">
@@ -701,6 +659,11 @@
         <div class="logo">
             <h1><i class="fas fa-user-plus"></i> B.Y PRO Accounts</h1>
             <p>Create Your Professional Account</p>
+        </div>
+
+        <!-- Service Status -->
+        <div id="serviceStatus" class="service-status">
+            <i class="fas fa-circle service-online"></i> <span id="statusText">OTP System: Online</span>
         </div>
 
         <!-- Progress Bar -->
@@ -754,26 +717,38 @@
             </button>
         </div>
 
-        <!-- Step 2: Email Verification -->
+        <!-- Step 2: Email & OTP Verification -->
         <div class="step" id="step2-content">
             <div class="form-group">
                 <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
                 <input type="email" id="email" placeholder="Enter your email address" autocomplete="email">
             </div>
+            
             <div class="form-group">
-                <div class="email-verification">
-                    <p><i class="fas fa-info-circle"></i> We'll send a secure sign-in link to your email. No password needed!</p>
+                <div class="otp-info">
+                    <p><i class="fas fa-info-circle"></i> We'll send a 6-digit verification code to your email for security verification.</p>
                 </div>
-                <button class="resend-btn" id="sendCodeBtn">
-                    <i class="fas fa-paper-plane"></i> Send Secure Sign-in Link
+                <button class="resend-btn" id="sendOtpBtn" style="width: 100%;">
+                    <i class="fas fa-paper-plane"></i> Send Verification Code
                 </button>
             </div>
+
+            <div class="form-group">
+                <label for="otpCode"><i class="fas fa-shield-alt"></i> Verification Code</label>
+                <div class="verification-code">
+                    <input type="text" id="otpCode" placeholder="000000" maxlength="6" inputmode="numeric">
+                </div>
+                <button class="resend-btn" id="resendOtpBtn" disabled style="width: 100%;">
+                    Resend code in <span id="countdown">60</span>s
+                </button>
+            </div>
+
             <div style="display: flex; gap: 10px;">
                 <button class="btn btn-secondary" id="prev2">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
                 <button class="btn" id="next2" disabled>
-                    Continue <i class="fas fa-arrow-right"></i>
+                    Verify & Continue <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
@@ -834,7 +809,7 @@
                 
                 <h3 style="margin: 20px 0 10px 0;">Welcome to B.Y PRO, <span id="successName"></span>!</h3>
                 <p style="color: var(--text-muted); margin-bottom: 30px;">
-                    Your professional account has been created and secured with Firebase authentication.
+                    Your professional account has been created and verified successfully.
                 </p>
 
                 <div class="qr-container">
@@ -852,9 +827,10 @@
 
                 <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
                     <p style="font-size: 0.9rem; color: var(--text-muted);">
-                        <strong>Your Secure Account:</strong><br>
+                        <strong>Your Account Details:</strong><br>
                         Account ID: <span id="displayId" style="color: var(--primary-color); font-weight: bold;"></span><br>
-                        Protected by Firebase Authentication
+                        Email: <span id="displayEmail" style="color: var(--primary-color);"></span><br>
+                        Keep your credentials secure and save this QR code for quick access.
                     </p>
                 </div>
             </div>
@@ -866,15 +842,17 @@
         const steps = document.querySelectorAll('.step');
         const progressSteps = document.querySelectorAll('.progress-step');
         const statusMessage = document.getElementById('statusMessage');
+        const serviceStatus = document.getElementById('serviceStatus');
+        const statusText = document.getElementById('statusText');
         const termsModal = document.getElementById('termsModal');
         const showTermsBtn = document.getElementById('showTerms');
         const closeModalBtn = document.getElementById('closeModal');
         const acceptTermsCheckbox = document.getElementById('acceptTerms');
-        const firebaseStatus = document.getElementById('firebaseStatus');
 
         // Form Elements
         const fullName = document.getElementById('fullName');
         const email = document.getElementById('email');
+        const otpCode = document.getElementById('otpCode');
         const password = document.getElementById('password');
         const confirmPassword = document.getElementById('confirmPassword');
         const profileImage = document.getElementById('profileImage');
@@ -889,28 +867,31 @@
         const next3 = document.getElementById('next3');
         const prev4 = document.getElementById('prev4');
         const next4 = document.getElementById('next4');
-        const sendCodeBtn = document.getElementById('sendCodeBtn');
+        const sendOtpBtn = document.getElementById('sendOtpBtn');
+        const resendOtpBtn = document.getElementById('resendOtpBtn');
         const downloadQR = document.getElementById('downloadQR');
 
         // Success Elements
         const successName = document.getElementById('successName');
         const displayId = document.getElementById('displayId');
+        const displayEmail = document.getElementById('displayEmail');
         const qrCodeContainer = document.getElementById('qrCode');
+
+        // Server Configuration
+        const API_BASE = window.location.origin.includes('github.io') 
+            ? 'https://your-render-app.onrender.com' 
+            : window.location.origin;
 
         // Variables
         let currentStep = 0;
+        let countdownInterval;
+        let countdownTime = 60;
         let userData = {
             name: '',
             email: '',
             password: '',
             image: '',
             id: ''
-        };
-
-        // Firebase Action Code Settings - الإعدادات المصححة
-        const actionCodeSettings = {
-            url: 'https://yacine2007.github.io/secure-auth-app/signup.html?verified=true',
-            handleCodeInApp: true
         };
 
         // Show status message
@@ -924,11 +905,11 @@
             }, 5000);
         }
 
-        // Update Firebase status
-        function updateFirebaseStatus(online) {
-            if (firebaseStatus) {
-                firebaseStatus.className = online ? 'status-indicator online' : 'status-indicator offline';
-                firebaseStatus.title = online ? 'Firebase Connected' : 'Firebase Disconnected';
+        // Update service status
+        function updateServiceStatus(online, message) {
+            serviceStatus.style.display = 'block';
+            if (statusText) {
+                statusText.innerHTML = `<i class="fas fa-circle ${online ? 'service-online' : 'service-offline'}"></i> ${message}`;
             }
         }
 
@@ -949,8 +930,29 @@
             currentStep = step;
         }
 
-        // Send verification email via Firebase
-        async function sendVerificationEmail() {
+        // Start countdown for resend button
+        function startCountdown() {
+            countdownTime = 60;
+            resendOtpBtn.disabled = true;
+            sendOtpBtn.disabled = true;
+            
+            countdownInterval = setInterval(() => {
+                countdownTime--;
+                document.getElementById('countdown').textContent = countdownTime;
+                
+                if (countdownTime <= 0) {
+                    clearInterval(countdownInterval);
+                    resendOtpBtn.disabled = false;
+                    sendOtpBtn.disabled = false;
+                    resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                } else {
+                    resendOtpBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
+                }
+            }, 1000);
+        }
+
+        // Send OTP code
+        async function sendOTP() {
             try {
                 const emailValue = email.value.trim();
                 if (!emailValue) {
@@ -964,57 +966,111 @@
                     return;
                 }
 
-                showStatus('Sending secure sign-in link to your email...', 'success');
+                showStatus('Sending verification code to your email...', 'success');
+                sendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+                sendOtpBtn.disabled = true;
                 
-                if (sendCodeBtn) {
-                    sendCodeBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-                    sendCodeBtn.disabled = true;
-                }
+                const response = await fetch(`${API_BASE}/api/send-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: emailValue })
+                });
 
-                // Store email for verification completion
-                localStorage.setItem('emailForSignIn', emailValue);
+                const result = await response.json();
                 
-                console.log('Sending email to:', emailValue);
-                console.log('Action settings:', actionCodeSettings);
-                
-                // Send sign-in link via Firebase
-                await window.firebase.sendSignInLinkToEmail(
-                    window.firebase.auth, 
-                    emailValue, 
-                    actionCodeSettings
-                );
-
-                showStatus('✅ Secure sign-in link sent! Check your email inbox and spam folder.', 'success');
-                
-                // Enable next button
-                if (next2) {
-                    next2.disabled = false;
-                }
-
-            } catch (error) {
-                console.error('Error sending verification email:', error);
-                console.error('Error code:', error.code);
-                console.error('Error message:', error.message);
-                
-                let errorMessage = 'Failed to send sign-in link. ';
-                
-                if (error.code === 'auth/invalid-email') {
-                    errorMessage = 'Invalid email address format.';
-                } else if (error.code === 'auth/unauthorized-continue-uri') {
-                    errorMessage = 'Please try a different email or contact support.';
-                } else if (error.code === 'auth/missing-continue-uri') {
-                    errorMessage = 'Configuration error. Please try again.';
+                if (result.success) {
+                    showStatus('Verification code sent to your email! Check your inbox.', 'success');
+                    startCountdown();
+                    userData.email = emailValue;
                 } else {
-                    errorMessage += 'Please try again.';
+                    showStatus(result.error || 'Failed to send verification code', 'error');
+                    sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
+                    sendOtpBtn.disabled = false;
                 }
                 
-                showStatus(errorMessage, 'error');
-                updateFirebaseStatus(false);
+            } catch (error) {
+                console.error('Error sending OTP:', error);
+                showStatus('Email service temporarily unavailable. Please try again later.', 'error');
+                sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
+                sendOtpBtn.disabled = false;
+            }
+        }
+
+        // Verify OTP code
+        async function verifyOTP() {
+            try {
+                const code = otpCode.value.trim();
+                const emailValue = email.value.trim();
                 
-                if (sendCodeBtn) {
-                    sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Secure Sign-in Link';
-                    sendCodeBtn.disabled = false;
+                if (!code || code.length !== 6) {
+                    showStatus('Please enter the 6-digit verification code', 'error');
+                    return;
                 }
+
+                showStatus('Verifying code...', 'success');
+                
+                const response = await fetch(`${API_BASE}/api/verify-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: emailValue,
+                        otp: code 
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('Email verified successfully!', 'success');
+                    next2.disabled = false;
+                } else {
+                    showStatus(result.error || 'Invalid verification code', 'error');
+                    next2.disabled = true;
+                }
+                
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                showStatus('Verification service unavailable. Please try again.', 'error');
+            }
+        }
+
+        // Resend OTP code
+        async function resendOTP() {
+            try {
+                const emailValue = email.value.trim();
+                
+                showStatus('Resending verification code...', 'success');
+                resendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+                resendOtpBtn.disabled = true;
+                
+                const response = await fetch(`${API_BASE}/api/resend-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ email: emailValue })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('New verification code sent!', 'success');
+                    startCountdown();
+                } else {
+                    showStatus(result.error || 'Failed to resend code', 'error');
+                    resendOtpBtn.disabled = false;
+                    resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                }
+                
+            } catch (error) {
+                console.error('Error resending OTP:', error);
+                showStatus('Resend service unavailable. Please try again.', 'error');
+                resendOtpBtn.disabled = false;
+                resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
             }
         }
 
@@ -1052,14 +1108,10 @@
             const confirmPass = confirmPassword.value;
             
             if (pass && confirmPass && pass === confirmPass) {
-                if (next3) {
-                    next3.disabled = false;
-                }
+                next3.disabled = false;
                 return true;
             } else {
-                if (next3) {
-                    next3.disabled = true;
-                }
+                next3.disabled = true;
                 return false;
             }
         }
@@ -1087,136 +1139,125 @@
             reader.readAsDataURL(file);
         }
 
-        // Generate unique account ID
-        function generateAccountId() {
-            const timestamp = Date.now().toString(36);
-            const random = Math.random().toString(36).substr(2, 5);
-            return `BYP${timestamp}${random}`.toUpperCase();
-        }
-
-        // Upload image to Firebase Storage
-        async function uploadImageToFirebase(imageData, accountId) {
+        // Get next available ID from server
+        async function getNextAccountId() {
             try {
-                const response = await fetch(imageData);
-                const blob = await response.blob();
+                const response = await fetch(`${API_BASE}/api/next-id`);
+                const result = await response.json();
                 
-                const storageRef = window.firebase.ref(
-                    window.firebase.storage, 
-                    `profile-images/${accountId}.png`
-                );
-                
-                const snapshot = await window.firebase.uploadBytes(storageRef, blob);
-                const downloadURL = await window.firebase.getDownloadURL(snapshot.ref);
-                
-                return downloadURL;
+                if (result.success) {
+                    return result.nextId;
+                } else {
+                    // Fallback ID generation
+                    return (1000 + Math.floor(Math.random() * 9000)).toString();
+                }
             } catch (error) {
-                console.error('Error uploading image:', error);
-                throw new Error('Failed to upload profile image');
-            }
-        }
-
-        // Create account in Firestore
-        async function createAccountInFirestore(accountData) {
-            try {
-                const accountRef = window.firebase.doc(
-                    window.firebase.db, 
-                    'accounts', 
-                    accountData.id
-                );
-                
-                await window.firebase.setDoc(accountRef, {
-                    id: accountData.id,
-                    name: accountData.name,
-                    email: accountData.email,
-                    password: accountData.password,
-                    profileImage: accountData.profileImage || '',
-                    createdAt: new Date(),
-                    updatedAt: new Date(),
-                    status: 'active',
-                    emailVerified: false
-                });
-                
-                return true;
-            } catch (error) {
-                console.error('Error creating account in Firestore:', error);
-                throw new Error('Failed to create account in database');
+                console.error('Error getting next ID:', error);
+                // Fallback ID generation
+                return (1000 + Math.floor(Math.random() * 9000)).toString();
             }
         }
 
         // Create account and generate QR code
         async function createAccount() {
             try {
-                showStatus('Creating your secure account...', 'success');
+                showStatus('Creating your account...', 'success');
+                next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
+                next4.disabled = true;
                 
-                if (next4) {
-                    next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
-                    next4.disabled = true;
-                }
-                
-                // Generate account ID
-                const accountId = generateAccountId();
+                // Get next account ID from server
+                const accountId = await getNextAccountId();
                 
                 // Prepare account data
                 userData.id = accountId;
                 userData.name = fullName.value.trim();
-                userData.email = email.value.trim();
                 userData.password = password.value;
 
-                // Upload profile image if available
-                let profileImageUrl = '';
+                // Prepare image data if available
+                let imageUrl = '';
                 if (userData.image) {
                     try {
-                        profileImageUrl = await uploadImageToFirebase(userData.image, accountId);
+                        const uploadResponse = await fetch(`${API_BASE}/api/upload-image`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                accountId: userData.id,
+                                imageData: userData.image
+                            })
+                        });
+                        
+                        const uploadResult = await uploadResponse.json();
+                        if (uploadResult.success) {
+                            imageUrl = uploadResult.imageUrl;
+                        }
                     } catch (uploadError) {
                         console.error('Image upload failed:', uploadError);
-                        showStatus('Profile image upload failed, but account was created', 'warning');
                     }
                 }
 
-                // Create account in Firestore
-                await createAccountInFirestore({
-                    ...userData,
-                    profileImage: profileImageUrl
+                // Create account on server
+                const response = await fetch(`${API_BASE}/api/accounts`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: userData.id,
+                        name: userData.name,
+                        email: userData.email,
+                        password: userData.password,
+                        image: imageUrl || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`
+                    })
                 });
 
-                // Generate QR code
-                if (qrCodeContainer) {
-                    qrCodeContainer.innerHTML = '';
-                    const qrData = JSON.stringify({
-                        accountId: userData.id,
-                        email: userData.email,
-                        timestamp: new Date().toISOString()
-                    });
+                const result = await response.json();
+                
+                if (result.success) {
+                    // Generate QR code
+                    if (qrCodeContainer && result.qrCode) {
+                        qrCodeContainer.innerHTML = '';
+                        const qrImg = document.createElement('img');
+                        qrImg.src = result.qrCode;
+                        qrImg.alt = 'Account QR Code';
+                        qrImg.style.width = '200px';
+                        qrImg.style.height = '200px';
+                        qrCodeContainer.appendChild(qrImg);
+                    } else if (qrCodeContainer) {
+                        // Fallback QR display
+                        qrCodeContainer.innerHTML = `
+                            <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
+                                <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
+                                    B.Y PRO Account<br>
+                                    ID: ${userData.id}<br>
+                                    Name: ${userData.name}
+                                </div>
+                                <div style="margin-top:10px;font-size:12px;color:#666;">
+                                    Scan for quick login
+                                </div>
+                            </div>
+                        `;
+                    }
                     
-                    new QRCode(qrCodeContainer, {
-                        text: qrData,
-                        width: 200,
-                        height: 200,
-                        colorDark: "#000000",
-                        colorLight: "#ffffff",
-                        correctLevel: QRCode.CorrectLevel.H
-                    });
-                }
-                
-                // Update success page
-                if (successName) {
+                    // Update success page
                     successName.textContent = userData.name;
-                }
-                if (displayId) {
                     displayId.textContent = userData.id;
+                    displayEmail.textContent = userData.email;
+                    
+                    showStatus('Account created successfully!', 'success');
+                    goToStep(5);
+                    
+                } else {
+                    throw new Error(result.error || 'Failed to create account');
                 }
-                
-                showStatus('Account created successfully with Firebase security!', 'success');
-                goToStep(5);
                 
             } catch (error) {
                 console.error('Error creating account:', error);
                 showStatus(error.message || 'Failed to create account. Please try again.', 'error');
             } finally {
-                if (next4) {
-                    next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
-                    next4.disabled = false;
-                }
+                next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                next4.disabled = false;
             }
         }
 
@@ -1224,11 +1265,12 @@
         function downloadQRCode() {
             try {
                 const canvas = qrCodeContainer.querySelector('canvas');
+                const img = qrCodeContainer.querySelector('img');
                 
-                if (canvas) {
+                if (img) {
                     const link = document.createElement('a');
                     link.download = `BYP-${userData.id}-QR.png`;
-                    link.href = canvas.toDataURL('image/png');
+                    link.href = img.src;
                     link.click();
                     showStatus('QR Code downloaded successfully!', 'success');
                 } else {
@@ -1239,7 +1281,6 @@ B.Y PRO Account Information
 Account ID: ${userData.id}
 Full Name: ${userData.name}
 Email: ${userData.email}
-Security: Firebase Authentication
 ============================
 Created: ${new Date().toLocaleString()}
 
@@ -1259,6 +1300,28 @@ Keep this information secure!
             } catch (error) {
                 console.error('Error downloading QR code:', error);
                 showStatus('Failed to download QR code', 'error');
+            }
+        }
+
+        // Check service health
+        async function checkServiceHealth() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                
+                if (!response.ok) {
+                    throw new Error(`Server status: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                
+                if (result.status === 'operational') {
+                    updateServiceStatus(true, `OTP System connected - System operational`);
+                } else {
+                    updateServiceStatus(false, 'Server has issues');
+                }
+            } catch (error) {
+                console.error('Health check failed:', error);
+                updateServiceStatus(false, 'Server offline - Please check connection');
             }
         }
 
@@ -1304,7 +1367,15 @@ Keep this information secure!
         prev4.addEventListener('click', () => goToStep(3));
         next4.addEventListener('click', createAccount);
         
-        sendCodeBtn.addEventListener('click', sendVerificationEmail);
+        sendOtpBtn.addEventListener('click', sendOTP);
+        resendOtpBtn.addEventListener('click', resendOTP);
+        
+        otpCode.addEventListener('input', function() {
+            // Auto-verify when 6 digits are entered
+            if (this.value.length === 6) {
+                verifyOTP();
+            }
+        });
         
         password.addEventListener('input', function() {
             checkPasswordStrength(this.value);
@@ -1317,8 +1388,11 @@ Keep this information secure!
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 B.Y PRO Signup System with Firebase Initialized');
-            updateFirebaseStatus(true);
+            console.log('🚀 B.Y PRO Signup System with OTP Initialized');
+            checkServiceHealth();
+            
+            // Check health every 30 seconds
+            setInterval(checkServiceHealth, 30000);
         });
     </script>
 </body>
