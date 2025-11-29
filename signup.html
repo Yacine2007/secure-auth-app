@@ -34,9 +34,22 @@
         const storage = getStorage(app);
 
         // Make Firebase available globally
-        window.firebase = { auth, db, storage, sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink, doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, where, orderBy, limit, ref, uploadBytes, getDownloadURL };
+        window.firebase = { 
+            app, auth, db, storage, 
+            sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink,
+            doc, setDoc, getDoc, updateDoc, collection, addDoc, getDocs, query, where, orderBy, limit,
+            ref, uploadBytes, getDownloadURL 
+        };
         
         console.log('🔥 Firebase initialized successfully');
+        
+        // Check Firebase connection
+        setTimeout(() => {
+            if (auth) {
+                document.getElementById('firebaseStatus').className = 'status-indicator online';
+                document.getElementById('firebaseStatus').title = 'Firebase Connected';
+            }
+        }, 1000);
     </script>
 
     <style>
@@ -70,6 +83,40 @@
             align-items: center;
             padding: 20px;
             line-height: 1.6;
+            position: relative;
+        }
+
+        /* Status Indicator */
+        .status-indicator {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            z-index: 1000;
+            border: 2px solid var(--card-bg);
+        }
+
+        .status-indicator.online {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        .status-indicator.offline {
+            background: var(--danger-color);
+            box-shadow: 0 0 10px var(--danger-color);
+        }
+
+        .status-indicator.connecting {
+            background: var(--warning-color);
+            box-shadow: 0 0 10px var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .signup-container {
@@ -81,6 +128,7 @@
             border: 1px solid var(--border-color);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
             backdrop-filter: blur(10px);
+            position: relative;
         }
 
         .logo {
@@ -189,18 +237,18 @@
             background-color: rgba(0, 0, 0, 0.5);
         }
 
-        .verification-code {
-            display: flex;
-            gap: 10px;
+        .email-verification {
+            background: rgba(52, 152, 219, 0.1);
+            padding: 15px;
+            border-radius: 8px;
             margin-bottom: 15px;
+            border: 1px solid var(--primary-color);
         }
 
-        .verification-code input {
-            flex: 1;
-            text-align: center;
-            font-size: 1.2rem;
-            letter-spacing: 8px;
-            font-weight: bold;
+        .email-verification p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            margin: 0;
         }
 
         .resend-btn {
@@ -212,6 +260,7 @@
             cursor: pointer;
             font-size: 0.9rem;
             transition: all 0.3s ease;
+            width: 100%;
         }
 
         .resend-btn:hover {
@@ -439,27 +488,6 @@
         .strength-strong { background: var(--success-color); width: 75%; }
         .strength-very-strong { background: var(--success-color); width: 100%; }
 
-        .service-status {
-            background: rgba(52, 152, 219, 0.1);
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-            margin: 10px 0;
-            border: 1px solid var(--primary-color);
-            font-size: 0.9rem;
-        }
-
-        .service-status i {
-            margin-right: 8px;
-        }
-
-        .service-online {
-            color: var(--success-color);
-        }
-
-        .service-offline {
-            color: var(--warning-color);
-        }
-
         /* Terms & Conditions Styles */
         .terms-link {
             color: var(--primary-color);
@@ -582,10 +610,6 @@
                 font-size: 1.8rem;
             }
 
-            .verification-code {
-                flex-direction: column;
-            }
-
             .image-preview {
                 width: 120px;
                 height: 120px;
@@ -635,6 +659,9 @@
     </style>
 </head>
 <body>
+    <!-- Firebase Status Indicator -->
+    <div id="firebaseStatus" class="status-indicator connecting" title="Connecting to Firebase..."></div>
+
     <!-- Terms & Conditions Modal -->
     <div class="modal-overlay" id="termsModal">
         <div class="modal-content">
@@ -645,88 +672,28 @@
             </div>
             <div class="modal-body">
                 <h3>1. Introduction & Welcome | المقدمة والترحيب</h3>
-                <p>Welcome to B.Y PRO Unified Accounts System - your gateway to professional digital services. By creating an account, you join our community of innovators and professionals.</p>
-                <p>مرحباً بك في نظام الحسابات الموحد B.Y PRO - بوابتك إلى الخدمات الرقمية الاحترافية. بإنشاء حساب، تنضم إلى مجتمعنا من المبتكرين والمحترفين.</p>
+                <p>Welcome to B.Y PRO Unified Accounts System - your gateway to professional digital services.</p>
+                <p>مرحباً بك في نظام الحسابات الموحد B.Y PRO - بوابتك إلى الخدمات الرقمية الاحترافية.</p>
 
                 <h3>2. Account Creation & Responsibility | إنشاء الحساب والمسؤولية</h3>
                 <ul>
-                    <li>You are responsible for maintaining the security and confidentiality of your account credentials</li>
+                    <li>You are responsible for maintaining the security of your account</li>
                     <li>Ensure your account information is accurate and up-to-date</li>
-                    <li>Notify us immediately of any unauthorized access or security breaches</li>
-                    <li>أنت مسؤول عن الحفاظ على أمان وسرية بيانات اعتماد حسابك</li>
+                    <li>أنت مسؤول عن الحفاظ على أمان حسابك</li>
                     <li>تأكد من أن معلومات حسابك دقيقة وحديثة</li>
-                    <li>أبلغنا فوراً عن أي وصول غير مصرح به أو خروقات أمنية</li>
                 </ul>
 
                 <h3>3. Data Transparency & Usage | شفافية البيانات والاستخدام</h3>
                 <ul>
-                    <li>We collect only essential data required for service delivery and improvement</li>
-                    <li>Your data helps us enhance user experience and develop new features</li>
-                    <li>We maintain transparency in how we collect, store, and use your information</li>
-                    <li>نقوم بجمع البيانات الأساسية فقط المطلوبة لتقديم الخدمة وتحسينها</li>
-                    <li>بياناتك تساعدنا في تحسين تجربة المستخدم وتطوير ميزات جديدة</li>
-                    <li>نحافظ على الشفافية في كيفية جمع وتخزين واستخدام معلوماتك</li>
+                    <li>We collect only essential data required for service delivery</li>
+                    <li>Your data helps us enhance user experience</li>
+                    <li>نقوم بجمع البيانات الأساسية فقط المطلوبة لتقديم الخدمة</li>
+                    <li>بياناتك تساعدنا في تحسين تجربة المستخدم</li>
                 </ul>
 
-                <h3>4. Data Protection & Security | حماية البيانات والأمان</h3>
-                <ul>
-                    <li>We implement industry-standard security measures to protect your data</li>
-                    <li>Regular security audits and updates are performed to maintain protection</li>
-                    <li>Your personal information is encrypted and stored securely</li>
-                    <li>نطبق إجراءات أمنية قياسية في الصناعة لحماية بياناتك</li>
-                    <li>يتم إجراء تدقيقات أمنية وتحديثات منتظمة للحفاظ على الحماية</li>
-                    <li>معلوماتك الشخصية مشفرة ومخزنة بأمان</li>
-                </ul>
-
-                <h3>5. Service Limitations & Liability | قيود الخدمة والمسؤولية</h3>
-                <p>While we strive for 100% uptime and security, B.Y PRO shall not be liable for service interruptions caused by factors beyond our reasonable control, including but not limited to: internet outages, third-party service failures, or force majeure events.</p>
-                <p>بينما نسعى لتقديم خدمة متاحة بنسبة 100٪ وآمنة، فإن B.Y PRO لا تتحمل المسؤولية عن انقطاعات الخدمة الناجمة عن عوامل beyond سيطرتنا المعقولة، بما في ذلك على سبيل المثال لا الحصر: انقطاعات الإنترنت، فشل خدمات الطرف الثالث، أو أحداث القوة القاهرة.</p>
-
-                <h3>6. Acceptable Use Policy | سياسة الاستخدام المقبول</h3>
-                <ul>
-                    <li>Use B.Y PRO services for lawful purposes only</li>
-                    <li>Respect intellectual property rights and copyright laws</li>
-                    <li>Do not engage in activities that may harm the service or other users</li>
-                    <li>Report any suspicious or abusive activities immediately</li>
-                    <li>استخدم خدمات B.Y PRO لأغراض قانونية فقط</li>
-                    <li>احترم حقوق الملكية الفكرية وقوانين حقوق النشر</li>
-                    <li>لا تشارك في أنشطة قد تضر بالخدمة أو المستخدمين الآخرين</li>
-                    <li>أبلغ عن أي أنشطة مشبوهة أو مسيئة على الفور</li>
-                </ul>
-
-                <h3>7. Privacy Commitment | الالتزام بالخصوصية</h3>
-                <ul>
-                    <li>We do not sell your personal data to third parties</li>
-                    <li>Data sharing only occurs with your explicit consent or as required by law</li>
-                    <li>You have the right to access, modify, or delete your personal data</li>
-                    <li>Regular privacy policy reviews and updates</li>
-                    <li>لا نبيع بياناتك الشخصية لأطراف ثالثة</li>
-                    <li>يحدث مشاركة البيانات فقط بموافقتك الصريحة أو حسبما يقتضي القانون</li>
-                    <li>لديك الحق في الوصول إلى بياناتك الشخصية وتعديلها أو حذفها</li>
-                    <li>مراجعات وتحديثات منتظمة لسياسة الخصوصية</li>
-                </ul>
-
-                <h3>8. Service Evolution & Updates | تطور الخدمة والتحديثات</h3>
-                <p>B.Y PRO continuously evolves to provide better services. We may update these terms to reflect service improvements, legal requirements, or user feedback. Continued use of our services constitutes acceptance of updated terms.</p>
-                <p>تتطور B.Y PRO باستمرار لتقديم خدمات أفضل. قد نقوم بتحديث هذه الشروط لتعكس تحسينات الخدمة، أو المتطلبات القانونية، أو ملاحظات المستخدمين. الاستمرار في استخدام خدماتنا يعني قبول الشروط المحدثة.</p>
-
-                <h3>9. Support & Communication | الدعم والاتصال</h3>
+                <h3>4. Support & Communication | الدعم والاتصال</h3>
                 <p>Customer Support: byprosprt2007@gmail.com</p>
-                <p>Emergency Security Issues: Report immediately to above email</p>
                 <p>دعم العملاء: byprosprt2007@gmail.com</p>
-                <p>قضايا الأمن الطارئة: أبلغ فوراً إلى البريد الإلكتروني أعلاه</p>
-
-                <h3>10. Community Guidelines | إرشادات المجتمع</h3>
-                <ul>
-                    <li>Respect all community members and their privacy</li>
-                    <li>Share knowledge and help fellow users</li>
-                    <li>Provide constructive feedback to help us improve</li>
-                    <li>Maintain professional and respectful communication</li>
-                    <li>احترم جميع أعضاء المجتمع وخصوصيتهم</li>
-                    <li>شارك المعرفة وساعد المستخدمين الآخرين</li>
-                    <li>قدم ملاحظات بناءة لمساعدتنا على التحسن</li>
-                    <li>حافظ على التواصل المهني والمحترم</li>
-                </ul>
             </div>
         </div>
     </div>
@@ -735,11 +702,6 @@
         <div class="logo">
             <h1><i class="fas fa-user-plus"></i> B.Y PRO Accounts</h1>
             <p>Create Your Professional Account</p>
-        </div>
-
-        <!-- Service Status -->
-        <div id="serviceStatus" class="service-status">
-            <i class="fas fa-circle service-online"></i> <span id="statusText">Firebase Services: Online</span>
         </div>
 
         <!-- Progress Bar -->
@@ -761,19 +723,19 @@
                     <i class="fas fa-shield-alt"></i> Welcome to B.Y PRO
                 </h3>
                 <p style="color: var(--text-muted); text-align: center; margin-bottom: 20px;">
-                    Join our professional community. Read our transparent terms to understand how we protect and use your data.
+                    Join our professional community. Read our transparent terms to understand how we protect your data.
                 </p>
                 
                 <div style="text-align: center; margin: 20px 0;">
                     <a class="terms-link" id="showTerms">
-                        <i class="fas fa-file-contract"></i> Read Our Transparent Terms & Conditions
+                        <i class="fas fa-file-contract"></i> Read Terms & Conditions
                     </a>
                 </div>
 
                 <div class="terms-checkbox">
                     <input type="checkbox" id="acceptTerms">
                     <label for="acceptTerms">
-                        I understand and agree to the Terms of Service and Privacy Policy. I acknowledge that my data will be used to improve services and enhance user experience.
+                        I understand and agree to the Terms of Service and Privacy Policy.
                     </label>
                 </div>
             </div>
@@ -800,13 +762,10 @@
                 <input type="email" id="email" placeholder="Enter your email address" autocomplete="email">
             </div>
             <div class="form-group">
-                <label><i class="fas fa-shield-alt"></i> Email Verification</label>
-                <div style="background: rgba(52, 152, 219, 0.1); padding: 15px; border-radius: 8px; margin-bottom: 15px;">
-                    <p style="font-size: 0.9rem; color: var(--text-muted);">
-                        <i class="fas fa-info-circle"></i> We'll send a secure sign-in link to your email. No password needed!
-                    </p>
+                <div class="email-verification">
+                    <p><i class="fas fa-info-circle"></i> We'll send a secure sign-in link to your email. No password needed!</p>
                 </div>
-                <button class="resend-btn" id="sendCodeBtn" style="width: 100%;">
+                <button class="resend-btn" id="sendCodeBtn">
                     <i class="fas fa-paper-plane"></i> Send Secure Sign-in Link
                 </button>
             </div>
@@ -896,7 +855,7 @@
                     <p style="font-size: 0.9rem; color: var(--text-muted);">
                         <strong>Your Secure Account:</strong><br>
                         Account ID: <span id="displayId" style="color: var(--primary-color); font-weight: bold;"></span><br>
-                        Protected by Firebase Authentication & Firestore Security
+                        Protected by Firebase Authentication
                     </p>
                 </div>
             </div>
@@ -912,6 +871,7 @@
         const showTermsBtn = document.getElementById('showTerms');
         const closeModalBtn = document.getElementById('closeModal');
         const acceptTermsCheckbox = document.getElementById('acceptTerms');
+        const firebaseStatus = document.getElementById('firebaseStatus');
 
         // Form Elements
         const fullName = document.getElementById('fullName');
@@ -950,17 +910,8 @@
 
         // Firebase Action Code Settings
         const actionCodeSettings = {
-            url: window.location.origin + '/complete-signup.html',
-            handleCodeInApp: true,
-            iOS: {
-                bundleId: 'com.bypro.accounts'
-            },
-            android: {
-                packageName: 'com.bypro.accounts',
-                installApp: false,
-                minimumVersion: '12'
-            },
-            dynamicLinkDomain: 'byprosignup.firebaseapp.com'
+            url: window.location.href,
+            handleCodeInApp: true
         };
 
         // Show status message
@@ -972,6 +923,14 @@
             setTimeout(() => {
                 statusMessage.style.display = 'none';
             }, 5000);
+        }
+
+        // Update Firebase status
+        function updateFirebaseStatus(online) {
+            if (firebaseStatus) {
+                firebaseStatus.className = online ? 'status-indicator online' : 'status-indicator offline';
+                firebaseStatus.title = online ? 'Firebase Connected' : 'Firebase Disconnected';
+            }
         }
 
         // Navigate to step
@@ -1023,7 +982,7 @@
                     actionCodeSettings
                 );
 
-                showStatus('Secure sign-in link sent! Check your email inbox.', 'success');
+                showStatus('✅ Secure sign-in link sent! Check your email inbox.', 'success');
                 
                 // Enable next button
                 if (next2) {
@@ -1032,44 +991,24 @@
 
             } catch (error) {
                 console.error('Error sending verification email:', error);
-                showStatus('Failed to send sign-in link. Please try again.', 'error');
+                
+                let errorMessage = 'Failed to send sign-in link. ';
+                
+                if (error.code === 'auth/invalid-email') {
+                    errorMessage = 'Invalid email address format.';
+                } else if (error.code === 'auth/unauthorized-continue-uri') {
+                    errorMessage = 'Domain configuration issue. Please try again.';
+                } else {
+                    errorMessage += 'Please try again.';
+                }
+                
+                showStatus(errorMessage, 'error');
+                updateFirebaseStatus(false);
                 
                 if (sendCodeBtn) {
                     sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Secure Sign-in Link';
                     sendCodeBtn.disabled = false;
                 }
-            }
-        }
-
-        // Check if user is returning from email verification
-        async function checkEmailVerification() {
-            try {
-                if (window.firebase.isSignInWithEmailLink(window.firebase.auth, window.location.href)) {
-                    let email = localStorage.getItem('emailForSignIn');
-                    
-                    if (!email) {
-                        email = window.prompt('Please provide your email for confirmation');
-                    }
-                    
-                    if (email) {
-                        showStatus('Completing email verification...', 'success');
-                        
-                        const result = await window.firebase.signInWithEmailLink(
-                            window.firebase.auth, 
-                            email, 
-                            window.location.href
-                        );
-                        
-                        localStorage.removeItem('emailForSignIn');
-                        showStatus('Email verified successfully!', 'success');
-                        return true;
-                    }
-                }
-                return false;
-            } catch (error) {
-                console.error('Error verifying email:', error);
-                showStatus('Email verification failed. Please try again.', 'error');
-                return false;
             }
         }
 
@@ -1183,7 +1122,7 @@
                     id: accountData.id,
                     name: accountData.name,
                     email: accountData.email,
-                    password: accountData.password, // Note: In production, hash this!
+                    password: accountData.password,
                     profileImage: accountData.profileImage || '',
                     createdAt: new Date(),
                     updatedAt: new Date(),
@@ -1371,14 +1310,9 @@ Keep this information secure!
         downloadQR.addEventListener('click', downloadQRCode);
 
         // Initialize
-        document.addEventListener('DOMContentLoaded', async function() {
+        document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 B.Y PRO Signup System with Firebase Initialized');
-            
-            // Check if user is returning from email verification
-            const isVerified = await checkEmailVerification();
-            if (isVerified) {
-                showStatus('Email verified successfully! You can continue with account creation.', 'success');
-            }
+            updateFirebaseStatus(true);
         });
     </script>
 </body>
