@@ -8,7 +8,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Unified Accounts System...');
+console.log('🚀 Starting B.Y PRO Unified Accounts System with OTP...');
 
 // Enhanced Middleware
 app.use(cors({
@@ -31,7 +31,7 @@ app.use((req, res, next) => {
 
 console.log('✅ Middleware initialized');
 
-// ==================== EMAIL CONFIGURATION ====================
+// ==================== ENHANCED EMAIL CONFIGURATION ====================
 const createEmailTransporter = () => {
   return nodemailer.createTransporter({
     service: 'gmail',
@@ -42,8 +42,9 @@ const createEmailTransporter = () => {
   });
 };
 
-// In-memory storage for verification codes
+// In-memory storage for verification codes and OTP
 const verificationCodes = new Map();
+const otpStorage = new Map(); // تخزين OTPs
 
 // ==================== RULES SYSTEM ====================
 const acceptedRules = new Set();
@@ -369,8 +370,12 @@ async function saveAllAccounts(accounts) {
   }
 }
 
-// ==================== ENHANCED EMAIL SERVICE ====================
-async function sendVerificationEmail(email, code) {
+// ==================== ENHANCED OTP EMAIL SERVICE ====================
+function generateOTP() {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+}
+
+async function sendOTPEmail(email, otpCode) {
   try {
     const transporter = createEmailTransporter();
     
@@ -379,31 +384,49 @@ async function sendVerificationEmail(email, code) {
       to: email,
       subject: 'B.Y PRO - Verification Code',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-          <div style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 20px; text-align: center; color: white;">
-            <h1>B.Y PRO Accounts</h1>
+        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5; padding: 20px;">
+          <div style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
+            <h1 style="margin: 0; font-size: 28px;">B.Y PRO Accounts</h1>
+            <p style="margin: 10px 0 0 0; opacity: 0.9;">Secure Account Verification</p>
           </div>
-          <div style="padding: 20px; background: #f9f9f9;">
-            <h2>Email Verification</h2>
-            <p>Your verification code is:</p>
-            <div style="background: #3498db; color: white; padding: 15px; text-align: center; font-size: 24px; font-weight: bold; letter-spacing: 5px; margin: 20px 0;">
-              ${code}
+          
+          <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+            <h2 style="color: #2c3e50; margin-bottom: 20px;">Email Verification Code</h2>
+            
+            <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
+              Use the following verification code to complete your account registration:
+            </p>
+            
+            <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 25px 0; border-radius: 8px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);">
+              ${otpCode}
             </div>
-            <p>This code will expire in 10 minutes.</p>
-            <p>If you didn't request this code, please ignore this email.</p>
+            
+            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
+              <p style="color: #856404; margin: 0; font-size: 14px;">
+                <strong>⚠️ Important:</strong> This code will expire in <strong>10 minutes</strong>. Do not share this code with anyone.
+              </p>
+            </div>
+            
+            <p style="color: #777; font-size: 14px; text-align: center; margin-top: 25px;">
+              If you didn't request this code, please ignore this email.
+            </p>
           </div>
-          <div style="background: #34495e; color: white; padding: 15px; text-align: center;">
-            <p>&copy; 2024 B.Y PRO Accounts System. All rights reserved.</p>
+          
+          <div style="background: #34495e; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; margin-top: 2px;">
+            <p style="margin: 0; font-size: 12px; opacity: 0.8;">
+              &copy; 2024 B.Y PRO Accounts System. All rights reserved.<br>
+              This is an automated message, please do not reply.
+            </p>
           </div>
         </div>
       `
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ Verification email sent to: ${email}`);
+    console.log(`✅ OTP email sent to: ${email} | Code: ${otpCode}`);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error('❌ Email sending failed:', error);
+    console.error('❌ OTP email sending failed:', error);
     return { success: false, error: error.message };
   }
 }
@@ -517,6 +540,189 @@ app.get('/qrcode.min.js', (req, res) => {
   `);
 });
 
+// ==================== ENHANCED OTP ROUTES ====================
+
+// إرسال كود OTP
+app.post('/api/send-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    console.log(`📧 OTP requested for: ${email}`);
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: "البريد الإلكتروني مطلوب"
+      });
+    }
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "يرجى تقديم بريد إلكتروني صحيح"
+      });
+    }
+
+    // إنشاء كود OTP
+    const otp = generateOTP();
+    
+    // حفظ الكود لمدة 10 دقائق
+    otpStorage.set(email, {
+      otp: otp,
+      expires: Date.now() + 10 * 60 * 1000, // 10 دقائق
+      attempts: 0 // عدد محاولات التحقق
+    });
+
+    console.log(`✅ Generated OTP for ${email}: ${otp}`);
+
+    // إرسال البريد الإلكتروني
+    const emailResult = await sendOTPEmail(email, otp);
+    
+    if (emailResult.success) {
+      res.json({
+        success: true,
+        message: "تم إرسال كود التحقق إلى بريدك الإلكتروني",
+        email: email
+      });
+    } else {
+      // تنظيف التخزين إذا فشل الإرسال
+      otpStorage.delete(email);
+      res.status(500).json({
+        success: false,
+        error: "خدمة البريد الإلكتروني غير متاحة حالياً. يرجى المحاولة لاحقاً."
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ OTP sending error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "الخدمة غير متاحة حالياً. يرجى المحاولة لاحقاً."
+    });
+  }
+});
+
+// التحقق من كود OTP
+app.post('/api/verify-otp', async (req, res) => {
+  try {
+    const { email, otp } = req.body;
+    
+    console.log(`🔍 Verifying OTP for: ${email}`);
+    
+    if (!email || !otp) {
+      return res.status(400).json({
+        success: false,
+        error: "البريد الإلكتروني والكود مطلوبان"
+      });
+    }
+
+    const storedData = otpStorage.get(email);
+    
+    if (!storedData) {
+      return res.status(400).json({
+        success: false,
+        error: "لم يتم العثور على كود تحقق لهذا البريد. يرجى طلب كود جديد."
+      });
+    }
+
+    // التحقق من انتهاء الصلاحية
+    if (Date.now() > storedData.expires) {
+      otpStorage.delete(email);
+      return res.status(400).json({
+        success: false,
+        error: "كود التحقق منتهي الصلاحية. يرجى طلب كود جديد."
+      });
+    }
+
+    // زيادة عدد المحاولات
+    storedData.attempts += 1;
+    
+    // التحقق من تجاوز الحد الأقصى للمحاولات
+    if (storedData.attempts > 5) {
+      otpStorage.delete(email);
+      return res.status(400).json({
+        success: false,
+        error: "تم تجاوز الحد الأقصى لمحاولات التحقق. يرجى طلب كود جديد."
+      });
+    }
+
+    // التحقق من صحة الكود
+    if (storedData.otp === otp) {
+      otpStorage.delete(email);
+      res.json({
+        success: true,
+        message: "تم التحقق بنجاح"
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        error: "كود التحقق غير صحيح. يرجى المحاولة مرة أخرى.",
+        attempts: storedData.attempts,
+        remainingAttempts: 5 - storedData.attempts
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ OTP verification error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "خدمة التحقق غير متاحة حالياً."
+    });
+  }
+});
+
+// إعادة إرسال كود OTP
+app.post('/api/resend-otp', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({
+        success: false,
+        error: "البريد الإلكتروني مطلوب"
+      });
+    }
+
+    // حذف أي كود موجود مسبقاً
+    otpStorage.delete(email);
+    
+    // إنشاء كود جديد
+    const otp = generateOTP();
+    
+    // حفظ الكود الجديد
+    otpStorage.set(email, {
+      otp: otp,
+      expires: Date.now() + 10 * 60 * 1000,
+      attempts: 0
+    });
+
+    console.log(`🔄 Resent OTP for ${email}: ${otp}`);
+
+    const emailResult = await sendOTPEmail(email, otp);
+    
+    if (emailResult.success) {
+      res.json({
+        success: true,
+        message: "تم إعادة إرسال كود التحقق بنجاح"
+      });
+    } else {
+      otpStorage.delete(email);
+      res.status(500).json({
+        success: false,
+        error: "فشل إعادة الإرسال. يرجى المحاولة لاحقاً."
+      });
+    }
+    
+  } catch (error) {
+    console.error('❌ OTP resend error:', error.message);
+    res.status(500).json({
+      success: false,
+      error: "خدمة إعادة الإرسال غير متاحة."
+    });
+  }
+});
+
 // ==================== RULES SYSTEM ROUTES ====================
 
 // مسار التحقق من قبول القوانين
@@ -580,426 +786,6 @@ app.post('/api/accept-rules', async (req, res) => {
   }
 });
 
-// مسار الحصول على محتوى القوانين
-app.get('/api/rules-content', async (req, res) => {
-  try {
-    const rulesContent = {
-      title: "UltraSpace Usage Rules",
-      subtitle: "Please read and follow our platform rules to ensure a safe and enjoyable experience for everyone",
-      rules: [
-        {
-          icon: "fa-user-check",
-          title: "Free Registration",
-          content: "<strong>Registration is free</strong> and available to everyone, without any subscription or hidden fees. Adherence to real identity and accurate information is required."
-        },
-        {
-          icon: "fa-comments",
-          title: "Unlimited Messaging", 
-          content: "<strong>Text messaging</strong> is unlimited for all users. You can send and receive an unlimited number of messages daily with complete freedom."
-        },
-        {
-          icon: "fa-photo-film",
-          title: "Media Sharing",
-          content: "<strong>Allowed media:</strong> Images, videos, and audio recordings can be sent provided that their total size does not exceed <strong>25 MB per day</strong> per user."
-        },
-        {
-          icon: "fa-database",
-          title: "Personal Storage",
-          content: "Each user has personal storage space used only for saving private data, and is automatically monitored to prevent server overload."
-        },
-        {
-          icon: "fa-clock", 
-          title: "Daily Activity",
-          content: "<strong>Daily activity:</strong> It is recommended not to publish more than <strong>10 posts daily</strong> to avoid flooding the platform."
-        },
-        {
-          icon: "fa-ban",
-          title: "Content Restrictions", 
-          content: "Publishing or exchanging any <strong>offensive, illegal, or indecent content</strong> is prohibited. Violators risk immediate account suspension."
-        },
-        {
-          icon: "fa-shield-halved",
-          title: "Privacy & Security",
-          content: "<strong>Privacy and security:</strong> The platform adheres to the highest standards of data protection, and no personal information is shared without user consent."
-        },
-        {
-          icon: "fa-scale-unbalanced",
-          title: "Equality & Respect",
-          content: "<strong>Equality and respect:</strong> All members must be treated with full respect, regardless of nationality, opinions, or personal background."
-        },
-        {
-          icon: "fa-server",
-          title: "Resource Management",
-          content: "<strong>Resource management:</strong> To ensure fast performance, space usage is periodically monitored. Inactive accounts may be removed after 6 months."
-        }
-      ],
-      footer: "© 2025 UltraSpace — All rights reserved"
-    };
-
-    res.json({
-      success: true,
-      content: rulesContent
-    });
-    
-  } catch (error) {
-    console.error('❌ Error getting rules content:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Unable to load rules content"
-    });
-  }
-});
-
-// مسار صفحة القوانين كـ popup
-app.get('/rules-popup', (req, res) => {
-  const htmlContent = `
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>UltraSpace Rules</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
-    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Cairo', sans-serif;
-            background: radial-gradient(circle at top, #0d1b2a 0%, #000814 100%);
-            color: #e0e6ed;
-            line-height: 1.6;
-            padding: 20px;
-            margin: 0;
-            min-height: 100vh;
-        }
-
-        .rules-container {
-            max-width: 800px;
-            margin: 0 auto;
-            background: rgba(255, 255, 255, 0.05);
-            border-radius: 20px;
-            border: 2px solid #4da3ff;
-            overflow: hidden;
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5);
-        }
-
-        .header {
-            background: rgba(13, 27, 42, 0.9);
-            padding: 25px;
-            border-bottom: 1px solid rgba(77, 163, 255, 0.3);
-            text-align: center;
-        }
-
-        .logo-container {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 15px;
-            margin-bottom: 15px;
-        }
-
-        .logo-container img {
-            height: 50px;
-            border-radius: 10px;
-        }
-
-        .logo-container h1 {
-            color: #4da3ff;
-            font-size: 2rem;
-            margin: 0;
-        }
-
-        .subtitle {
-            color: #9bb4d0;
-            font-size: 1.1rem;
-            margin-top: 10px;
-        }
-
-        .rules-content {
-            padding: 25px;
-            max-height: 500px;
-            overflow-y: auto;
-        }
-
-        .rules-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
-            gap: 20px;
-            margin-bottom: 25px;
-        }
-
-        .rule-card {
-            background: rgba(255, 255, 255, 0.05);
-            padding: 20px;
-            border-radius: 12px;
-            border: 1px solid rgba(77, 163, 255, 0.2);
-            transition: all 0.3s ease;
-        }
-
-        .rule-card:hover {
-            transform: translateY(-2px);
-            border-color: #4da3ff;
-            box-shadow: 0 5px 15px rgba(77, 163, 255, 0.2);
-        }
-
-        .rule-header {
-            display: flex;
-            align-items: flex-start;
-            gap: 12px;
-            margin-bottom: 12px;
-        }
-
-        .rule-icon {
-            color: #4da3ff;
-            font-size: 1.4rem;
-            margin-top: 2px;
-        }
-
-        .rule-title {
-            color: #79b8ff;
-            font-size: 1.2rem;
-            font-weight: 600;
-            margin: 0;
-        }
-
-        .rule-content {
-            color: #e0e6ed;
-            font-size: 0.95rem;
-            line-height: 1.5;
-            margin: 0;
-        }
-
-        .rule-content strong {
-            color: #79b8ff;
-        }
-
-        .footer {
-            background: rgba(13, 27, 42, 0.9);
-            padding: 20px;
-            border-top: 1px solid rgba(77, 163, 255, 0.3);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .accept-btn {
-            background: linear-gradient(135deg, #4da3ff, #3a8be6);
-            color: white;
-            border: none;
-            padding: 12px 30px;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 16px;
-            font-family: 'Cairo', sans-serif;
-            font-weight: 600;
-            transition: all 0.3s ease;
-        }
-
-        .accept-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(77, 163, 255, 0.3);
-        }
-
-        .copyright {
-            color: #9bb4d0;
-            font-size: 0.9rem;
-        }
-
-        /* Scrollbar Styling */
-        .rules-content::-webkit-scrollbar {
-            width: 6px;
-        }
-
-        .rules-content::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
-        }
-
-        .rules-content::-webkit-scrollbar-thumb {
-            background: #4da3ff;
-            border-radius: 3px;
-        }
-
-        @media (max-width: 768px) {
-            body {
-                padding: 10px;
-            }
-            
-            .rules-container {
-                max-width: 100%;
-            }
-            
-            .rules-grid {
-                grid-template-columns: 1fr;
-            }
-            
-            .header {
-                padding: 20px;
-            }
-            
-            .logo-container h1 {
-                font-size: 1.6rem;
-            }
-            
-            .rules-content {
-                padding: 20px;
-            }
-            
-            .footer {
-                flex-direction: column;
-                gap: 15px;
-                text-align: center;
-            }
-        }
-    </style>
-</head>
-<body>
-    <div class="rules-container">
-        <div class="header">
-            <div class="logo-container">
-                <img src="https://raw.githubusercontent.com/Yacine2007/UltraSpace/main/logo/favicon.png" alt="UltraSpace Logo">
-                <h1>UltraSpace Usage Rules</h1>
-            </div>
-            <p class="subtitle">Please read and follow our platform rules to ensure a safe and enjoyable experience for everyone</p>
-        </div>
-        
-        <div class="rules-content">
-            <div class="rules-grid">
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-user-check rule-icon"></i>
-                        <h3 class="rule-title">Free Registration</h3>
-                    </div>
-                    <p class="rule-content"><strong>Registration is free</strong> and available to everyone, without any subscription or hidden fees. Adherence to real identity and accurate information is required.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-comments rule-icon"></i>
-                        <h3 class="rule-title">Unlimited Messaging</h3>
-                    </div>
-                    <p class="rule-content"><strong>Text messaging</strong> is unlimited for all users. You can send and receive an unlimited number of messages daily with complete freedom.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-photo-film rule-icon"></i>
-                        <h3 class="rule-title">Media Sharing</h3>
-                    </div>
-                    <p class="rule-content"><strong>Allowed media:</strong> Images, videos, and audio recordings can be sent provided that their total size does not exceed <strong>25 MB per day</strong> per user.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-database rule-icon"></i>
-                        <h3 class="rule-title">Personal Storage</h3>
-                    </div>
-                    <p class="rule-content">Each user has personal storage space used only for saving private data, and is automatically monitored to prevent server overload.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-clock rule-icon"></i>
-                        <h3 class="rule-title">Daily Activity</h3>
-                    </div>
-                    <p class="rule-content"><strong>Daily activity:</strong> It is recommended not to publish more than <strong>10 posts daily</strong> to avoid flooding the platform.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-ban rule-icon"></i>
-                        <h3 class="rule-title">Content Restrictions</h3>
-                    </div>
-                    <p class="rule-content">Publishing or exchanging any <strong>offensive, illegal, or indecent content</strong> is prohibited. Violators risk immediate account suspension.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-shield-halved rule-icon"></i>
-                        <h3 class="rule-title">Privacy & Security</h3>
-                    </div>
-                    <p class="rule-content"><strong>Privacy and security:</strong> The platform adheres to the highest standards of data protection, and no personal information is shared without user consent.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-scale-unbalanced rule-icon"></i>
-                        <h3 class="rule-title">Equality & Respect</h3>
-                    </div>
-                    <p class="rule-content"><strong>Equality and respect:</strong> All members must be treated with full respect, regardless of nationality, opinions, or personal background.</p>
-                </div>
-                
-                <div class="rule-card">
-                    <div class="rule-header">
-                        <i class="fas fa-server rule-icon"></i>
-                        <h3 class="rule-title">Resource Management</h3>
-                    </div>
-                    <p class="rule-content"><strong>Resource management:</strong> To ensure fast performance, space usage is periodically monitored. Inactive accounts may be removed after 6 months.</p>
-                </div>
-            </div>
-            
-            <div style="background: rgba(77, 163, 255, 0.1); border: 1px solid rgba(77, 163, 255, 0.3); border-radius: 12px; padding: 15px; text-align: center;">
-                <p style="margin: 0; color: #9bb4d0; font-size: 0.9rem;">
-                    <strong>Note:</strong> By clicking "Accept & Continue", you agree to abide by these rules and terms of service.
-                </p>
-            </div>
-        </div>
-        
-        <div class="footer">
-            <button class="accept-btn" onclick="acceptRules()">
-                <i class="fas fa-check-circle"></i> Accept & Continue
-            </button>
-            <span class="copyright">© 2025 UltraSpace — All rights reserved</span>
-        </div>
-    </div>
-
-    <script>
-        function acceptRules() {
-            // إرسال طلب قبول القوانين إلى النافذة الأصلية
-            if (window.opener) {
-                window.opener.postMessage({ type: 'RULES_ACCEPTED', userId: getUserIdFromURL() }, '*');
-            }
-            
-            // إغلاق النافذة
-            setTimeout(() => {
-                window.close();
-            }, 500);
-        }
-
-        function getUserIdFromURL() {
-            const urlParams = new URLSearchParams(window.location.search);
-            return urlParams.get('userId');
-        }
-
-        // إضافة تأثيرات عند التمرير
-        const ruleCards = document.querySelectorAll('.rule-card');
-        const observer = new IntersectionObserver((entries) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.style.opacity = '1';
-                    entry.target.style.transform = 'translateY(0)';
-                }
-            });
-        }, { threshold: 0.1 });
-
-        ruleCards.forEach(card => {
-            card.style.opacity = '0';
-            card.style.transform = 'translateY(20px)';
-            card.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
-            observer.observe(card);
-        });
-    </script>
-</body>
-</html>`;
-  
-  res.send(htmlContent);
-});
-
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
   let driveStatus = 'checking';
@@ -1022,16 +808,17 @@ app.get('/api/health', async (req, res) => {
     
     res.json({ 
       status: 'operational',
-      service: 'B.Y PRO Unified Accounts System',
+      service: 'B.Y PRO Unified Accounts System with OTP',
       timestamp: new Date().toISOString(),
       services: {
         database: driveStatus,
         storage: 'google_drive_only',
+        email_service: 'nodemailer_otp',
         total_accounts: accounts.length,
         last_modified: lastModified
       },
-      version: '4.0.0',
-      rules_system: 'active'
+      version: '5.0.0',
+      features: ['otp_verification', 'qr_codes', 'rules_system']
     });
   } catch (error) {
     res.status(500).json({
@@ -1040,7 +827,8 @@ app.get('/api/health', async (req, res) => {
       error: "Google Drive service unavailable",
       services: {
         database: 'error',
-        storage: 'google_drive_only'
+        storage: 'google_drive_only',
+        email_service: 'nodemailer_otp'
       }
     });
   }
@@ -1137,7 +925,7 @@ app.post('/api/accounts', async (req, res) => {
         verified: !!savedAccount,
         storage: 'google_drive',
         totalAccounts: allAccounts.length,
-        show_rules: true, // إشارة لعرض القوانين
+        show_rules: true,
         rules_url: `/rules-popup?userId=${accountData.id}`
       });
     } else {
@@ -1172,117 +960,6 @@ app.get('/api/accounts', async (req, res) => {
   } catch (error) {
     console.error('❌ Dashboard API Error:', error.message);
     res.status(500).json([]);
-  }
-});
-
-// ==================== ENHANCED EMAIL VERIFICATION ROUTES ====================
-
-// Send verification code
-app.post('/api/send-verification-code', async (req, res) => {
-  try {
-    const { email } = req.body;
-    
-    console.log(`📧 Verification code requested for: ${email}`);
-    
-    if (!email) {
-      return res.status(400).json({
-        success: false,
-        error: "Email address is required"
-      });
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        error: "Please provide a valid email address"
-      });
-    }
-
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
-    
-    verificationCodes.set(email, {
-      code: code,
-      expires: Date.now() + 10 * 60 * 1000
-    });
-
-    console.log(`✅ Generated verification code for ${email}: ${code}`);
-
-    const emailResult = await sendVerificationEmail(email, code);
-    
-    if (emailResult.success) {
-      res.json({
-        success: true,
-        message: "Verification code sent successfully to your email",
-        email: email
-      });
-    } else {
-      res.status(500).json({
-        success: false,
-        error: "Email service temporarily unavailable. Please try again later."
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ Verification code error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Service temporarily unavailable. Please try again."
-    });
-  }
-});
-
-// Verify code
-app.post('/api/verify-code', async (req, res) => {
-  try {
-    const { email, code } = req.body;
-    
-    console.log(`🔍 Verifying code for: ${email}`);
-    
-    if (!email || !code) {
-      return res.status(400).json({
-        success: false,
-        error: "Email and verification code are required"
-      });
-    }
-
-    const storedData = verificationCodes.get(email);
-    
-    if (!storedData) {
-      return res.status(400).json({
-        success: false,
-        error: "No verification code found for this email. Please request a new code."
-      });
-    }
-
-    if (Date.now() > storedData.expires) {
-      verificationCodes.delete(email);
-      return res.status(400).json({
-        success: false,
-        error: "Verification code has expired. Please request a new code."
-      });
-    }
-
-    if (storedData.code !== code) {
-      return res.status(400).json({
-        success: false,
-        error: "Invalid verification code. Please try again."
-      });
-    }
-
-    verificationCodes.delete(email);
-    
-    res.json({
-      success: true,
-      message: "Email verified successfully"
-    });
-    
-  } catch (error) {
-    console.error('❌ Code verification error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Verification service temporarily unavailable."
-    });
   }
 });
 
@@ -1392,37 +1069,13 @@ app.get('/api/admin/stats', async (req, res) => {
       accountsWithImages: accounts.filter(acc => acc.image && acc.image !== '').length,
       lastUpdated: new Date().toISOString(),
       databaseStatus: 'connected',
-      storage: 'google_drive'
+      storage: 'google_drive',
+      otpService: 'active'
     });
   } catch (error) {
     res.status(500).json({ 
       success: false,
       error: "Cannot fetch statistics from Google Drive" 
-    });
-  }
-});
-
-// Debug route to view all accounts
-app.get('/api/debug/accounts', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    res.json({
-      success: true,
-      count: accounts.length,
-      accounts: accounts,
-      storage: 'google_drive',
-      file_info: {
-        file_id: FILE_ID,
-        total_accounts: accounts.length
-      }
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      storage: 'google_drive_error'
     });
   }
 });
@@ -1450,7 +1103,7 @@ app.use((err, req, res, next) => {
 // Keep-alive to prevent shutdown
 const keepAlive = () => {
   setInterval(() => {
-    console.log('🔄 Keep-alive ping - Google Drive service active');
+    console.log('🔄 Keep-alive ping - OTP service active');
   }, 240000);
 };
 
@@ -1464,9 +1117,9 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('✅ Server started successfully!');
   console.log(`🔗 Port: ${PORT}`);
   console.log('💾 Storage: Google Drive ONLY');
-  console.log('📧 Features: Login + Signup + Dashboard');
-  console.log('🔐 Auth: QR Code + Password');
-  console.log('📨 Email: Nodemailer + Fixed');
+  console.log('📧 Features: OTP + Login + Signup + Dashboard');
+  console.log('🔐 Auth: OTP + QR Code + Password');
+  console.log('📨 Email: Nodemailer + OTP System');
   console.log('⚖️ Rules System: Active');
   console.log('🎉 =================================\n');
 });
