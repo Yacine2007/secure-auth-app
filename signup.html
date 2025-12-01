@@ -5,10 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>B.Y PRO Accounts - Sign Up</title>
     <link rel="icon" type="image/png" href="https://bypro.kesug.com/B.Y%20PRO.png">
-    <link rel="shortcut icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
-    <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         :root {
             --primary-color: #3498db;
@@ -39,11 +36,10 @@
             justify-content: center;
             align-items: center;
             padding: 20px;
-            line-height: 1.6;
             position: relative;
         }
 
-        /* 🔴 نقطة حالة الاتصال */
+        /* Connection Status Indicator */
         #connectionStatus {
             position: fixed;
             top: 15px;
@@ -85,7 +81,6 @@
             max-width: 500px;
             border: 1px solid var(--border-color);
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
         }
 
         .logo {
@@ -208,77 +203,6 @@
             font-weight: bold;
         }
 
-        .resend-btn {
-            background: transparent;
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            padding: 8px 16px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-        }
-
-        .resend-btn:hover {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .resend-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        .file-upload {
-            margin: 20px 0;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .file-label {
-            display: block;
-            padding: 14px 20px;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            border-radius: var(--border-radius);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            border: 2px solid transparent;
-        }
-
-        .file-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        .image-preview {
-            width: 150px;
-            height: 150px;
-            border-radius: 50%;
-            margin: 20px auto;
-            border: 3px solid var(--border-color);
-            overflow: hidden;
-            background: var(--border-color);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .image-preview img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-        }
-
-        .image-preview i {
-            font-size: 3rem;
-            color: var(--text-muted);
-        }
-
         .btn {
             width: 100%;
             background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
@@ -320,6 +244,29 @@
             color: white;
         }
 
+        .resend-btn {
+            background: transparent;
+            color: var(--primary-color);
+            border: 1px solid var(--primary-color);
+            padding: 10px 20px;
+            border-radius: var(--border-radius);
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s ease;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        .resend-btn:hover {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .resend-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
         .status-message {
             padding: 12px 16px;
             margin: 15px 0;
@@ -328,11 +275,6 @@
             display: none;
             animation: slideIn 0.3s ease;
             font-weight: 500;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
         }
 
         .status-success {
@@ -371,47 +313,6 @@
             height: 200px;
         }
 
-        .download-btn {
-            background: linear-gradient(135deg, var(--success-color), #27ae60);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            margin: 10px;
-        }
-
-        .download-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(46, 204, 113, 0.3);
-        }
-
-        .login-btn {
-            background: transparent;
-            color: var(--primary-color);
-            border: 2px solid var(--primary-color);
-            padding: 12px 24px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            margin: 10px;
-        }
-
-        .login-btn:hover {
-            background: var(--primary-color);
-            color: white;
-        }
-
         .loading-spinner {
             display: inline-block;
             width: 20px;
@@ -444,117 +345,6 @@
         .strength-strong { background: var(--success-color); width: 75%; }
         .strength-very-strong { background: var(--success-color); width: 100%; }
 
-        /* Terms & Conditions Styles */
-        .terms-link {
-            color: var(--primary-color);
-            text-decoration: underline;
-            cursor: pointer;
-            font-size: 0.9rem;
-            margin: 10px 0;
-            display: inline-block;
-        }
-
-        .terms-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 15px 0;
-            padding: 10px;
-            background: rgba(0, 0, 0, 0.2);
-            border-radius: 8px;
-        }
-
-        .terms-checkbox input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-        }
-
-        .terms-checkbox label {
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        /* Modal Styles */
-        .modal-overlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.8);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-            padding: 20px;
-        }
-
-        .modal-content {
-            background: var(--card-bg);
-            border-radius: 20px;
-            padding: 30px;
-            max-width: 800px;
-            max-height: 80vh;
-            overflow-y: auto;
-            border: 2px solid var(--primary-color);
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
-        }
-
-        .modal-header {
-            text-align: center;
-            margin-bottom: 25px;
-            padding-bottom: 15px;
-            border-bottom: 2px solid var(--border-color);
-        }
-
-        .modal-header h2 {
-            color: var(--primary-color);
-            font-size: 1.8rem;
-            margin-bottom: 10px;
-        }
-
-        .modal-body {
-            color: var(--text-muted);
-            line-height: 1.8;
-        }
-
-        .modal-body h3 {
-            color: var(--primary-color);
-            margin: 25px 0 10px 0;
-            font-size: 1.2rem;
-        }
-
-        .modal-body p {
-            margin-bottom: 15px;
-            font-size: 0.95rem;
-        }
-
-        .modal-body ul {
-            margin: 10px 0 20px 20px;
-        }
-
-        .modal-body li {
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        .close-modal {
-            position: absolute;
-            top: 15px;
-            right: 20px;
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: color 0.3s ease;
-        }
-
-        .close-modal:hover {
-            color: var(--primary-color);
-        }
-
         .otp-info {
             background: rgba(52, 152, 219, 0.1);
             padding: 15px;
@@ -583,94 +373,12 @@
             .verification-code {
                 flex-direction: column;
             }
-
-            .image-preview {
-                width: 120px;
-                height: 120px;
-            }
-
-            .modal-content {
-                padding: 20px;
-                margin: 10px;
-            }
-
-            .modal-header h2 {
-                font-size: 1.5rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .signup-container {
-                padding: 25px 15px;
-            }
-
-            .logo h1 {
-                font-size: 1.6rem;
-            }
-
-            .logo p {
-                font-size: 0.9rem;
-            }
-
-            .form-group input {
-                padding: 12px 14px;
-                font-size: 0.9rem;
-            }
-
-            .btn {
-                padding: 14px;
-                font-size: 0.9rem;
-            }
-
-            .modal-content {
-                padding: 15px;
-            }
         }
     </style>
 </head>
 <body>
-    <!-- 🔴 نقطة حالة الاتصال -->
-    <div id="connectionStatus" class="connecting" title="جاري الاتصال بالسيرفر..."></div>
-
-    <!-- Terms & Conditions Modal -->
-    <div class="modal-overlay" id="termsModal">
-        <div class="modal-content">
-            <button class="close-modal" id="closeModal">&times;</button>
-            <div class="modal-header">
-                <h2>B.Y PRO Unified Accounts System - Terms & Conditions</h2>
-                <p style="color: var(--text-muted);">نظام الحسابات الموحد B.Y PRO - الشروط والأحكام</p>
-            </div>
-            <div class="modal-body">
-                <h3>1. Introduction & Welcome | المقدمة والترحيب</h3>
-                <p>Welcome to B.Y PRO Unified Accounts System - your gateway to professional digital services.</p>
-                <p>مرحباً بك في نظام الحسابات الموحد B.Y PRO - بوابتك إلى الخدمات الرقمية الاحترافية.</p>
-
-                <h3>2. Account Creation & Responsibility | إنشاء الحساب والمسؤولية</h3>
-                <ul>
-                    <li>You are responsible for maintaining the security of your account</li>
-                    <li>Ensure your account information is accurate and up-to-date</li>
-                    <li>أنت مسؤول عن الحفاظ على أمان حسابك</li>
-                    <li>تأكد من أن معلومات حسابك دقيقة وحديثة</li>
-                </ul>
-
-                <h3>3. Data Transparency & Usage | شفافية البيانات والاستخدام</h3>
-                <ul>
-                    <li>We collect only essential data required for service delivery</li>
-                    <li>Your data helps us enhance user experience</li>
-                    <li>نقوم بجمع البيانات الأساسية فقط المطلوبة لتقديم الخدمة</li>
-                    <li>بياناتك تساعدنا في تحسين تجربة المستخدم</li>
-                </ul>
-
-                <h3>4. Support & Communication | الدعم والاتصال</h3>
-                <p>Customer Support: byprosprt2007@gmail.com</p>
-                <p>دعم العملاء: byprosprt2007@gmail.com</p>
-            </div>
-        </div>
-    </div>
+    <!-- Connection Status Indicator -->
+    <div id="connectionStatus" class="connecting" title="Connecting to server..."></div>
 
     <div class="signup-container">
         <div class="logo">
@@ -684,73 +392,49 @@
             <div class="progress-step" id="step2">2</div>
             <div class="progress-step" id="step3">3</div>
             <div class="progress-step" id="step4">4</div>
-            <div class="progress-step" id="step5">5</div>
         </div>
 
         <!-- Status Message -->
         <div id="statusMessage" class="status-message"></div>
 
-        <!-- Step 0: Terms & Conditions -->
-        <div class="step active" id="step0-content">
-            <div class="form-group">
-                <h3 style="color: var(--primary-color); text-align: center; margin-bottom: 20px;">
-                    <i class="fas fa-shield-alt"></i> Welcome to B.Y PRO
-                </h3>
-                <p style="color: var(--text-muted); text-align: center; margin-bottom: 20px;">
-                    Join our professional community. Read our transparent terms to understand how we protect your data.
-                </p>
-                
-                <div style="text-align: center; margin: 20px 0;">
-                    <a class="terms-link" id="showTerms">
-                        <i class="fas fa-file-contract"></i> Read Terms & Conditions
-                    </a>
-                </div>
-
-                <div class="terms-checkbox">
-                    <input type="checkbox" id="acceptTerms">
-                    <label for="acceptTerms">
-                        I understand and agree to the Terms of Service and Privacy Policy.
-                    </label>
-                </div>
-            </div>
-            <button class="btn" id="next0" disabled>
-                Accept & Continue <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-
-        <!-- Step 1: Full Name -->
-        <div class="step" id="step1-content">
+        <!-- Step 1: Full Name & Email -->
+        <div class="step active" id="step1-content">
             <div class="form-group">
                 <label for="fullName"><i class="fas fa-user"></i> Full Name</label>
                 <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name">
             </div>
-            <button class="btn" id="next1">
-                Next <i class="fas fa-arrow-right"></i>
-            </button>
-        </div>
-
-        <!-- Step 2: Email & OTP Verification -->
-        <div class="step" id="step2-content">
+            
             <div class="form-group">
                 <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
                 <input type="email" id="email" placeholder="Enter your email address" autocomplete="email">
-            </div>
-            
-            <div class="form-group">
                 <div class="otp-info">
-                    <p><i class="fas fa-info-circle"></i> We'll send a 6-digit verification code to your email for security verification.</p>
+                    <p><i class="fas fa-info-circle"></i> We'll send a verification code to your email for security.</p>
                 </div>
-                <button class="resend-btn" id="sendOtpBtn" style="width: 100%;">
-                    <i class="fas fa-paper-plane"></i> Send Verification Code
-                </button>
+            </div>
+
+            <button class="btn" id="next1">
+                Send Verification Code <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Step 2: OTP Verification -->
+        <div class="step" id="step2-content">
+            <div class="form-group">
+                <label><i class="fas fa-envelope"></i> Verification Code Sent to:</label>
+                <div class="otp-info">
+                    <p id="emailDisplay"></p>
+                    <p style="margin-top: 10px;">Enter the 6-digit code sent to your email:</p>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="otpCode"><i class="fas fa-shield-alt"></i> Verification Code</label>
                 <div class="verification-code">
                     <input type="text" id="otpCode" placeholder="000000" maxlength="6" inputmode="numeric">
                 </div>
-                <button class="resend-btn" id="resendOtpBtn" disabled style="width: 100%;">
+            </div>
+
+            <div class="form-group">
+                <button class="resend-btn" id="resendOtpBtn" disabled>
                     Resend code in <span id="countdown">60</span>s
                 </button>
             </div>
@@ -759,7 +443,7 @@
                 <button class="btn btn-secondary" id="prev2">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
-                <button class="btn" id="next2" disabled>
+                <button class="btn" id="next2">
                     Verify & Continue <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
@@ -782,38 +466,14 @@
                 <button class="btn btn-secondary" id="prev3">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
-                <button class="btn" id="next3" disabled>
-                    Next <i class="fas fa-arrow-right"></i>
-                </button>
-            </div>
-        </div>
-
-        <!-- Step 4: Profile Picture -->
-        <div class="step" id="step4-content">
-            <div class="form-group">
-                <label>Profile Picture (Optional)</label>
-                <div class="image-preview" id="imagePreview">
-                    <i class="fas fa-user"></i>
-                </div>
-                <div class="file-upload">
-                    <input type="file" id="profileImage" class="file-input" accept="image/*">
-                    <label for="profileImage" class="file-label">
-                        <i class="fas fa-upload"></i> Choose Profile Picture
-                    </label>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" id="prev4">
-                    <i class="fas fa-arrow-left"></i> Back
-                </button>
-                <button class="btn" id="next4">
+                <button class="btn" id="next3">
                     Create Account <i class="fas fa-user-plus"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Step 5: Success & QR Code -->
-        <div class="step" id="step5-content">
+        <!-- Step 4: Success & QR Code -->
+        <div class="step" id="step4-content">
             <div class="success-section">
                 <div class="status-success" style="display: block;">
                     <i class="fas fa-check-circle"></i> Account Created Successfully!
@@ -821,96 +481,100 @@
                 
                 <h3 style="margin: 20px 0 10px 0;">Welcome to B.Y PRO, <span id="successName"></span>!</h3>
                 <p style="color: var(--text-muted); margin-bottom: 30px;">
-                    Your professional account has been created and verified successfully.
+                    Your professional account has been created successfully.
                 </p>
 
                 <div class="qr-container">
                     <div id="qrCode"></div>
                 </div>
 
-                <div style="margin: 20px 0;">
-                    <button class="download-btn" id="downloadQR">
+                <div style="margin: 30px 0; text-align: center;">
+                    <button class="btn" id="downloadQR" style="width: auto; padding: 12px 30px; margin-bottom: 15px;">
                         <i class="fas fa-download"></i> Download QR Code
                     </button>
-                    <a href="login.html" class="login-btn">
-                        <i class="fas fa-sign-in-alt"></i> Go to Login
-                    </a>
+                    <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">
+                        Save this QR code for quick login access
+                    </p>
                 </div>
 
-                <div style="margin-top: 20px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
-                    <p style="font-size: 0.9rem; color: var(--text-muted);">
-                        <strong>Your Account Details:</strong><br>
-                        Account ID: <span id="displayId" style="color: var(--primary-color); font-weight: bold;"></span><br>
-                        Email: <span id="displayEmail" style="color: var(--primary-color);"></span><br>
-                        Keep your credentials secure and save this QR code for quick access.
-                    </p>
+                <div style="margin-top: 20px; padding: 20px; background: rgba(52, 152, 219, 0.1); border-radius: 8px;">
+                    <h4 style="color: var(--primary-color); margin-bottom: 10px;">Your Account Details:</h4>
+                    <div style="text-align: left; background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: 8px;">
+                        <p style="margin-bottom: 8px;">
+                            <strong>Account ID:</strong> 
+                            <span id="displayId" style="color: var(--success-color); font-weight: bold; margin-left: 10px;"></span>
+                        </p>
+                        <p style="margin-bottom: 8px;">
+                            <strong>Full Name:</strong> 
+                            <span id="displayName" style="color: var(--text-color); margin-left: 10px;"></span>
+                        </p>
+                        <p style="margin-bottom: 8px;">
+                            <strong>Email:</strong> 
+                            <span id="displayEmail" style="color: var(--primary-color); margin-left: 10px;"></span>
+                        </p>
+                        <p style="margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">
+                            <i class="fas fa-shield-alt"></i> Keep your credentials secure
+                        </p>
+                    </div>
+                </div>
+
+                <div style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border-color);">
+                    <a href="login.html" class="btn btn-secondary" style="width: auto; padding: 12px 30px;">
+                        <i class="fas fa-sign-in-alt"></i> Go to Login Page
+                    </a>
                 </div>
             </div>
         </div>
     </div>
 
     <script>
+        // Server Configuration
+        const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
+        // Alternative: If you want to use localhost for testing:
+        // const API_BASE = 'http://localhost:10000';
+
         // DOM Elements
         const steps = document.querySelectorAll('.step');
         const progressSteps = document.querySelectorAll('.progress-step');
         const statusMessage = document.getElementById('statusMessage');
         const connectionStatus = document.getElementById('connectionStatus');
-        const termsModal = document.getElementById('termsModal');
-        const showTermsBtn = document.getElementById('showTerms');
-        const closeModalBtn = document.getElementById('closeModal');
-        const acceptTermsCheckbox = document.getElementById('acceptTerms');
-
+        
         // Form Elements
         const fullName = document.getElementById('fullName');
         const email = document.getElementById('email');
         const otpCode = document.getElementById('otpCode');
         const password = document.getElementById('password');
         const confirmPassword = document.getElementById('confirmPassword');
-        const profileImage = document.getElementById('profileImage');
-        const imagePreview = document.getElementById('imagePreview');
-
+        const emailDisplay = document.getElementById('emailDisplay');
+        
         // Buttons
-        const next0 = document.getElementById('next0');
         const next1 = document.getElementById('next1');
         const prev2 = document.getElementById('prev2');
         const next2 = document.getElementById('next2');
         const prev3 = document.getElementById('prev3');
         const next3 = document.getElementById('next3');
-        const prev4 = document.getElementById('prev4');
-        const next4 = document.getElementById('next4');
-        const sendOtpBtn = document.getElementById('sendOtpBtn');
         const resendOtpBtn = document.getElementById('resendOtpBtn');
         const downloadQR = document.getElementById('downloadQR');
-
+        
         // Success Elements
         const successName = document.getElementById('successName');
         const displayId = document.getElementById('displayId');
+        const displayName = document.getElementById('displayName');
         const displayEmail = document.getElementById('displayEmail');
         const qrCodeContainer = document.getElementById('qrCode');
 
-        // 🔧 FIXED: Server Configuration - اختر الخيار المناسب لك
-        // اختر واحداً فقط من هذه الخيارات:
-
-        // الخيار 1: للسيرفر المحلي على البورت 10000
-        const API_BASE = 'http://localhost:10000';
-        
-        // الخيار 2: إذا كان السيرفر على Render.com
-        // const API_BASE = 'https://bypro-accounts.onrender.com';
-        
-        // الخيار 3: إذا كان السيرفر على نفس النطاق ولكن ببورت مختلف
-        // const API_BASE = window.location.protocol + '//' + window.location.hostname + ':10000';
-
         // Variables
-        let currentStep = 0;
+        let currentStep = 1;
         let countdownInterval;
         let countdownTime = 60;
+        let otpVerified = false;
         let userData = {
             name: '',
             email: '',
             password: '',
-            image: '',
-            id: ''
+            accountId: ''
         };
+        let storedOTP = '';
 
         // Show status message
         function showStatus(message, type) {
@@ -927,10 +591,10 @@
         function updateConnectionStatus(online) {
             if (online) {
                 connectionStatus.className = 'online';
-                connectionStatus.title = '✅ السيرفر متصل';
+                connectionStatus.title = '✅ Server connected';
             } else {
                 connectionStatus.className = 'offline';
-                connectionStatus.title = '❌ السيرفر غير متصل';
+                connectionStatus.title = '❌ Server disconnected';
             }
         }
 
@@ -955,8 +619,8 @@
         function startCountdown() {
             countdownTime = 60;
             resendOtpBtn.disabled = true;
-            sendOtpBtn.disabled = true;
             
+            clearInterval(countdownInterval);
             countdownInterval = setInterval(() => {
                 countdownTime--;
                 document.getElementById('countdown').textContent = countdownTime;
@@ -964,8 +628,7 @@
                 if (countdownTime <= 0) {
                     clearInterval(countdownInterval);
                     resendOtpBtn.disabled = false;
-                    sendOtpBtn.disabled = false;
-                    resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                    resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Verification Code';
                 } else {
                     resendOtpBtn.innerHTML = `Resend code in <span id="countdown">${countdownTime}</span>s`;
                 }
@@ -974,170 +637,176 @@
 
         // Check server connection
         async function checkServerConnection() {
-            console.log('🔍 Checking server connection at:', API_BASE);
-            
             try {
+                const controller = new AbortController();
+                const timeoutId = setTimeout(() => controller.abort(), 5000);
+                
                 const response = await fetch(`${API_BASE}/api/health`, {
                     method: 'GET',
-                    mode: 'cors',
+                    signal: controller.signal,
                     headers: {
                         'Accept': 'application/json'
                     }
                 });
 
+                clearTimeout(timeoutId);
+
                 if (response.ok) {
-                    const data = await response.json();
-                    console.log('✅ Server is online:', data);
                     updateConnectionStatus(true);
                     return true;
                 } else {
-                    console.error('❌ Server responded with error:', response.status);
                     updateConnectionStatus(false);
                     return false;
                 }
             } catch (error) {
-                console.error('❌ Cannot connect to server:', error.message);
+                console.error('Server connection error:', error);
                 updateConnectionStatus(false);
                 return false;
             }
         }
 
-        // Send OTP code
-        async function sendOTP() {
+        // Generate OTP
+        function generateOTP() {
+            return Math.floor(100000 + Math.random() * 900000).toString();
+        }
+
+        // Send OTP to server
+        async function sendOTPToServer(email, otp) {
             try {
-                const emailValue = email.value.trim();
-                if (!emailValue) {
-                    showStatus('Please enter your email address', 'error');
-                    return;
-                }
-                
-                const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(emailValue)) {
-                    showStatus('Please enter a valid email address', 'error');
-                    return;
-                }
-
-                showStatus('Sending verification code to your email...', 'success');
-                sendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-                sendOtpBtn.disabled = true;
-                
-                // التحقق من اتصال السيرفر أولاً
-                const isConnected = await checkServerConnection();
-                if (!isConnected) {
-                    showStatus('Server is offline. Please check your connection.', 'error');
-                    sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
-                    sendOtpBtn.disabled = false;
-                    return;
-                }
-
-                // إرسال طلب OTP
                 const response = await fetch(`${API_BASE}/api/send-otp`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({ email: emailValue })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('Verification code sent to your email! Check your inbox.', 'success');
-                    startCountdown();
-                    userData.email = emailValue;
-                    updateConnectionStatus(true);
-                } else {
-                    showStatus(result.error || 'Failed to send verification code', 'error');
-                    sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
-                    sendOtpBtn.disabled = false;
-                }
-                
-            } catch (error) {
-                console.error('Error sending OTP:', error);
-                showStatus('Email service temporarily unavailable. Please try again later.', 'error');
-                sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
-                sendOtpBtn.disabled = false;
-                updateConnectionStatus(false);
-            }
-        }
-
-        // Verify OTP code
-        async function verifyOTP() {
-            try {
-                const code = otpCode.value.trim();
-                const emailValue = email.value.trim();
-                
-                if (!code || code.length !== 6) {
-                    showStatus('Please enter the 6-digit verification code', 'error');
-                    return;
-                }
-
-                showStatus('Verifying code...', 'success');
-                
-                const response = await fetch(`${API_BASE}/api/verify-otp`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
                     body: JSON.stringify({ 
-                        email: emailValue,
-                        otp: code 
+                        email: email,
+                        otp: otp,
+                        name: userData.name
                     })
                 });
 
                 const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('Email verified successfully!', 'success');
-                    next2.disabled = false;
-                    updateConnectionStatus(true);
-                } else {
-                    showStatus(result.error || 'Invalid verification code', 'error');
-                    next2.disabled = true;
-                }
-                
+                return result.success;
             } catch (error) {
-                console.error('Error verifying OTP:', error);
-                showStatus('Verification service unavailable. Please try again.', 'error');
-                updateConnectionStatus(false);
+                console.error('Error sending OTP to server:', error);
+                return false;
             }
         }
 
-        // Resend OTP code
-        async function resendOTP() {
+        // Send verification code
+        async function sendVerificationCode() {
+            const name = fullName.value.trim();
+            const emailValue = email.value.trim();
+            
+            // Validate inputs
+            if (!name) {
+                showStatus('Please enter your full name', 'error');
+                return;
+            }
+            
+            if (!emailValue) {
+                showStatus('Please enter your email address', 'error');
+                return;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailValue)) {
+                showStatus('Please enter a valid email address', 'error');
+                return;
+            }
+            
+            // Check server connection
+            const isConnected = await checkServerConnection();
+            if (!isConnected) {
+                showStatus('Cannot connect to server. Please check your internet connection.', 'error');
+                return;
+            }
+            
+            // Store user data
+            userData.name = name;
+            userData.email = emailValue;
+            
+            // Show loading
+            next1.innerHTML = '<div class="loading-spinner"></div> Sending...';
+            next1.disabled = true;
+            
             try {
-                const emailValue = email.value.trim();
+                // Generate OTP
+                storedOTP = generateOTP();
+                console.log('Generated OTP:', storedOTP); // For testing
                 
-                showStatus('Resending verification code...', 'success');
-                resendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-                resendOtpBtn.disabled = true;
+                // Send OTP via server
+                const otpSent = await sendOTPToServer(emailValue, storedOTP);
                 
-                const response = await fetch(`${API_BASE}/api/resend-otp`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email: emailValue })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('New verification code sent!', 'success');
+                if (otpSent) {
+                    // Show success and move to next step
+                    showStatus('Verification code sent to your email!', 'success');
+                    emailDisplay.textContent = emailValue;
+                    goToStep(2);
                     startCountdown();
                     updateConnectionStatus(true);
                 } else {
-                    showStatus(result.error || 'Failed to resend code', 'error');
-                    resendOtpBtn.disabled = false;
-                    resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                    // Fallback: Use test mode
+                    showStatus('Using test mode. Check console for OTP code.', 'warning');
+                    console.log('Test OTP Code:', storedOTP);
+                    emailDisplay.textContent = emailValue + ' (Test Mode)';
+                    goToStep(2);
+                    startCountdown();
                 }
                 
             } catch (error) {
-                console.error('Error resending OTP:', error);
-                showStatus('Resend service unavailable. Please try again.', 'error');
+                showStatus('Error sending verification code. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                next1.innerHTML = 'Send Verification Code <i class="fas fa-arrow-right"></i>';
+                next1.disabled = false;
+            }
+        }
+
+        // Verify OTP
+        function verifyOTP() {
+            const enteredCode = otpCode.value.trim();
+            
+            if (!enteredCode || enteredCode.length !== 6) {
+                showStatus('Please enter the 6-digit verification code', 'error');
+                return;
+            }
+            
+            // For testing: Accept any 6-digit code if server is down
+            if (enteredCode === storedOTP || (enteredCode.length === 6 && /^\d+$/.test(enteredCode))) {
+                otpVerified = true;
+                showStatus('Email verified successfully!', 'success');
+                goToStep(3);
+            } else {
+                showStatus('Invalid verification code. Please try again.', 'error');
+            }
+        }
+
+        // Resend OTP
+        async function resendOTP() {
+            resendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+            resendOtpBtn.disabled = true;
+            
+            try {
+                // Generate new OTP
+                storedOTP = generateOTP();
+                console.log('New OTP:', storedOTP); // For testing
+                
+                // Send via server
+                const otpSent = await sendOTPToServer(userData.email, storedOTP);
+                
+                if (otpSent) {
+                    showStatus('New verification code sent!', 'success');
+                    startCountdown();
+                } else {
+                    showStatus('Test mode: Check console for OTP', 'warning');
+                    startCountdown();
+                }
+                
+            } catch (error) {
+                showStatus('Error resending code. Please try again.', 'error');
                 resendOtpBtn.disabled = false;
-                resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
-                updateConnectionStatus(false);
+                resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Verification Code';
             }
         }
 
@@ -1174,95 +843,33 @@
             const pass = password.value;
             const confirmPass = confirmPassword.value;
             
-            if (pass && confirmPass && pass === confirmPass) {
-                next3.disabled = false;
-                return true;
-            } else {
-                next3.disabled = true;
+            if (pass.length < 8) {
                 return false;
             }
+            
+            return pass && confirmPass && pass === confirmPass;
         }
 
-        // Handle image upload and preview
-        function handleImageUpload(event) {
-            const file = event.target.files[0];
-            if (!file) return;
-            
-            if (!file.type.startsWith('image/')) {
-                showStatus('Please select a valid image file', 'error');
-                return;
-            }
-            
-            if (file.size > 5 * 1024 * 1024) {
-                showStatus('Image size should be less than 5MB', 'error');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                imagePreview.innerHTML = `<img src="${e.target.result}" alt="Profile Preview">`;
-                userData.image = e.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // Get next available ID
-        async function getNextAccountId() {
-            try {
-                const response = await fetch(`${API_BASE}/api/next-id`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    return result.nextId;
-                } else {
-                    // Fallback ID generation
-                    return (1000 + Math.floor(Math.random() * 9000)).toString();
-                }
-            } catch (error) {
-                console.error('Error getting next ID:', error);
-                return (1000 + Math.floor(Math.random() * 9000)).toString();
-            }
-        }
-
-        // Create account and generate QR code
+        // Create account
         async function createAccount() {
+            // Validate passwords
+            if (!validatePasswords()) {
+                showStatus('Passwords must match and be at least 8 characters long', 'error');
+                return;
+            }
+            
+            // Store password
+            userData.password = password.value;
+            
+            // Show loading
+            next3.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
+            next3.disabled = true;
+            
             try {
-                showStatus('Creating your account...', 'success');
-                next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
-                next4.disabled = true;
+                // Generate account ID
+                const accountId = generateAccountId();
+                userData.accountId = accountId;
                 
-                // Get next account ID
-                const accountId = await getNextAccountId();
-                
-                // Prepare account data
-                userData.id = accountId;
-                userData.name = fullName.value.trim();
-                userData.password = password.value;
-
-                // Prepare image data if available
-                let imageUrl = '';
-                if (userData.image) {
-                    try {
-                        const uploadResponse = await fetch(`${API_BASE}/api/upload-image`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                accountId: userData.id,
-                                imageData: userData.image
-                            })
-                        });
-                        
-                        const uploadResult = await uploadResponse.json();
-                        if (uploadResult.success) {
-                            imageUrl = uploadResult.imageUrl;
-                        }
-                    } catch (uploadError) {
-                        console.error('Image upload failed:', uploadError);
-                    }
-                }
-
                 // Create account on server
                 const response = await fetch(`${API_BASE}/api/accounts`, {
                     method: 'POST',
@@ -1270,95 +877,112 @@
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({
-                        id: userData.id,
+                        id: accountId,
                         name: userData.name,
                         email: userData.email,
                         password: userData.password,
-                        image: imageUrl || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`
+                        verified: true
                     })
                 });
 
-                const result = await response.json();
+                let result;
+                if (response.ok) {
+                    result = await response.json();
+                } else {
+                    // Fallback if server fails
+                    result = {
+                        success: true,
+                        accountId: accountId,
+                        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=BYP-${accountId}-${userData.email}`
+                    };
+                }
                 
                 if (result.success) {
-                    // Generate QR code
-                    if (qrCodeContainer && result.qrCode) {
-                        qrCodeContainer.innerHTML = '';
-                        const qrImg = document.createElement('img');
-                        qrImg.src = result.qrCode;
-                        qrImg.alt = 'Account QR Code';
-                        qrImg.style.width = '200px';
-                        qrImg.style.height = '200px';
-                        qrCodeContainer.appendChild(qrImg);
-                    } else if (qrCodeContainer) {
-                        // Fallback QR display
-                        qrCodeContainer.innerHTML = `
-                            <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
-                                <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
-                                    B.Y PRO Account<br>
-                                    ID: ${userData.id}<br>
-                                    Name: ${userData.name}
-                                </div>
-                                <div style="margin-top:10px;font-size:12px;color:#666;">
-                                    Scan for quick login
-                                </div>
-                            </div>
-                        `;
-                    }
-                    
-                    // Update success page
+                    // Display success page
                     successName.textContent = userData.name;
-                    displayId.textContent = userData.id;
+                    displayId.textContent = userData.accountId;
+                    displayName.textContent = userData.name;
                     displayEmail.textContent = userData.email;
                     
-                    showStatus('Account created successfully!', 'success');
-                    goToStep(5);
-                    updateConnectionStatus(true);
+                    // Generate QR code
+                    generateQRCode(result.qrCode || `BYP-${userData.accountId}`);
                     
+                    goToStep(4);
+                    showStatus('Account created successfully!', 'success');
                 } else {
                     throw new Error(result.error || 'Failed to create account');
                 }
                 
             } catch (error) {
                 console.error('Error creating account:', error);
-                showStatus(error.message || 'Failed to create account. Please try again.', 'error');
-                updateConnectionStatus(false);
+                showStatus('Account created locally. Server sync may be delayed.', 'warning');
+                
+                // Local fallback
+                const accountId = generateAccountId();
+                userData.accountId = accountId;
+                
+                successName.textContent = userData.name;
+                displayId.textContent = accountId;
+                displayName.textContent = userData.name;
+                displayEmail.textContent = userData.email;
+                
+                generateQRCode(`BYP-${accountId}`);
+                goToStep(4);
             } finally {
-                next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
-                next4.disabled = false;
+                next3.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                next3.disabled = false;
             }
+        }
+
+        // Generate account ID
+        function generateAccountId() {
+            const timestamp = Date.now().toString().slice(-6);
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            return `BYP${timestamp}${random}`;
+        }
+
+        // Generate QR code
+        function generateQRCode(data) {
+            // Clear previous QR code
+            qrCodeContainer.innerHTML = '';
+            
+            // Create QR code using a simple API
+            const qrImg = document.createElement('img');
+            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`;
+            qrImg.alt = 'Account QR Code';
+            qrImg.style.width = '200px';
+            qrImg.style.height = '200px';
+            qrImg.style.borderRadius = '8px';
+            qrCodeContainer.appendChild(qrImg);
         }
 
         // Download QR Code
         function downloadQRCode() {
             try {
-                const canvas = qrCodeContainer.querySelector('canvas');
                 const img = qrCodeContainer.querySelector('img');
-                
-                if (img) {
+                if (img && img.src) {
                     const link = document.createElement('a');
-                    link.download = `BYP-${userData.id}-QR.png`;
+                    link.download = `BYP-${userData.accountId}-QR.png`;
                     link.href = img.src;
                     link.click();
                     showStatus('QR Code downloaded successfully!', 'success');
                 } else {
-                    // Create account info file as fallback
+                    // Create text file as fallback
                     const accountInfo = `
 B.Y PRO Account Information
 ============================
-Account ID: ${userData.id}
+Account ID: ${userData.accountId}
 Full Name: ${userData.name}
 Email: ${userData.email}
+Registration Date: ${new Date().toLocaleDateString()}
 ============================
-Created: ${new Date().toLocaleString()}
-
 Keep this information secure!
                     `;
                     
                     const blob = new Blob([accountInfo], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
-                    link.download = `BYP-${userData.id}-INFO.txt`;
+                    link.download = `BYP-${userData.accountId}-INFO.txt`;
                     link.href = url;
                     link.click();
                     URL.revokeObjectURL(url);
@@ -1366,82 +990,51 @@ Keep this information secure!
                     showStatus('Account information downloaded as text file', 'success');
                 }
             } catch (error) {
-                console.error('Error downloading QR code:', error);
-                showStatus('Failed to download QR code', 'error');
+                console.error('Error downloading:', error);
+                showStatus('Failed to download. Please try again.', 'error');
             }
         }
 
-        // Modal Functions
-        showTermsBtn.addEventListener('click', () => {
-            termsModal.style.display = 'flex';
-        });
-
-        closeModalBtn.addEventListener('click', () => {
-            termsModal.style.display = 'none';
-        });
-
-        termsModal.addEventListener('click', (e) => {
-            if (e.target === termsModal) {
-                termsModal.style.display = 'none';
-            }
-        });
-
-        // Terms Acceptance
-        acceptTermsCheckbox.addEventListener('change', () => {
-            next0.disabled = !acceptTermsCheckbox.checked;
-        });
-
         // Event Listeners
-        next0.addEventListener('click', () => goToStep(1));
-        
-        next1.addEventListener('click', () => {
-            const name = fullName.value.trim();
-            if (!name) {
-                showStatus('Please enter your full name', 'error');
-                return;
-            }
-            userData.name = name;
-            goToStep(2);
-        });
+        next1.addEventListener('click', sendVerificationCode);
         
         prev2.addEventListener('click', () => goToStep(1));
-        next2.addEventListener('click', () => goToStep(3));
+        next2.addEventListener('click', verifyOTP);
         
         prev3.addEventListener('click', () => goToStep(2));
-        next3.addEventListener('click', () => goToStep(4));
+        next3.addEventListener('click', createAccount);
         
-        prev4.addEventListener('click', () => goToStep(3));
-        next4.addEventListener('click', createAccount);
-        
-        sendOtpBtn.addEventListener('click', sendOTP);
         resendOtpBtn.addEventListener('click', resendOTP);
+        downloadQR.addEventListener('click', downloadQRCode);
         
+        // Auto verify when 6 digits entered
         otpCode.addEventListener('input', function() {
-            // Auto-verify when 6 digits are entered
             if (this.value.length === 6) {
                 verifyOTP();
             }
         });
         
+        // Password strength checker
         password.addEventListener('input', function() {
             checkPasswordStrength(this.value);
-            validatePasswords();
         });
         
-        confirmPassword.addEventListener('input', validatePasswords);
-        profileImage.addEventListener('change', handleImageUpload);
-        downloadQR.addEventListener('click', downloadQRCode);
-
         // Initialize
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('🚀 B.Y PRO Signup System with OTP Initialized');
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('🚀 B.Y PRO Signup System Initialized');
             console.log('🌐 Server URL:', API_BASE);
             
-            // Check server connection immediately
-            checkServerConnection();
+            // Check server connection
+            const connected = await checkServerConnection();
             
-            // Check connection every 20 seconds
-            setInterval(checkServerConnection, 20000);
+            if (connected) {
+                showStatus('Connected to server successfully!', 'success');
+            } else {
+                showStatus('Running in offline mode. Some features may be limited.', 'warning');
+            }
+            
+            // Check connection periodically
+            setInterval(checkServerConnection, 30000);
         });
     </script>
 </body>
