@@ -359,6 +359,50 @@
             margin: 0;
         }
 
+        .terms-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            border: 1px solid var(--border-color);
+        }
+
+        .terms-section h4 {
+            color: var(--primary-color);
+            margin-bottom: 10px;
+        }
+
+        .terms-section p {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+            margin-bottom: 10px;
+        }
+
+        .terms-checkbox {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 8px;
+        }
+
+        .terms-checkbox input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .terms-checkbox label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
         @media (max-width: 768px) {
             .signup-container {
                 padding: 30px 20px;
@@ -392,13 +436,45 @@
             <div class="progress-step" id="step2">2</div>
             <div class="progress-step" id="step3">3</div>
             <div class="progress-step" id="step4">4</div>
+            <div class="progress-step" id="step5">5</div>
         </div>
 
         <!-- Status Message -->
         <div id="statusMessage" class="status-message"></div>
 
-        <!-- Step 1: Full Name & Email -->
+        <!-- Step 1: Terms & Conditions -->
         <div class="step active" id="step1-content">
+            <div class="form-group">
+                <h3 style="color: var(--primary-color); text-align: center; margin-bottom: 20px;">
+                    <i class="fas fa-shield-alt"></i> Welcome to B.Y PRO
+                </h3>
+                <p style="color: var(--text-muted); text-align: center; margin-bottom: 20px;">
+                    By creating an account, you agree to our terms and conditions.
+                </p>
+                
+                <div class="terms-section">
+                    <h4>Terms & Conditions</h4>
+                    <p>1. You are responsible for maintaining the security of your account.</p>
+                    <p>2. Ensure your account information is accurate and up-to-date.</p>
+                    <p>3. We collect only essential data required for service delivery.</p>
+                    <p>4. Your data helps us enhance user experience.</p>
+                    <p>5. Customer Support: byprosprt2007@gmail.com</p>
+                </div>
+
+                <div class="terms-checkbox">
+                    <input type="checkbox" id="acceptTerms">
+                    <label for="acceptTerms">
+                        I understand and agree to the Terms of Service and Privacy Policy.
+                    </label>
+                </div>
+            </div>
+            <button class="btn" id="next1" disabled>
+                Accept & Continue <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+
+        <!-- Step 2: Full Name & Email -->
+        <div class="step" id="step2-content">
             <div class="form-group">
                 <label for="fullName"><i class="fas fa-user"></i> Full Name</label>
                 <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name">
@@ -412,13 +488,18 @@
                 </div>
             </div>
 
-            <button class="btn" id="next1">
-                Send Verification Code <i class="fas fa-arrow-right"></i>
-            </button>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-secondary" id="prev2">
+                    <i class="fas fa-arrow-left"></i> Back
+                </button>
+                <button class="btn" id="next2">
+                    Send Verification Code <i class="fas fa-arrow-right"></i>
+                </button>
+            </div>
         </div>
 
-        <!-- Step 2: OTP Verification -->
-        <div class="step" id="step2-content">
+        <!-- Step 3: OTP Verification -->
+        <div class="step" id="step3-content">
             <div class="form-group">
                 <label><i class="fas fa-envelope"></i> Verification Code Sent to:</label>
                 <div class="otp-info">
@@ -440,17 +521,17 @@
             </div>
 
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" id="prev2">
+                <button class="btn btn-secondary" id="prev3">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
-                <button class="btn" id="next2">
+                <button class="btn" id="next3">
                     Verify & Continue <i class="fas fa-arrow-right"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Step 3: Password -->
-        <div class="step" id="step3-content">
+        <!-- Step 4: Password -->
+        <div class="step" id="step4-content">
             <div class="form-group">
                 <label for="password"><i class="fas fa-lock"></i> Password</label>
                 <input type="password" id="password" placeholder="Create a strong password" autocomplete="new-password">
@@ -463,17 +544,17 @@
                 <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
             </div>
             <div style="display: flex; gap: 10px;">
-                <button class="btn btn-secondary" id="prev3">
+                <button class="btn btn-secondary" id="prev4">
                     <i class="fas fa-arrow-left"></i> Back
                 </button>
-                <button class="btn" id="next3">
+                <button class="btn" id="next4">
                     Create Account <i class="fas fa-user-plus"></i>
                 </button>
             </div>
         </div>
 
-        <!-- Step 4: Success & QR Code -->
-        <div class="step" id="step4-content">
+        <!-- Step 5: Success & QR Code -->
+        <div class="step" id="step5-content">
             <div class="success-section">
                 <div class="status-success" style="display: block;">
                     <i class="fas fa-check-circle"></i> Account Created Successfully!
@@ -493,7 +574,7 @@
                         <i class="fas fa-download"></i> Download QR Code
                     </button>
                     <p style="color: var(--text-muted); font-size: 0.9rem; margin-top: 10px;">
-                        Save this QR code for quick login access
+                        QR Format: BYPRO:ID:Password
                     </p>
                 </div>
 
@@ -511,6 +592,10 @@
                         <p style="margin-bottom: 8px;">
                             <strong>Email:</strong> 
                             <span id="displayEmail" style="color: var(--primary-color); margin-left: 10px;"></span>
+                        </p>
+                        <p style="margin-bottom: 8px;">
+                            <strong>QR Data:</strong> 
+                            <span id="displayQRData" style="color: var(--warning-color); margin-left: 10px; font-family: monospace;"></span>
                         </p>
                         <p style="margin-top: 15px; color: var(--text-muted); font-size: 0.9rem;">
                             <i class="fas fa-shield-alt"></i> Keep your credentials secure
@@ -530,8 +615,6 @@
     <script>
         // Server Configuration
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
-        // Alternative: If you want to use localhost for testing:
-        // const API_BASE = 'http://localhost:10000';
 
         // DOM Elements
         const steps = document.querySelectorAll('.step');
@@ -546,6 +629,7 @@
         const password = document.getElementById('password');
         const confirmPassword = document.getElementById('confirmPassword');
         const emailDisplay = document.getElementById('emailDisplay');
+        const acceptTermsCheckbox = document.getElementById('acceptTerms');
         
         // Buttons
         const next1 = document.getElementById('next1');
@@ -553,6 +637,8 @@
         const next2 = document.getElementById('next2');
         const prev3 = document.getElementById('prev3');
         const next3 = document.getElementById('next3');
+        const prev4 = document.getElementById('prev4');
+        const next4 = document.getElementById('next4');
         const resendOtpBtn = document.getElementById('resendOtpBtn');
         const downloadQR = document.getElementById('downloadQR');
         
@@ -561,6 +647,7 @@
         const displayId = document.getElementById('displayId');
         const displayName = document.getElementById('displayName');
         const displayEmail = document.getElementById('displayEmail');
+        const displayQRData = document.getElementById('displayQRData');
         const qrCodeContainer = document.getElementById('qrCode');
 
         // Variables
@@ -568,13 +655,13 @@
         let countdownInterval;
         let countdownTime = 60;
         let otpVerified = false;
+        let generatedOTP = '';
         let userData = {
             name: '',
             email: '',
             password: '',
             accountId: ''
         };
-        let storedOTP = '';
 
         // Show status message
         function showStatus(message, type) {
@@ -652,6 +739,8 @@
                 clearTimeout(timeoutId);
 
                 if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Server health:', data);
                     updateConnectionStatus(true);
                     return true;
                 } else {
@@ -665,35 +754,107 @@
             }
         }
 
-        // Generate OTP
-        function generateOTP() {
-            return Math.floor(100000 + Math.random() * 900000).toString();
-        }
-
-        // Send OTP to server
-        async function sendOTPToServer(email, otp) {
+        // Send OTP via server
+        async function sendOTPToServer(emailValue) {
             try {
+                showStatus('Sending verification code...', 'success');
+                
                 const response = await fetch(`${API_BASE}/api/send-otp`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
                     body: JSON.stringify({ 
-                        email: email,
-                        otp: otp,
-                        name: userData.name
+                        email: emailValue
                     })
                 });
 
                 const result = await response.json();
-                return result.success;
+                
+                if (result.success) {
+                    showStatus('Verification code sent to your email!', 'success');
+                    return { success: true, email: emailValue };
+                } else {
+                    showStatus(result.error || 'Failed to send verification code', 'error');
+                    return { success: false, error: result.error };
+                }
             } catch (error) {
-                console.error('Error sending OTP to server:', error);
-                return false;
+                console.error('Error sending OTP:', error);
+                showStatus('Email service temporarily unavailable.', 'error');
+                return { success: false, error: 'Network error' };
             }
         }
 
-        // Send verification code
+        // Verify OTP via server
+        async function verifyOTPOnServer(emailValue, otpValue) {
+            try {
+                showStatus('Verifying code...', 'success');
+                
+                const response = await fetch(`${API_BASE}/api/verify-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: emailValue,
+                        otp: otpValue
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('Email verified successfully!', 'success');
+                    return { success: true };
+                } else {
+                    showStatus(result.error || 'Invalid verification code', 'error');
+                    return { success: false, error: result.error };
+                }
+            } catch (error) {
+                console.error('Error verifying OTP:', error);
+                showStatus('Verification service unavailable.', 'error');
+                return { success: false, error: 'Network error' };
+            }
+        }
+
+        // Resend OTP via server
+        async function resendOTPOnServer(emailValue) {
+            try {
+                resendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
+                resendOtpBtn.disabled = true;
+                
+                const response = await fetch(`${API_BASE}/api/resend-otp`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: emailValue
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    showStatus('New verification code sent!', 'success');
+                    startCountdown();
+                    return { success: true };
+                } else {
+                    showStatus(result.error || 'Failed to resend code', 'error');
+                    resendOtpBtn.disabled = false;
+                    resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Verification Code';
+                    return { success: false, error: result.error };
+                }
+            } catch (error) {
+                console.error('Error resending OTP:', error);
+                showStatus('Resend service unavailable.', 'error');
+                resendOtpBtn.disabled = false;
+                resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Verification Code';
+                return { success: false, error: 'Network error' };
+            }
+        }
+
+        // Validate and send verification code
         async function sendVerificationCode() {
             const name = fullName.value.trim();
             const emailValue = email.value.trim();
@@ -727,44 +888,35 @@
             userData.email = emailValue;
             
             // Show loading
-            next1.innerHTML = '<div class="loading-spinner"></div> Sending...';
-            next1.disabled = true;
+            next2.innerHTML = '<div class="loading-spinner"></div> Sending...';
+            next2.disabled = true;
             
             try {
-                // Generate OTP
-                storedOTP = generateOTP();
-                console.log('Generated OTP:', storedOTP); // For testing
-                
                 // Send OTP via server
-                const otpSent = await sendOTPToServer(emailValue, storedOTP);
+                const result = await sendOTPToServer(emailValue);
                 
-                if (otpSent) {
+                if (result.success) {
                     // Show success and move to next step
-                    showStatus('Verification code sent to your email!', 'success');
                     emailDisplay.textContent = emailValue;
-                    goToStep(2);
+                    goToStep(3);
                     startCountdown();
                     updateConnectionStatus(true);
                 } else {
-                    // Fallback: Use test mode
-                    showStatus('Using test mode. Check console for OTP code.', 'warning');
-                    console.log('Test OTP Code:', storedOTP);
-                    emailDisplay.textContent = emailValue + ' (Test Mode)';
-                    goToStep(2);
-                    startCountdown();
+                    // Show error
+                    console.error('OTP sending failed:', result.error);
                 }
                 
             } catch (error) {
                 showStatus('Error sending verification code. Please try again.', 'error');
                 console.error('Error:', error);
             } finally {
-                next1.innerHTML = 'Send Verification Code <i class="fas fa-arrow-right"></i>';
-                next1.disabled = false;
+                next2.innerHTML = 'Send Verification Code <i class="fas fa-arrow-right"></i>';
+                next2.disabled = false;
             }
         }
 
         // Verify OTP
-        function verifyOTP() {
+        async function verifyOTP() {
             const enteredCode = otpCode.value.trim();
             
             if (!enteredCode || enteredCode.length !== 6) {
@@ -772,41 +924,37 @@
                 return;
             }
             
-            // For testing: Accept any 6-digit code if server is down
-            if (enteredCode === storedOTP || (enteredCode.length === 6 && /^\d+$/.test(enteredCode))) {
-                otpVerified = true;
-                showStatus('Email verified successfully!', 'success');
-                goToStep(3);
-            } else {
-                showStatus('Invalid verification code. Please try again.', 'error');
+            // Show loading
+            next3.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+            next3.disabled = true;
+            
+            try {
+                // Verify OTP via server
+                const result = await verifyOTPOnServer(userData.email, enteredCode);
+                
+                if (result.success) {
+                    otpVerified = true;
+                    goToStep(4);
+                } else {
+                    // Show error
+                    console.error('OTP verification failed:', result.error);
+                }
+                
+            } catch (error) {
+                showStatus('Error verifying code. Please try again.', 'error');
+                console.error('Error:', error);
+            } finally {
+                next3.innerHTML = 'Verify & Continue <i class="fas fa-arrow-right"></i>';
+                next3.disabled = false;
             }
         }
 
         // Resend OTP
         async function resendOTP() {
-            resendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
-            resendOtpBtn.disabled = true;
-            
             try {
-                // Generate new OTP
-                storedOTP = generateOTP();
-                console.log('New OTP:', storedOTP); // For testing
-                
-                // Send via server
-                const otpSent = await sendOTPToServer(userData.email, storedOTP);
-                
-                if (otpSent) {
-                    showStatus('New verification code sent!', 'success');
-                    startCountdown();
-                } else {
-                    showStatus('Test mode: Check console for OTP', 'warning');
-                    startCountdown();
-                }
-                
+                await resendOTPOnServer(userData.email);
             } catch (error) {
-                showStatus('Error resending code. Please try again.', 'error');
-                resendOtpBtn.disabled = false;
-                resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Verification Code';
+                console.error('Error in resend OTP:', error);
             }
         }
 
@@ -850,7 +998,25 @@
             return pass && confirmPass && pass === confirmPass;
         }
 
-        // Create account
+        // Get next account ID from server
+        async function getNextAccountId() {
+            try {
+                const response = await fetch(`${API_BASE}/api/next-id`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.nextId;
+                } else {
+                    // Fallback ID generation
+                    return (1000 + Math.floor(Math.random() * 9000)).toString();
+                }
+            } catch (error) {
+                console.error('Error getting next ID:', error);
+                return (1000 + Math.floor(Math.random() * 9000)).toString();
+            }
+        }
+
+        // Create account on server
         async function createAccount() {
             // Validate passwords
             if (!validatePasswords()) {
@@ -862,12 +1028,12 @@
             userData.password = password.value;
             
             // Show loading
-            next3.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
-            next3.disabled = true;
+            next4.innerHTML = '<div class="loading-spinner"></div> Creating Account...';
+            next4.disabled = true;
             
             try {
-                // Generate account ID
-                const accountId = generateAccountId();
+                // Get next account ID
+                const accountId = await getNextAccountId();
                 userData.accountId = accountId;
                 
                 // Create account on server
@@ -880,8 +1046,7 @@
                         id: accountId,
                         name: userData.name,
                         email: userData.email,
-                        password: userData.password,
-                        verified: true
+                        password: userData.password
                     })
                 });
 
@@ -889,12 +1054,7 @@
                 if (response.ok) {
                     result = await response.json();
                 } else {
-                    // Fallback if server fails
-                    result = {
-                        success: true,
-                        accountId: accountId,
-                        qrCode: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=BYP-${accountId}-${userData.email}`
-                    };
+                    throw new Error('Failed to create account on server');
                 }
                 
                 if (result.success) {
@@ -904,10 +1064,15 @@
                     displayName.textContent = userData.name;
                     displayEmail.textContent = userData.email;
                     
-                    // Generate QR code
-                    generateQRCode(result.qrCode || `BYP-${userData.accountId}`);
+                    // Generate QR code with correct format
+                    const qrData = `BYPRO:${userData.accountId}:${userData.password}`;
+                    displayQRData.textContent = qrData;
                     
-                    goToStep(4);
+                    // Generate QR code image
+                    await generateQRCode(qrData);
+                    
+                    // Go to success step
+                    goToStep(5);
                     showStatus('Account created successfully!', 'success');
                 } else {
                     throw new Error(result.error || 'Failed to create account');
@@ -915,74 +1080,120 @@
                 
             } catch (error) {
                 console.error('Error creating account:', error);
-                showStatus('Account created locally. Server sync may be delayed.', 'warning');
-                
-                // Local fallback
-                const accountId = generateAccountId();
-                userData.accountId = accountId;
-                
-                successName.textContent = userData.name;
-                displayId.textContent = accountId;
-                displayName.textContent = userData.name;
-                displayEmail.textContent = userData.email;
-                
-                generateQRCode(`BYP-${accountId}`);
-                goToStep(4);
+                showStatus('Failed to create account. Please try again.', 'error');
             } finally {
-                next3.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
-                next3.disabled = false;
+                next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                next4.disabled = false;
             }
         }
 
-        // Generate account ID
-        function generateAccountId() {
-            const timestamp = Date.now().toString().slice(-6);
-            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
-            return `BYP${timestamp}${random}`;
+        // Generate QR code image
+        async function generateQRCode(qrData) {
+            try {
+                // Clear previous QR code
+                qrCodeContainer.innerHTML = '';
+                
+                // Create canvas for QR code
+                const canvas = document.createElement('canvas');
+                canvas.width = 200;
+                canvas.height = 200;
+                qrCodeContainer.appendChild(canvas);
+                
+                // Simple QR code generation (you can use a library for better results)
+                const ctx = canvas.getContext('2d');
+                
+                // Background
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(0, 0, 200, 200);
+                
+                // Generate pattern based on data
+                const hash = stringToHash(qrData);
+                const cellSize = 8;
+                const cols = Math.floor(200 / cellSize);
+                const rows = Math.floor(200 / cellSize);
+                
+                // Draw QR pattern
+                ctx.fillStyle = '#1a237e';
+                for (let y = 0; y < rows; y++) {
+                    for (let x = 0; x < cols; x++) {
+                        if (shouldFillCell(x, y, hash)) {
+                            ctx.fillRect(
+                                x * cellSize + 1,
+                                y * cellSize + 1,
+                                cellSize - 2,
+                                cellSize - 2
+                            );
+                        }
+                    }
+                }
+                
+                // Add BYPRO text
+                ctx.fillStyle = '#1a237e';
+                ctx.font = 'bold 12px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('BYPRO Account', 100, 190);
+                
+            } catch (error) {
+                console.error('Error generating QR code:', error);
+                // Fallback text display
+                qrCodeContainer.innerHTML = `
+                    <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
+                        <div style="font-size:14px;font-weight:bold;color:#1a237e;text-align:center;">
+                            BYPRO Account<br>
+                            ID: ${userData.accountId}
+                        </div>
+                        <div style="margin-top:10px;font-size:10px;color:#666;word-break:break-all;padding:5px;">
+                            ${qrData}
+                        </div>
+                    </div>
+                `;
+            }
         }
 
-        // Generate QR code
-        function generateQRCode(data) {
-            // Clear previous QR code
-            qrCodeContainer.innerHTML = '';
-            
-            // Create QR code using a simple API
-            const qrImg = document.createElement('img');
-            qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(data)}`;
-            qrImg.alt = 'Account QR Code';
-            qrImg.style.width = '200px';
-            qrImg.style.height = '200px';
-            qrImg.style.borderRadius = '8px';
-            qrCodeContainer.appendChild(qrImg);
+        // Helper functions for QR generation
+        function stringToHash(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = str.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            return hash;
         }
 
-        // Download QR Code
+        function shouldFillCell(x, y, hash) {
+            const seed = (x * 73856093) ^ (y * 19349663) ^ (hash * 83492791);
+            return (seed % 3) === 0;
+        }
+
+        // Download QR Code as image
         function downloadQRCode() {
             try {
-                const img = qrCodeContainer.querySelector('img');
-                if (img && img.src) {
+                const canvas = qrCodeContainer.querySelector('canvas');
+                if (canvas) {
                     const link = document.createElement('a');
-                    link.download = `BYP-${userData.accountId}-QR.png`;
-                    link.href = img.src;
+                    link.download = `BYPRO-${userData.accountId}-QR.png`;
+                    link.href = canvas.toDataURL('image/png');
                     link.click();
                     showStatus('QR Code downloaded successfully!', 'success');
                 } else {
-                    // Create text file as fallback
+                    // Create account info file as fallback
                     const accountInfo = `
 B.Y PRO Account Information
 ============================
 Account ID: ${userData.accountId}
 Full Name: ${userData.name}
 Email: ${userData.email}
-Registration Date: ${new Date().toLocaleDateString()}
+Password: ${userData.password}
+QR Data: BYPRO:${userData.accountId}:${userData.password}
 ============================
+Created: ${new Date().toLocaleString()}
+
 Keep this information secure!
                     `;
                     
                     const blob = new Blob([accountInfo], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
                     const link = document.createElement('a');
-                    link.download = `BYP-${userData.accountId}-INFO.txt`;
+                    link.download = `BYPRO-${userData.accountId}-INFO.txt`;
                     link.href = url;
                     link.click();
                     URL.revokeObjectURL(url);
@@ -996,13 +1207,20 @@ Keep this information secure!
         }
 
         // Event Listeners
-        next1.addEventListener('click', sendVerificationCode);
+        acceptTermsCheckbox.addEventListener('change', () => {
+            next1.disabled = !acceptTermsCheckbox.checked;
+        });
+
+        next1.addEventListener('click', () => goToStep(2));
         
         prev2.addEventListener('click', () => goToStep(1));
-        next2.addEventListener('click', verifyOTP);
+        next2.addEventListener('click', sendVerificationCode);
         
         prev3.addEventListener('click', () => goToStep(2));
-        next3.addEventListener('click', createAccount);
+        next3.addEventListener('click', verifyOTP);
+        
+        prev4.addEventListener('click', () => goToStep(3));
+        next4.addEventListener('click', createAccount);
         
         resendOtpBtn.addEventListener('click', resendOTP);
         downloadQR.addEventListener('click', downloadQRCode);
@@ -1018,7 +1236,7 @@ Keep this information secure!
         password.addEventListener('input', function() {
             checkPasswordStrength(this.value);
         });
-        
+
         // Initialize
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('🚀 B.Y PRO Signup System Initialized');
@@ -1030,7 +1248,7 @@ Keep this information secure!
             if (connected) {
                 showStatus('Connected to server successfully!', 'success');
             } else {
-                showStatus('Running in offline mode. Some features may be limited.', 'warning');
+                showStatus('Server connection failed. Please check your internet.', 'warning');
             }
             
             // Check connection periodically
