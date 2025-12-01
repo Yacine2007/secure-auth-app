@@ -634,7 +634,7 @@
 </head>
 <body>
     <!-- 🔴 نقطة حالة الاتصال -->
-    <div id="connectionStatus" class="connecting" title="Checking server connection..."></div>
+    <div id="connectionStatus" class="connecting" title="جاري الاتصال بالسيرفر..."></div>
 
     <!-- Terms & Conditions Modal -->
     <div class="modal-overlay" id="termsModal">
@@ -888,14 +888,17 @@
         const displayEmail = document.getElementById('displayEmail');
         const qrCodeContainer = document.getElementById('qrCode');
 
-        // 🔧 FIXED: Server Configuration
-        // إذا كنت على GitHub Pages، استخدم هذا:
-        // const API_BASE = 'https://your-render-app.onrender.com';
+        // 🔧 FIXED: Server Configuration - اختر الخيار المناسب لك
+        // اختر واحداً فقط من هذه الخيارات:
+
+        // الخيار 1: للسيرفر المحلي على البورت 10000
+        const API_BASE = 'http://localhost:10000';
         
-        // إذا كنت تعمل محلياً، استخدم هذا:
-        const API_BASE = window.location.origin.includes('localhost') 
-            ? 'http://localhost:10000' 
-            : window.location.origin;
+        // الخيار 2: إذا كان السيرفر على Render.com
+        // const API_BASE = 'https://bypro-accounts.onrender.com';
+        
+        // الخيار 3: إذا كان السيرفر على نفس النطاق ولكن ببورت مختلف
+        // const API_BASE = window.location.protocol + '//' + window.location.hostname + ':10000';
 
         // Variables
         let currentStep = 0;
@@ -924,10 +927,10 @@
         function updateConnectionStatus(online) {
             if (online) {
                 connectionStatus.className = 'online';
-                connectionStatus.title = 'Server connected';
+                connectionStatus.title = '✅ السيرفر متصل';
             } else {
                 connectionStatus.className = 'offline';
-                connectionStatus.title = 'Server disconnected';
+                connectionStatus.title = '❌ السيرفر غير متصل';
             }
         }
 
@@ -969,6 +972,36 @@
             }, 1000);
         }
 
+        // Check server connection
+        async function checkServerConnection() {
+            console.log('🔍 Checking server connection at:', API_BASE);
+            
+            try {
+                const response = await fetch(`${API_BASE}/api/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('✅ Server is online:', data);
+                    updateConnectionStatus(true);
+                    return true;
+                } else {
+                    console.error('❌ Server responded with error:', response.status);
+                    updateConnectionStatus(false);
+                    return false;
+                }
+            } catch (error) {
+                console.error('❌ Cannot connect to server:', error.message);
+                updateConnectionStatus(false);
+                return false;
+            }
+        }
+
         // Send OTP code
         async function sendOTP() {
             try {
@@ -988,6 +1021,16 @@
                 sendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
                 sendOtpBtn.disabled = true;
                 
+                // التحقق من اتصال السيرفر أولاً
+                const isConnected = await checkServerConnection();
+                if (!isConnected) {
+                    showStatus('Server is offline. Please check your connection.', 'error');
+                    sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
+                    sendOtpBtn.disabled = false;
+                    return;
+                }
+
+                // إرسال طلب OTP
                 const response = await fetch(`${API_BASE}/api/send-otp`, {
                     method: 'POST',
                     headers: {
@@ -1163,6 +1206,24 @@
             reader.readAsDataURL(file);
         }
 
+        // Get next available ID
+        async function getNextAccountId() {
+            try {
+                const response = await fetch(`${API_BASE}/api/next-id`);
+                const result = await response.json();
+                
+                if (result.success) {
+                    return result.nextId;
+                } else {
+                    // Fallback ID generation
+                    return (1000 + Math.floor(Math.random() * 9000)).toString();
+                }
+            } catch (error) {
+                console.error('Error getting next ID:', error);
+                return (1000 + Math.floor(Math.random() * 9000)).toString();
+            }
+        }
+
         // Create account and generate QR code
         async function createAccount() {
             try {
@@ -1170,13 +1231,37 @@
                 next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
                 next4.disabled = true;
                 
-                // Generate account ID
-                const accountId = (1000 + Math.floor(Math.random() * 9000)).toString();
+                // Get next account ID
+                const accountId = await getNextAccountId();
                 
                 // Prepare account data
                 userData.id = accountId;
                 userData.name = fullName.value.trim();
                 userData.password = password.value;
+
+                // Prepare image data if available
+                let imageUrl = '';
+                if (userData.image) {
+                    try {
+                        const uploadResponse = await fetch(`${API_BASE}/api/upload-image`, {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                            },
+                            body: JSON.stringify({
+                                accountId: userData.id,
+                                imageData: userData.image
+                            })
+                        });
+                        
+                        const uploadResult = await uploadResponse.json();
+                        if (uploadResult.success) {
+                            imageUrl = uploadResult.imageUrl;
+                        }
+                    } catch (uploadError) {
+                        console.error('Image upload failed:', uploadError);
+                    }
+                }
 
                 // Create account on server
                 const response = await fetch(`${API_BASE}/api/accounts`, {
@@ -1189,7 +1274,7 @@
                         name: userData.name,
                         email: userData.email,
                         password: userData.password,
-                        image: userData.image ? `data:image/png;base64,${userData.image.split(',')[1]}` : ''
+                        image: imageUrl || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`
                     })
                 });
 
@@ -1197,17 +1282,28 @@
                 
                 if (result.success) {
                     // Generate QR code
-                    if (qrCodeContainer) {
+                    if (qrCodeContainer && result.qrCode) {
                         qrCodeContainer.innerHTML = '';
-                        const qrData = `BYP-${userData.id}`;
-                        new QRCode(qrCodeContainer, {
-                            text: qrData,
-                            width: 200,
-                            height: 200,
-                            colorDark: "#000000",
-                            colorLight: "#ffffff",
-                            correctLevel: QRCode.CorrectLevel.H
-                        });
+                        const qrImg = document.createElement('img');
+                        qrImg.src = result.qrCode;
+                        qrImg.alt = 'Account QR Code';
+                        qrImg.style.width = '200px';
+                        qrImg.style.height = '200px';
+                        qrCodeContainer.appendChild(qrImg);
+                    } else if (qrCodeContainer) {
+                        // Fallback QR display
+                        qrCodeContainer.innerHTML = `
+                            <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
+                                <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
+                                    B.Y PRO Account<br>
+                                    ID: ${userData.id}<br>
+                                    Name: ${userData.name}
+                                </div>
+                                <div style="margin-top:10px;font-size:12px;color:#666;">
+                                    Scan for quick login
+                                </div>
+                            </div>
+                        `;
                     }
                     
                     // Update success page
@@ -1233,25 +1329,45 @@
             }
         }
 
-        // Check service health
-        async function checkServiceHealth() {
+        // Download QR Code
+        function downloadQRCode() {
             try {
-                const response = await fetch(`${API_BASE}/api/health`);
+                const canvas = qrCodeContainer.querySelector('canvas');
+                const img = qrCodeContainer.querySelector('img');
                 
-                if (!response.ok) {
-                    throw new Error(`Server status: ${response.status}`);
-                }
-                
-                const result = await response.json();
-                
-                if (result.status === 'operational') {
-                    updateConnectionStatus(true);
+                if (img) {
+                    const link = document.createElement('a');
+                    link.download = `BYP-${userData.id}-QR.png`;
+                    link.href = img.src;
+                    link.click();
+                    showStatus('QR Code downloaded successfully!', 'success');
                 } else {
-                    updateConnectionStatus(false);
+                    // Create account info file as fallback
+                    const accountInfo = `
+B.Y PRO Account Information
+============================
+Account ID: ${userData.id}
+Full Name: ${userData.name}
+Email: ${userData.email}
+============================
+Created: ${new Date().toLocaleString()}
+
+Keep this information secure!
+                    `;
+                    
+                    const blob = new Blob([accountInfo], { type: 'text/plain' });
+                    const url = URL.createObjectURL(blob);
+                    const link = document.createElement('a');
+                    link.download = `BYP-${userData.id}-INFO.txt`;
+                    link.href = url;
+                    link.click();
+                    URL.revokeObjectURL(url);
+                    
+                    showStatus('Account information downloaded as text file', 'success');
                 }
             } catch (error) {
-                console.error('Health check failed:', error);
-                updateConnectionStatus(false);
+                console.error('Error downloading QR code:', error);
+                showStatus('Failed to download QR code', 'error');
             }
         }
 
@@ -1314,17 +1430,18 @@
         
         confirmPassword.addEventListener('input', validatePasswords);
         profileImage.addEventListener('change', handleImageUpload);
+        downloadQR.addEventListener('click', downloadQRCode);
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 B.Y PRO Signup System with OTP Initialized');
-            console.log('API Base URL:', API_BASE);
+            console.log('🌐 Server URL:', API_BASE);
             
-            // Check health immediately
-            checkServiceHealth();
+            // Check server connection immediately
+            checkServerConnection();
             
-            // Check health every 30 seconds
-            setInterval(checkServiceHealth, 30000);
+            // Check connection every 20 seconds
+            setInterval(checkServerConnection, 20000);
         });
     </script>
 </body>
