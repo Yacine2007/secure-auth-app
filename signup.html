@@ -40,6 +40,41 @@
             align-items: center;
             padding: 20px;
             line-height: 1.6;
+            position: relative;
+        }
+
+        /* 🔴 نقطة حالة الاتصال */
+        #connectionStatus {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            z-index: 1000;
+            border: 2px solid var(--card-bg);
+            transition: all 0.3s ease;
+        }
+
+        #connectionStatus.online {
+            background: var(--success-color);
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        #connectionStatus.offline {
+            background: var(--danger-color);
+            box-shadow: 0 0 10px var(--danger-color);
+        }
+
+        #connectionStatus.connecting {
+            background: var(--warning-color);
+            box-shadow: 0 0 10px var(--warning-color);
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
         }
 
         .signup-container {
@@ -409,27 +444,6 @@
         .strength-strong { background: var(--success-color); width: 75%; }
         .strength-very-strong { background: var(--success-color); width: 100%; }
 
-        .service-status {
-            background: rgba(52, 152, 219, 0.1);
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-            margin: 10px 0;
-            border: 1px solid var(--primary-color);
-            font-size: 0.9rem;
-        }
-
-        .service-status i {
-            margin-right: 8px;
-        }
-
-        .service-online {
-            color: var(--success-color);
-        }
-
-        .service-offline {
-            color: var(--warning-color);
-        }
-
         /* Terms & Conditions Styles */
         .terms-link {
             color: var(--primary-color);
@@ -619,6 +633,9 @@
     </style>
 </head>
 <body>
+    <!-- 🔴 نقطة حالة الاتصال -->
+    <div id="connectionStatus" class="connecting" title="Checking server connection..."></div>
+
     <!-- Terms & Conditions Modal -->
     <div class="modal-overlay" id="termsModal">
         <div class="modal-content">
@@ -659,11 +676,6 @@
         <div class="logo">
             <h1><i class="fas fa-user-plus"></i> B.Y PRO Accounts</h1>
             <p>Create Your Professional Account</p>
-        </div>
-
-        <!-- Service Status -->
-        <div id="serviceStatus" class="service-status">
-            <i class="fas fa-circle service-online"></i> <span id="statusText">Checking server connection...</span>
         </div>
 
         <!-- Progress Bar -->
@@ -842,8 +854,7 @@
         const steps = document.querySelectorAll('.step');
         const progressSteps = document.querySelectorAll('.progress-step');
         const statusMessage = document.getElementById('statusMessage');
-        const serviceStatus = document.getElementById('serviceStatus');
-        const statusText = document.getElementById('statusText');
+        const connectionStatus = document.getElementById('connectionStatus');
         const termsModal = document.getElementById('termsModal');
         const showTermsBtn = document.getElementById('showTerms');
         const closeModalBtn = document.getElementById('closeModal');
@@ -877,8 +888,14 @@
         const displayEmail = document.getElementById('displayEmail');
         const qrCodeContainer = document.getElementById('qrCode');
 
-        // 🔧 FIXED: Server Configuration - تحديد السيرفر بشكل صحيح
-        const API_BASE = window.location.origin;
+        // 🔧 FIXED: Server Configuration
+        // إذا كنت على GitHub Pages، استخدم هذا:
+        // const API_BASE = 'https://your-render-app.onrender.com';
+        
+        // إذا كنت تعمل محلياً، استخدم هذا:
+        const API_BASE = window.location.origin.includes('localhost') 
+            ? 'http://localhost:10000' 
+            : window.location.origin;
 
         // Variables
         let currentStep = 0;
@@ -903,11 +920,14 @@
             }, 5000);
         }
 
-        // Update service status
-        function updateServiceStatus(online, message) {
-            serviceStatus.style.display = 'block';
-            if (statusText) {
-                statusText.innerHTML = `<i class="fas fa-circle ${online ? 'service-online' : 'service-offline'}"></i> ${message}`;
+        // Update connection status
+        function updateConnectionStatus(online) {
+            if (online) {
+                connectionStatus.className = 'online';
+                connectionStatus.title = 'Server connected';
+            } else {
+                connectionStatus.className = 'offline';
+                connectionStatus.title = 'Server disconnected';
             }
         }
 
@@ -968,9 +988,6 @@
                 sendOtpBtn.innerHTML = '<div class="loading-spinner"></div> Sending...';
                 sendOtpBtn.disabled = true;
                 
-                console.log('Sending OTP to:', emailValue);
-                console.log('API Base:', API_BASE);
-                
                 const response = await fetch(`${API_BASE}/api/send-otp`, {
                     method: 'POST',
                     headers: {
@@ -985,6 +1002,7 @@
                     showStatus('Verification code sent to your email! Check your inbox.', 'success');
                     startCountdown();
                     userData.email = emailValue;
+                    updateConnectionStatus(true);
                 } else {
                     showStatus(result.error || 'Failed to send verification code', 'error');
                     sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
@@ -996,6 +1014,7 @@
                 showStatus('Email service temporarily unavailable. Please try again later.', 'error');
                 sendOtpBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send Verification Code';
                 sendOtpBtn.disabled = false;
+                updateConnectionStatus(false);
             }
         }
 
@@ -1028,6 +1047,7 @@
                 if (result.success) {
                     showStatus('Email verified successfully!', 'success');
                     next2.disabled = false;
+                    updateConnectionStatus(true);
                 } else {
                     showStatus(result.error || 'Invalid verification code', 'error');
                     next2.disabled = true;
@@ -1036,6 +1056,7 @@
             } catch (error) {
                 console.error('Error verifying OTP:', error);
                 showStatus('Verification service unavailable. Please try again.', 'error');
+                updateConnectionStatus(false);
             }
         }
 
@@ -1061,6 +1082,7 @@
                 if (result.success) {
                     showStatus('New verification code sent!', 'success');
                     startCountdown();
+                    updateConnectionStatus(true);
                 } else {
                     showStatus(result.error || 'Failed to resend code', 'error');
                     resendOtpBtn.disabled = false;
@@ -1072,6 +1094,7 @@
                 showStatus('Resend service unavailable. Please try again.', 'error');
                 resendOtpBtn.disabled = false;
                 resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
+                updateConnectionStatus(false);
             }
         }
 
@@ -1140,25 +1163,6 @@
             reader.readAsDataURL(file);
         }
 
-        // Get next available ID from server
-        async function getNextAccountId() {
-            try {
-                const response = await fetch(`${API_BASE}/api/next-id`);
-                const result = await response.json();
-                
-                if (result.success) {
-                    return result.nextId;
-                } else {
-                    // Fallback ID generation
-                    return (1000 + Math.floor(Math.random() * 9000)).toString();
-                }
-            } catch (error) {
-                console.error('Error getting next ID:', error);
-                // Fallback ID generation
-                return (1000 + Math.floor(Math.random() * 9000)).toString();
-            }
-        }
-
         // Create account and generate QR code
         async function createAccount() {
             try {
@@ -1166,37 +1170,13 @@
                 next4.innerHTML = '<div class="loading-spinner"></div> Creating...';
                 next4.disabled = true;
                 
-                // Get next account ID from server
-                const accountId = await getNextAccountId();
+                // Generate account ID
+                const accountId = (1000 + Math.floor(Math.random() * 9000)).toString();
                 
                 // Prepare account data
                 userData.id = accountId;
                 userData.name = fullName.value.trim();
                 userData.password = password.value;
-
-                // Prepare image data if available
-                let imageUrl = '';
-                if (userData.image) {
-                    try {
-                        const uploadResponse = await fetch(`${API_BASE}/api/upload-image`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                            },
-                            body: JSON.stringify({
-                                accountId: userData.id,
-                                imageData: userData.image
-                            })
-                        });
-                        
-                        const uploadResult = await uploadResponse.json();
-                        if (uploadResult.success) {
-                            imageUrl = uploadResult.imageUrl;
-                        }
-                    } catch (uploadError) {
-                        console.error('Image upload failed:', uploadError);
-                    }
-                }
 
                 // Create account on server
                 const response = await fetch(`${API_BASE}/api/accounts`, {
@@ -1209,7 +1189,7 @@
                         name: userData.name,
                         email: userData.email,
                         password: userData.password,
-                        image: imageUrl || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${userData.id}.png`
+                        image: userData.image ? `data:image/png;base64,${userData.image.split(',')[1]}` : ''
                     })
                 });
 
@@ -1217,28 +1197,17 @@
                 
                 if (result.success) {
                     // Generate QR code
-                    if (qrCodeContainer && result.qrCode) {
+                    if (qrCodeContainer) {
                         qrCodeContainer.innerHTML = '';
-                        const qrImg = document.createElement('img');
-                        qrImg.src = result.qrCode;
-                        qrImg.alt = 'Account QR Code';
-                        qrImg.style.width = '200px';
-                        qrImg.style.height = '200px';
-                        qrCodeContainer.appendChild(qrImg);
-                    } else if (qrCodeContainer) {
-                        // Fallback QR display
-                        qrCodeContainer.innerHTML = `
-                            <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
-                                <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
-                                    B.Y PRO Account<br>
-                                    ID: ${userData.id}<br>
-                                    Name: ${userData.name}
-                                </div>
-                                <div style="margin-top:10px;font-size:12px;color:#666;">
-                                    Scan for quick login
-                                </div>
-                            </div>
-                        `;
+                        const qrData = `BYP-${userData.id}`;
+                        new QRCode(qrCodeContainer, {
+                            text: qrData,
+                            width: 200,
+                            height: 200,
+                            colorDark: "#000000",
+                            colorLight: "#ffffff",
+                            correctLevel: QRCode.CorrectLevel.H
+                        });
                     }
                     
                     // Update success page
@@ -1248,6 +1217,7 @@
                     
                     showStatus('Account created successfully!', 'success');
                     goToStep(5);
+                    updateConnectionStatus(true);
                     
                 } else {
                     throw new Error(result.error || 'Failed to create account');
@@ -1256,58 +1226,16 @@
             } catch (error) {
                 console.error('Error creating account:', error);
                 showStatus(error.message || 'Failed to create account. Please try again.', 'error');
+                updateConnectionStatus(false);
             } finally {
                 next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
                 next4.disabled = false;
             }
         }
 
-        // Download QR Code
-        function downloadQRCode() {
-            try {
-                const canvas = qrCodeContainer.querySelector('canvas');
-                const img = qrCodeContainer.querySelector('img');
-                
-                if (img) {
-                    const link = document.createElement('a');
-                    link.download = `BYP-${userData.id}-QR.png`;
-                    link.href = img.src;
-                    link.click();
-                    showStatus('QR Code downloaded successfully!', 'success');
-                } else {
-                    // Create account info file as fallback
-                    const accountInfo = `
-B.Y PRO Account Information
-============================
-Account ID: ${userData.id}
-Full Name: ${userData.name}
-Email: ${userData.email}
-============================
-Created: ${new Date().toLocaleString()}
-
-Keep this information secure!
-                    `;
-                    
-                    const blob = new Blob([accountInfo], { type: 'text/plain' });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.download = `BYP-${userData.id}-INFO.txt`;
-                    link.href = url;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                    
-                    showStatus('Account information downloaded as text file', 'success');
-                }
-            } catch (error) {
-                console.error('Error downloading QR code:', error);
-                showStatus('Failed to download QR code', 'error');
-            }
-        }
-
         // Check service health
         async function checkServiceHealth() {
             try {
-                console.log('Checking server health at:', `${API_BASE}/api/health`);
                 const response = await fetch(`${API_BASE}/api/health`);
                 
                 if (!response.ok) {
@@ -1317,13 +1245,13 @@ Keep this information secure!
                 const result = await response.json();
                 
                 if (result.status === 'operational') {
-                    updateServiceStatus(true, `Server connected - ${result.service}`);
+                    updateConnectionStatus(true);
                 } else {
-                    updateServiceStatus(false, 'Server has issues');
+                    updateConnectionStatus(false);
                 }
             } catch (error) {
                 console.error('Health check failed:', error);
-                updateServiceStatus(false, 'Server offline - Please check connection');
+                updateConnectionStatus(false);
             }
         }
 
@@ -1386,12 +1314,13 @@ Keep this information secure!
         
         confirmPassword.addEventListener('input', validatePasswords);
         profileImage.addEventListener('change', handleImageUpload);
-        downloadQR.addEventListener('click', downloadQRCode);
 
         // Initialize
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 B.Y PRO Signup System with OTP Initialized');
             console.log('API Base URL:', API_BASE);
+            
+            // Check health immediately
             checkServiceHealth();
             
             // Check health every 30 seconds
