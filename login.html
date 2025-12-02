@@ -607,15 +607,37 @@
 
         // ========== إرسال حالة المستخدم للمشاريع الأخرى ==========
         function broadcastUserStatus(userData, isLoggedIn) {
-            // تخزين الحالة محلياً
-            safeStorage.setItem('bypro_user_status', {
+            // تخزين الحالة محلياً بالتنسيق المطلوب للمتجر
+            const byproAuthData = {
                 user: userData,
-                isLoggedIn: isLoggedIn,
-                timestamp: Date.now(),
-                appId: APP_ID
+                timestamp: Date.now()
+            };
+            
+            safeStorage.setItem('bypro_auth_data', byproAuthData);
+            console.log('💾 Saved to bypro_auth_data:', byproAuthData);
+            
+            // تخزين نسخة إضافية للتأكد
+            safeStorage.setItem('authsync_user_data', userData);
+            safeStorage.setItem('authsync_user_status', {
+                authenticated: isLoggedIn,
+                lastCheck: Date.now(),
+                appId: APP_ID,
+                sessionId: generateSessionId()
             });
             
-            // إرسال للوالد (إذا كان في iframe)
+            // إرسال للوالد (إذا كان في iframe) - الرسالة التي يتوقعها المتجر
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'AUTHSYNC_AUTH_RESPONSE',
+                    authenticated: isLoggedIn,
+                    user: userData,
+                    sessionId: generateSessionId(),
+                    timestamp: Date.now()
+                }, '*');
+                console.log('📨 Sent AUTHSYNC_AUTH_RESPONSE to parent');
+            }
+            
+            // إرسال للوالد بصيغة متوافقة مع AuthSync
             if (window.parent !== window) {
                 window.parent.postMessage({
                     type: 'BYPRO_USER_STATUS',
@@ -638,29 +660,44 @@
             console.log('📢 تم بث حالة المستخدم:', { user: userData, isLoggedIn });
         }
 
+        // ========== إنشاء معرف جلسة ==========
+        function generateSessionId() {
+            return Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
         // ========== FIRST: Check if user is already logged in ==========
         function checkExistingLogin() {
             console.log('🔍 Checking for existing login...');
             
             try {
-                // First try to get from parent window via postMessage
-                requestUserDataFromParent();
+                // First check the format expected by the store
+                const byproAuthData = safeStorage.getItem('bypro_auth_data');
+                if (byproAuthData && byproAuthData.user) {
+                    const userData = byproAuthData.user;
+                    if (userData.authString && userData.authString.startsWith('BYPRO:')) {
+                        console.log('✅ Found existing BYPRO user in storage:', userData);
+                        currentUser = userData;
+                        showLoggedInState(userData);
+                        return true;
+                    }
+                }
                 
-                // Also check local storage
-                const userData = safeStorage.getItem('bypro_user');
-                const userStatus = safeStorage.getItem('bypro_user_status');
+                // Also check legacy storage
+                const userData = safeStorage.getItem('authsync_user_data');
+                const userStatus = safeStorage.getItem('authsync_user_status');
                 
-                if (userData && userStatus && userStatus.isLoggedIn) {
-                    console.log('✅ Found existing user in storage:', userData);
+                if (userData && userStatus && userStatus.authenticated) {
+                    console.log('✅ Found existing authsync user in storage:', userData);
                     
-                    if (userData.id && userData.password) {
+                    if (userData.id && userData.authString && userData.authString.startsWith('BYPRO:')) {
                         currentUser = userData;
                         showLoggedInState(userData);
                         return true;
                     } else {
                         console.log('❌ Invalid user data structure');
-                        safeStorage.removeItem('bypro_user');
-                        safeStorage.removeItem('bypro_user_status');
+                        safeStorage.removeItem('bypro_auth_data');
+                        safeStorage.removeItem('authsync_user_data');
+                        safeStorage.removeItem('authsync_user_status');
                     }
                 }
             } catch (error) {
@@ -695,6 +732,30 @@
                     }
                 }
                 
+                // Handle AUTH_REQUEST from AuthSync (Store PRO)
+                if (event.data && event.data.type === 'AUTHSYNC_AUTH_REQUEST') {
+                    console.log('🔐 Auth request from AuthSync:', event.data);
+                    if (currentUser) {
+                        // Send authentication response
+                        event.source.postMessage({
+                            type: 'AUTHSYNC_AUTH_RESPONSE',
+                            authenticated: true,
+                            user: currentUser,
+                            sessionId: event.data.sessionId || generateSessionId(),
+                            timestamp: Date.now()
+                        }, event.origin);
+                        console.log('📨 Sent AUTHSYNC_AUTH_RESPONSE');
+                    } else {
+                        // Not authenticated
+                        event.source.postMessage({
+                            type: 'AUTHSYNC_AUTH_RESPONSE',
+                            authenticated: false,
+                            sessionId: event.data.sessionId || generateSessionId(),
+                            timestamp: Date.now()
+                        }, event.origin);
+                    }
+                }
+                
                 // Handle logout command from parent
                 if (event.data && event.data.type === 'FORCE_LOGOUT') {
                     console.log('🚪 Logout requested by parent');
@@ -718,8 +779,13 @@
                 // Handle login requests from other projects
                 if (event.data && event.data.type === 'REQUEST_LOGIN') {
                     console.log('🔐 Login request received');
-                    // يمكنك تخصيص هذا الجزء حسب احتياجاتك
                     showStatus('Login requested by external application', 'warning');
+                }
+                
+                // Handle AUTHSYNC_LOGOUT from parent
+                if (event.data && event.data.type === 'AUTHSYNC_LOGOUT') {
+                    console.log('🚪 AUTHSYNC_LOGOUT received from parent');
+                    logout();
                 }
             });
         }
@@ -750,12 +816,23 @@
         function sendLoginSuccessMessage(user) {
             try {
                 if (window.parent !== window) {
+                    // Send to parent in store PRO format
+                    window.parent.postMessage({
+                        type: 'AUTHSYNC_AUTH_RESPONSE',
+                        authenticated: true,
+                        user: user,
+                        sessionId: generateSessionId(),
+                        timestamp: Date.now()
+                    }, '*');
+                    
+                    // Also send in BYPRO format
                     window.parent.postMessage({
                         type: 'USER_AUTHENTICATED',
                         userData: user,
                         timestamp: Date.now()
                     }, '*');
-                    console.log('📨 Sent login success message to parent');
+                    
+                    console.log('📨 Sent login success messages to parent');
                 }
             } catch (error) {
                 console.log('⚠️ Could not send message to parent');
@@ -767,8 +844,9 @@
             console.log('🚪 Logging out...');
             
             // Clear all storage
-            safeStorage.removeItem('bypro_user');
-            safeStorage.removeItem('bypro_user_status');
+            safeStorage.removeItem('bypro_auth_data');
+            safeStorage.removeItem('authsync_user_data');
+            safeStorage.removeItem('authsync_user_status');
             currentUser = null;
             
             // Reset UI
@@ -780,9 +858,15 @@
             passwordInput.value = '';
             qrFileInput.value = '';
             
-            // Send logout message to parent
+            // Send logout message to parent in both formats
             try {
                 if (window.parent !== window) {
+                    window.parent.postMessage({
+                        type: 'AUTHSYNC_LOGOUT',
+                        sessionId: generateSessionId(),
+                        timestamp: Date.now()
+                    }, '*');
+                    
                     window.parent.postMessage({
                         type: 'USER_LOGGED_OUT',
                         timestamp: Date.now()
@@ -916,6 +1000,28 @@
             }
         }
 
+        // ========== Create user object in BYPRO format ==========
+        function createBYPROUserObject(id, password, accountData = {}) {
+            const authString = `BYPRO:${id}:${password}`;
+            
+            return {
+                id: id,
+                username: accountData.name || `Developer_${id}`,
+                password: password,
+                authString: authString, // التنسيق الأساسي: BYPRO:رقم_ايدي:كلمة_مرور
+                name: accountData.name || `Developer ${id}`,
+                email: accountData.email || '',
+                image: accountData.image || '',
+                loginTime: new Date().toISOString(),
+                lastLogin: new Date().toISOString(),
+                source: 'bypro_login',
+                uid: id, // متوافق مع firebase uid
+                developerId: id, // للمتجر
+                developerName: accountData.name || `Developer #${id}`,
+                developerEmail: accountData.email || ''
+            };
+        }
+
         // ========== LAST: Verify login credentials and SAVE ==========
         async function verifyLogin(id, password) {
             if (!id || !password) {
@@ -961,29 +1067,41 @@
                     const accountsData = await accountsResponse.json();
                     
                     let userImage = '';
+                    let userName = '';
+                    let userEmail = '';
+                    
                     if (accountsData.success) {
                         const account = accountsData.accounts.find(acc => acc.id === id);
                         userImage = account?.image || '';
+                        userName = account?.name || '';
+                        userEmail = account?.email || '';
                     }
 
-                    // ========== SAVE USER DATA ==========
-                    const userData = {
-                        id: result.account.id,
-                        name: result.account.name,
-                        email: result.account.email,
-                        password: password,
-                        image: userImage,
-                        loginTime: new Date().toISOString(),
-                        lastLogin: new Date().toISOString(),
-                        source: 'bypro_login'
+                    // ========== SAVE USER DATA IN BYPRO FORMAT ==========
+                    const userData = createBYPROUserObject(id, password, {
+                        name: userName,
+                        email: userEmail,
+                        image: userImage
+                    });
+                    
+                    console.log('💾 Saving user data in BYPRO format:', userData);
+                    
+                    // Save locally in the format expected by the store
+                    const byproAuthData = {
+                        user: userData,
+                        timestamp: Date.now()
                     };
                     
-                    // Try to save locally
-                    const savedLocally = safeStorage.setItem('bypro_user', userData);
+                    safeStorage.setItem('bypro_auth_data', byproAuthData);
                     
-                    if (!savedLocally) {
-                        console.log('💡 Storage not available, relying on parent window');
-                    }
+                    // Also save in legacy format for compatibility
+                    safeStorage.setItem('authsync_user_data', userData);
+                    safeStorage.setItem('authsync_user_status', {
+                        authenticated: true,
+                        lastCheck: Date.now(),
+                        appId: APP_ID,
+                        sessionId: generateSessionId()
+                    });
                     
                     currentUser = userData;
                     
@@ -1103,7 +1221,6 @@
                 user: currentUser
             }),
             requestLogin: () => {
-                // يمكنك تخصيص هذا حسب احتياجاتك
                 showStatus('Login requested externally', 'warning');
             },
             logout: logout
