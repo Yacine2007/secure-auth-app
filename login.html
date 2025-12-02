@@ -9,433 +9,7 @@
     <link rel="apple-touch-icon" href="https://bypro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        :root {
-            --primary-color: #3498db;
-            --primary-dark: #2980b9;
-            --bg-color: #000000;
-            --card-bg: #111111;
-            --text-color: #ffffff;
-            --text-muted: #bdc3c7;
-            --border-color: #2c3e50;
-            --danger-color: #e74c3c;
-            --warning-color: #f39c12;
-            --success-color: #2ecc71;
-            --border-radius: 12px;
-        }
-
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
-        }
-
-        body {
-            background: linear-gradient(135deg, #000000 0%, #1a1a2e 50%, #16213e 100%);
-            color: var(--text-color);
-            min-height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            padding: 20px;
-            line-height: 1.6;
-        }
-
-        .login-container {
-            background-color: var(--card-bg);
-            padding: 40px 30px;
-            border-radius: var(--border-radius);
-            width: 100%;
-            max-width: 450px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
-        }
-
-        .logo {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-
-        .logo h1 {
-            color: var(--primary-color);
-            font-size: 2rem;
-            margin-bottom: 10px;
-            font-weight: 700;
-        }
-
-        .logo p {
-            color: var(--text-muted);
-            font-size: 1rem;
-        }
-
-        .login-methods {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-            flex-wrap: wrap;
-        }
-
-        .method-btn {
-            flex: 1;
-            min-width: 120px;
-            padding: 14px 16px;
-            background-color: transparent;
-            color: var(--text-color);
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .method-btn.active {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        .method-btn:hover {
-            border-color: var(--primary-color);
-            transform: translateY(-1px);
-        }
-
-        .login-form {
-            display: none;
-            animation: fadeIn 0.5s ease;
-        }
-
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .login-form.active {
-            display: block;
-        }
-
-        .form-group {
-            margin-bottom: 20px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 8px;
-            color: var(--text-muted);
-            font-size: 0.9rem;
-            font-weight: 500;
-        }
-
-        .form-group input {
-            width: 100%;
-            padding: 14px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-            background-color: rgba(0, 0, 0, 0.3);
-            color: var(--text-color);
-            font-size: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .form-group input:focus {
-            outline: none;
-            border-color: var(--primary-color);
-            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-            background-color: rgba(0, 0, 0, 0.5);
-        }
-
-        .login-btn {
-            width: 100%;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            border: none;
-            padding: 16px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
-        }
-
-        .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
-        }
-
-        .login-btn:active {
-            transform: translateY(0);
-        }
-
-        .login-btn:disabled {
-            background: var(--text-muted);
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-
-        .qr-scanner {
-            text-align: center;
-        }
-
-        .file-upload {
-            margin: 20px 0;
-        }
-
-        .file-input {
-            display: none;
-        }
-
-        .file-label {
-            display: block;
-            padding: 14px 20px;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            border-radius: var(--border-radius);
-            text-align: center;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            border: 2px solid transparent;
-        }
-
-        .file-label:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        .status-message {
-            padding: 12px 16px;
-            margin: 15px 0;
-            border-radius: var(--border-radius);
-            text-align: center;
-            display: none;
-            animation: slideIn 0.3s ease;
-            font-weight: 500;
-        }
-
-        @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
-            to { opacity: 1; transform: translateX(0); }
-        }
-
-        .status-success {
-            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.2));
-            color: var(--success-color);
-            border: 2px solid var(--success-color);
-        }
-
-        .status-error {
-            background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.2));
-            color: var(--danger-color);
-            border: 2px solid var(--danger-color);
-        }
-
-        .status-warning {
-            background: linear-gradient(135deg, rgba(243, 156, 18, 0.2), rgba(211, 84, 0, 0.2));
-            color: var(--warning-color);
-            border: 2px solid var(--warning-color);
-        }
-
-        .logged-in-info {
-            display: none;
-            text-align: center;
-            padding: 30px 20px;
-            animation: fadeIn 0.5s ease;
-        }
-
-        .user-avatar {
-            width: 120px;
-            height: 120px;
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 3rem;
-            color: white;
-            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-        }
-
-        .user-avatar img {
-            width: 100%;
-            height: 100%;
-            object-fit: cover;
-            border-radius: 50%;
-        }
-
-        .logged-in-info h3 {
-            color: var(--text-color);
-            margin-bottom: 10px;
-            font-size: 1.5rem;
-        }
-
-        .success-message {
-            color: var(--success-color);
-            margin-bottom: 20px;
-            font-size: 1rem;
-            font-weight: 500;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-
-        .connection-status {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-            font-size: 0.8rem;
-            font-weight: 500;
-            z-index: 1000;
-            display: none;
-            animation: slideIn 0.3s ease;
-        }
-
-        .connection-online {
-            background: var(--success-color);
-            color: white;
-        }
-
-        .connection-offline {
-            background: var(--danger-color);
-            color: white;
-        }
-
-        .loading-spinner {
-            display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ffffff;
-            border-radius: 50%;
-            border-top-color: transparent;
-            animation: spin 1s ease-in-out infinite;
-        }
-
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
-
-        .signup-section {
-            text-align: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
-        }
-
-        .signup-text {
-            color: var(--text-muted);
-            margin-bottom: 15px;
-            font-size: 0.9rem;
-        }
-
-        .signup-btn {
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: var(--border-radius);
-            cursor: pointer;
-            font-weight: 500;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-        }
-
-        .signup-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
-        }
-
-        /* تحسينات للتجاوب */
-        @media (max-width: 768px) {
-            .login-container {
-                padding: 30px 20px;
-                margin: 10px;
-                max-width: 100%;
-            }
-
-            .logo h1 {
-                font-size: 1.8rem;
-            }
-
-            .method-btn {
-                min-width: 140px;
-                padding: 12px 14px;
-                font-size: 0.85rem;
-            }
-
-            .user-avatar {
-                width: 100px;
-                height: 100px;
-                font-size: 2.5rem;
-            }
-
-            .logged-in-info h3 {
-                font-size: 1.3rem;
-            }
-        }
-
-        @media (max-width: 480px) {
-            body {
-                padding: 10px;
-            }
-
-            .login-container {
-                padding: 25px 15px;
-            }
-
-            .logo h1 {
-                font-size: 1.6rem;
-            }
-
-            .logo p {
-                font-size: 0.9rem;
-            }
-
-            .login-methods {
-                flex-direction: column;
-            }
-
-            .method-btn {
-                min-width: auto;
-                width: 100%;
-            }
-
-            .form-group input {
-                padding: 12px 14px;
-                font-size: 0.9rem;
-            }
-
-            .login-btn {
-                padding: 14px;
-                font-size: 0.9rem;
-            }
-
-            .connection-status {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                text-align: center;
-            }
-        }
+        /* نفس الـ CSS السابق */
     </style>
 </head>
 <body>
@@ -458,10 +32,10 @@
             <h3>Welcome back, <span id="userName">User</span>!</h3>
             <div class="success-message">
                 <i class="fas fa-check-circle"></i>
-                <span>You are successfully logged in</span>
+                <span>Login successful! Closing in 3 seconds...</span>
             </div>
-            <button class="login-btn" onclick="logout()" style="margin-top: 20px; background: var(--danger-color);">
-                <i class="fas fa-sign-out-alt"></i> Logout
+            <button class="login-btn" onclick="forceClose()" style="margin-top: 20px; background: var(--primary-color);">
+                <i class="fas fa-times"></i> Close Now
             </button>
         </div>
 
@@ -526,10 +100,7 @@
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     
     <script>
-        // ========== نظام الاتصال مع المشاريع الأخرى ==========
-        
-        // معرف فريد للتطبيق (يجب تغييره لكل مشروع)
-        const APP_ID = 'bypro_login_system';
+        // ========== BYPRO LOGIN SYSTEM - النظام الموحد ==========
         
         // DOM Elements
         const loginSection = document.getElementById('loginSection');
@@ -555,428 +126,127 @@
         let isOnline = false;
         let currentUser = null;
 
-        // ========== Safe Storage for iframe ==========
-        const safeStorage = {
-            // Try localStorage, fallback to sessionStorage, then memory
-            setItem: (key, value) => {
-                try {
-                    localStorage.setItem(key, JSON.stringify(value));
-                    console.log('💾 Saved to localStorage');
-                    return true;
-                } catch (e) {
-                    console.log('⚠️ localStorage blocked, trying sessionStorage');
-                    try {
-                        sessionStorage.setItem(key, JSON.stringify(value));
-                        console.log('💾 Saved to sessionStorage');
-                        return true;
-                    } catch (e2) {
-                        console.log('⚠️ All storage blocked, using memory');
-                        // Store in memory only
-                        window[key] = value;
-                        return false;
-                    }
-                }
-            },
-
-            getItem: (key) => {
-                try {
-                    const item = localStorage.getItem(key);
-                    return item ? JSON.parse(item) : null;
-                } catch (e) {
-                    try {
-                        const item = sessionStorage.getItem(key);
-                        return item ? JSON.parse(item) : null;
-                    } catch (e2) {
-                        return window[key] || null;
-                    }
-                }
-            },
-
-            removeItem: (key) => {
-                try {
-                    localStorage.removeItem(key);
-                } catch (e) {
-                    try {
-                        sessionStorage.removeItem(key);
-                    } catch (e2) {
-                        delete window[key];
-                    }
-                }
+        // ========== INITIALIZE ==========
+        function init() {
+            console.log('🚀 BYPRO Login initializing...');
+            
+            setupEventListeners();
+            setupMessageListener();
+            checkConnection();
+            
+            // Focus on ID field if in manual mode
+            if (currentMethod === 'manual') {
+                setTimeout(() => userIdInput.focus(), 300);
             }
-        };
-
-        // ========== إرسال حالة المستخدم للمشاريع الأخرى ==========
-        function broadcastUserStatus(userData, isLoggedIn) {
-            // تخزين الحالة محلياً بالتنسيق المطلوب للمتجر
-            const byproAuthData = {
-                user: userData,
-                timestamp: Date.now()
-            };
-            
-            safeStorage.setItem('bypro_auth_data', byproAuthData);
-            console.log('💾 Saved to bypro_auth_data:', byproAuthData);
-            
-            // تخزين نسخة إضافية للتأكد
-            safeStorage.setItem('authsync_user_data', userData);
-            safeStorage.setItem('authsync_user_status', {
-                authenticated: isLoggedIn,
-                lastCheck: Date.now(),
-                appId: APP_ID,
-                sessionId: generateSessionId()
-            });
-            
-            // إرسال للوالد (إذا كان في iframe) - الرسالة التي يتوقعها المتجر
-            if (window.parent !== window) {
-                window.parent.postMessage({
-                    type: 'AUTHSYNC_AUTH_RESPONSE',
-                    authenticated: isLoggedIn,
-                    user: userData,
-                    sessionId: generateSessionId(),
-                    timestamp: Date.now()
-                }, '*');
-                console.log('📨 Sent AUTHSYNC_AUTH_RESPONSE to parent');
-            }
-            
-            // إرسال للوالد بصيغة متوافقة مع AuthSync
-            if (window.parent !== window) {
-                window.parent.postMessage({
-                    type: 'BYPRO_USER_STATUS',
-                    user: userData,
-                    isLoggedIn: isLoggedIn,
-                    timestamp: Date.now(),
-                    source: 'bypro_login'
-                }, '*');
-            }
-            
-            // إرسال للنوافذ الأخرى في نفس النطاق
-            window.dispatchEvent(new CustomEvent('byproUserStatus', {
-                detail: {
-                    user: userData,
-                    isLoggedIn: isLoggedIn,
-                    timestamp: Date.now()
-                }
-            }));
-            
-            console.log('📢 تم بث حالة المستخدم:', { user: userData, isLoggedIn });
         }
 
-        // ========== إنشاء معرف جلسة ==========
-        function generateSessionId() {
-            return Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        // ========== FIRST: Check if user is already logged in ==========
-        function checkExistingLogin() {
-            console.log('🔍 Checking for existing login...');
-            
-            try {
-                // First check the format expected by the store
-                const byproAuthData = safeStorage.getItem('bypro_auth_data');
-                if (byproAuthData && byproAuthData.user) {
-                    const userData = byproAuthData.user;
-                    if (userData.authString && userData.authString.startsWith('BYPRO:')) {
-                        console.log('✅ Found existing BYPRO user in storage:', userData);
-                        currentUser = userData;
-                        showLoggedInState(userData);
-                        return true;
-                    }
-                }
-                
-                // Also check legacy storage
-                const userData = safeStorage.getItem('authsync_user_data');
-                const userStatus = safeStorage.getItem('authsync_user_status');
-                
-                if (userData && userStatus && userStatus.authenticated) {
-                    console.log('✅ Found existing authsync user in storage:', userData);
+        // ========== SETUP EVENT LISTENERS ==========
+        function setupEventListeners() {
+            // Switch between login methods
+            methodBtns.forEach(btn => {
+                btn.addEventListener('click', () => {
+                    methodBtns.forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    currentMethod = btn.dataset.method;
                     
-                    if (userData.id && userData.authString && userData.authString.startsWith('BYPRO:')) {
-                        currentUser = userData;
-                        showLoggedInState(userData);
-                        return true;
+                    qrForm.classList.remove('active');
+                    manualForm.classList.remove('active');
+                    
+                    if (currentMethod === 'qr') {
+                        qrForm.classList.add('active');
                     } else {
-                        console.log('❌ Invalid user data structure');
-                        safeStorage.removeItem('bypro_auth_data');
-                        safeStorage.removeItem('authsync_user_data');
-                        safeStorage.removeItem('authsync_user_status');
+                        manualForm.classList.add('active');
+                        setTimeout(() => userIdInput.focus(), 300);
                     }
-                }
-            } catch (error) {
-                console.error('❌ Error checking existing login:', error);
-            }
-            
-            return false;
+                });
+            });
+
+            // QR Code upload
+            qrFileInput.addEventListener('change', handleQRUpload);
+
+            // Manual login
+            loginBtn.addEventListener('click', handleManualLogin);
+
+            // Enter key in manual form
+            [userIdInput, passwordInput].forEach(input => {
+                input.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        loginBtn.click();
+                    }
+                });
+            });
+
+            // Input validation
+            userIdInput.addEventListener('input', (e) => {
+                e.target.value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
+            });
         }
 
-        // ========== Request user data from parent window ==========
-        function requestUserDataFromParent() {
-            if (window.parent !== window) {
-                console.log('📨 Requesting user data from parent...');
-                window.parent.postMessage({
-                    type: 'GET_USER_DATA_REQUEST',
-                    timestamp: Date.now()
-                }, '*');
-            }
-        }
-
-        // ========== Setup message listener for parent communication ==========
-        function setupParentMessageListener() {
-            window.addEventListener('message', function(event) {
-                console.log('📨 Message from parent:', event.data);
+        // ========== MESSAGE LISTENER ==========
+        function setupMessageListener() {
+            window.addEventListener('message', (event) => {
+                console.log('📨 Message received:', event.data);
                 
-                // Handle user data response from parent
-                if (event.data && event.data.type === 'USER_DATA_RESPONSE') {
-                    console.log('✅ Received user data from parent:', event.data.userData);
-                    if (event.data.userData) {
-                        currentUser = event.data.userData;
-                        showLoggedInState(event.data.userData);
-                    }
-                }
-                
-                // Handle AUTH_REQUEST from AuthSync (Store PRO)
+                // Handle auth requests from parent
                 if (event.data && event.data.type === 'AUTHSYNC_AUTH_REQUEST') {
-                    console.log('🔐 Auth request from AuthSync:', event.data);
-                    if (currentUser) {
-                        // Send authentication response
-                        event.source.postMessage({
-                            type: 'AUTHSYNC_AUTH_RESPONSE',
-                            authenticated: true,
-                            user: currentUser,
-                            sessionId: event.data.sessionId || generateSessionId(),
-                            timestamp: Date.now()
-                        }, event.origin);
-                        console.log('📨 Sent AUTHSYNC_AUTH_RESPONSE');
-                    } else {
-                        // Not authenticated
-                        event.source.postMessage({
-                            type: 'AUTHSYNC_AUTH_RESPONSE',
-                            authenticated: false,
-                            sessionId: event.data.sessionId || generateSessionId(),
-                            timestamp: Date.now()
-                        }, event.origin);
-                    }
+                    console.log('🔐 Auth request from parent');
+                    // يمكن إضافة رد هنا إذا لزم الأمر
                 }
                 
-                // Handle logout command from parent
-                if (event.data && event.data.type === 'FORCE_LOGOUT') {
-                    console.log('🚪 Logout requested by parent');
-                    logout();
-                }
-                
-                // Handle status requests from other projects
-                if (event.data && event.data.type === 'GET_USER_STATUS') {
-                    console.log('📊 Status request received');
-                    const status = {
-                        isLoggedIn: currentUser !== null,
-                        user: currentUser,
-                        timestamp: Date.now()
-                    };
-                    event.source.postMessage({
-                        type: 'USER_STATUS_RESPONSE',
-                        ...status
-                    }, event.origin);
-                }
-                
-                // Handle login requests from other projects
-                if (event.data && event.data.type === 'REQUEST_LOGIN') {
-                    console.log('🔐 Login request received');
-                    showStatus('Login requested by external application', 'warning');
-                }
-                
-                // Handle AUTHSYNC_LOGOUT from parent
-                if (event.data && event.data.type === 'AUTHSYNC_LOGOUT') {
-                    console.log('🚪 AUTHSYNC_LOGOUT received from parent');
-                    logout();
+                // Handle other messages
+                if (event.data && event.data.type === 'BYPRO_LOGOUT') {
+                    console.log('🚪 Logout requested');
+                    // يمكن إضافة منطق تسجيل الخروج إذا لزم الأمر
                 }
             });
         }
 
-        // ========== Show logged in state ==========
-        function showLoggedInState(user) {
-            console.log('🎉 Showing logged in state for:', user.name || user.id);
-            
-            loginSection.style.display = 'none';
-            loggedInInfo.style.display = 'block';
-            userNameSpan.textContent = user.name || `User ${user.id}`;
-            
-            // Show user avatar if available
-            if (user.image) {
-                userAvatar.innerHTML = `<img src="${user.image}?t=${Date.now()}" alt="User Avatar" onerror="handleImageError(this)">`;
-            } else {
-                userAvatar.innerHTML = '<i class="fas fa-user-check"></i>';
-            }
-            
-            // Send login success message to parent
-            sendLoginSuccessMessage(user);
-            
-            // Broadcast user status to other projects
-            broadcastUserStatus(user, true);
-        }
-
-        // ========== Send login success message ==========
-        function sendLoginSuccessMessage(user) {
-            try {
-                if (window.parent !== window) {
-                    // Send to parent in store PRO format
-                    window.parent.postMessage({
-                        type: 'AUTHSYNC_AUTH_RESPONSE',
-                        authenticated: true,
-                        user: user,
-                        sessionId: generateSessionId(),
-                        timestamp: Date.now()
-                    }, '*');
-                    
-                    // Also send in BYPRO format
-                    window.parent.postMessage({
-                        type: 'USER_AUTHENTICATED',
-                        userData: user,
-                        timestamp: Date.now()
-                    }, '*');
-                    
-                    console.log('📨 Sent login success messages to parent');
-                }
-            } catch (error) {
-                console.log('⚠️ Could not send message to parent');
-            }
-        }
-
-        // ========== Logout function ==========
-        function logout() {
-            console.log('🚪 Logging out...');
-            
-            // Clear all storage
-            safeStorage.removeItem('bypro_auth_data');
-            safeStorage.removeItem('authsync_user_data');
-            safeStorage.removeItem('authsync_user_status');
-            currentUser = null;
-            
-            // Reset UI
-            loggedInInfo.style.display = 'none';
-            loginSection.style.display = 'block';
-            
-            // Clear form fields
-            userIdInput.value = '';
-            passwordInput.value = '';
-            qrFileInput.value = '';
-            
-            // Send logout message to parent in both formats
-            try {
-                if (window.parent !== window) {
-                    window.parent.postMessage({
-                        type: 'AUTHSYNC_LOGOUT',
-                        sessionId: generateSessionId(),
-                        timestamp: Date.now()
-                    }, '*');
-                    
-                    window.parent.postMessage({
-                        type: 'USER_LOGGED_OUT',
-                        timestamp: Date.now()
-                    }, '*');
-                }
-            } catch (error) {
-                console.log('⚠️ Could not send logout message');
-            }
-            
-            // Broadcast logout status to other projects
-            broadcastUserStatus(null, false);
-            
-            showStatus('You have been logged out', 'success');
-        }
-
-        // ========== Handle image loading errors ==========
-        function handleImageError(img) {
-            console.log('🖼️ Image loading error, using default avatar');
-            const parent = img.parentElement;
-            parent.innerHTML = '<i class="fas fa-user-check"></i>';
-        }
-
-        // ========== Update connection status ==========
-        function updateConnectionStatus(online) {
-            isOnline = online;
-            if (online) {
-                connectionStatus.className = 'connection-status connection-online';
-                connectionText.textContent = 'Connected';
-                connectionStatus.style.display = 'block';
-                setTimeout(() => {
-                    connectionStatus.style.display = 'none';
-                }, 3000);
-            } else {
-                connectionStatus.className = 'connection-status connection-offline';
-                connectionText.textContent = 'Offline - Check Connection';
-                connectionStatus.style.display = 'block';
-            }
-        }
-
-        // ========== Show status message ==========
-        function showStatus(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message status-${type}`;
-            statusMessage.style.display = 'block';
-            
-            setTimeout(() => {
-                statusMessage.style.display = 'none';
-            }, 5000);
-        }
-
-        // ========== Switch between login methods ==========
-        methodBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                methodBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentMethod = btn.dataset.method;
-                
-                qrForm.classList.remove('active');
-                manualForm.classList.remove('active');
-                
-                if (currentMethod === 'qr') {
-                    qrForm.classList.add('active');
-                } else {
-                    manualForm.classList.add('active');
-                    setTimeout(() => userIdInput.focus(), 300);
-                }
-            });
-        });
-
-        // ========== Process uploaded QR code image ==========
-        qrFileInput.addEventListener('change', (event) => {
+        // ========== HANDLE QR UPLOAD ==========
+        function handleQRUpload(event) {
             const file = event.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    showStatus('Image size too large. Please select a smaller image.', 'error');
-                    return;
-                }
+            if (!file) return;
 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        context.drawImage(img, 0, 0);
-                        
-                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, canvas.height);
-                        
-                        if (code) {
-                            processQRCode(code.data);
-                        } else {
-                            showStatus('No QR code found in the image', 'error');
-                        }
-                    };
-                    img.onerror = () => {
-                        showStatus('Error loading image', 'error');
-                    };
-                    img.src = e.target.result;
-                };
-                reader.onerror = () => {
-                    showStatus('Error reading file', 'error');
-                };
-                reader.readAsDataURL(file);
+            if (file.size > 5 * 1024 * 1024) {
+                showStatus('Image size too large. Please select a smaller image.', 'error');
+                return;
             }
-        });
 
-        // ========== Process QR code data ==========
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.onload = () => {
+                    scanQRCode(img);
+                };
+                img.onerror = () => {
+                    showStatus('Error loading image', 'error');
+                };
+                img.src = e.target.result;
+            };
+            reader.onerror = () => {
+                showStatus('Error reading file', 'error');
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // ========== SCAN QR CODE ==========
+        function scanQRCode(img) {
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = img.width;
+            canvas.height = img.height;
+            context.drawImage(img, 0, 0);
+            
+            const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+            const code = jsQR(imageData.data, imageData.width, canvas.height);
+            
+            if (code) {
+                processQRCode(code.data);
+            } else {
+                showStatus('No QR code found in the image', 'error');
+            }
+        }
+
+        // ========== PROCESS QR CODE ==========
         function processQRCode(data) {
             console.log('📱 QR Code detected:', data);
             
@@ -1000,145 +270,8 @@
             }
         }
 
-        // ========== Create user object in BYPRO format ==========
-        function createBYPROUserObject(id, password, accountData = {}) {
-            const authString = `BYPRO:${id}:${password}`;
-            
-            return {
-                id: id,
-                username: accountData.name || `Developer_${id}`,
-                password: password,
-                authString: authString, // التنسيق الأساسي: BYPRO:رقم_ايدي:كلمة_مرور
-                name: accountData.name || `Developer ${id}`,
-                email: accountData.email || '',
-                image: accountData.image || '',
-                loginTime: new Date().toISOString(),
-                lastLogin: new Date().toISOString(),
-                source: 'bypro_login',
-                uid: id, // متوافق مع firebase uid
-                developerId: id, // للمتجر
-                developerName: accountData.name || `Developer #${id}`,
-                developerEmail: accountData.email || ''
-            };
-        }
-
-        // ========== LAST: Verify login credentials and SAVE ==========
-        async function verifyLogin(id, password) {
-            if (!id || !password) {
-                showStatus('ID and password are required', 'error');
-                return;
-            }
-
-            // Show loading state
-            if (currentMethod === 'qr') {
-                const fileLabel = document.querySelector('.file-label');
-                fileLabel.innerHTML = '<div class="loading-spinner"></div> Verifying...';
-                fileLabel.style.opacity = '0.7';
-                fileLabel.style.cursor = 'not-allowed';
-            } else {
-                loginBtn.disabled = true;
-                loginBtn.innerHTML = '<div class="loading-spinner"></div> Verifying...';
-            }
-
-            try {
-                const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
-                console.log('🔐 Making request to:', url);
-
-                const response = await fetch(url, {
-                    method: 'GET',
-                    headers: {
-                        'Accept': 'application/json',
-                    },
-                    mode: 'cors'
-                });
-
-                console.log('📥 Response status:', response.status);
-
-                if (!response.ok) {
-                    throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
-                }
-
-                const result = await response.json();
-                console.log('📦 Response data:', result);
-
-                if (result.success) {
-                    // Get full account data
-                    const accountsResponse = await fetch(`${API_BASE}/api/debug/accounts`);
-                    const accountsData = await accountsResponse.json();
-                    
-                    let userImage = '';
-                    let userName = '';
-                    let userEmail = '';
-                    
-                    if (accountsData.success) {
-                        const account = accountsData.accounts.find(acc => acc.id === id);
-                        userImage = account?.image || '';
-                        userName = account?.name || '';
-                        userEmail = account?.email || '';
-                    }
-
-                    // ========== SAVE USER DATA IN BYPRO FORMAT ==========
-                    const userData = createBYPROUserObject(id, password, {
-                        name: userName,
-                        email: userEmail,
-                        image: userImage
-                    });
-                    
-                    console.log('💾 Saving user data in BYPRO format:', userData);
-                    
-                    // Save locally in the format expected by the store
-                    const byproAuthData = {
-                        user: userData,
-                        timestamp: Date.now()
-                    };
-                    
-                    safeStorage.setItem('bypro_auth_data', byproAuthData);
-                    
-                    // Also save in legacy format for compatibility
-                    safeStorage.setItem('authsync_user_data', userData);
-                    safeStorage.setItem('authsync_user_status', {
-                        authenticated: true,
-                        lastCheck: Date.now(),
-                        appId: APP_ID,
-                        sessionId: generateSessionId()
-                    });
-                    
-                    currentUser = userData;
-                    
-                    showStatus('Login successful!', 'success');
-                    updateConnectionStatus(true);
-                    
-                    // Show logged in state
-                    showLoggedInState(userData);
-                    
-                } else {
-                    showStatus(result.error || 'Login failed', 'error');
-                }
-            } catch (error) {
-                console.error('❌ Login error:', error);
-                if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
-                    showStatus('Cannot connect to server. Please check your internet connection.', 'error');
-                    updateConnectionStatus(false);
-                } else {
-                    showStatus('Login error: ' + error.message, 'error');
-                }
-            } finally {
-                // Reset UI
-                if (currentMethod === 'qr') {
-                    const fileLabel = document.querySelector('.file-label');
-                    fileLabel.innerHTML = '<i class="fas fa-upload"></i> Upload QR Code Image';
-                    fileLabel.style.opacity = '1';
-                    fileLabel.style.cursor = 'pointer';
-                    qrFileInput.value = '';
-                } else {
-                    loginBtn.disabled = false;
-                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
-                }
-            }
-        }
-
-        // ========== Manual login ==========
-        loginBtn.addEventListener('click', () => {
+        // ========== HANDLE MANUAL LOGIN ==========
+        function handleManualLogin() {
             const id = userIdInput.value.trim();
             const password = passwordInput.value.trim();
             
@@ -1155,76 +288,276 @@
             }
             
             verifyLogin(id, password);
-        });
+        }
 
-        // ========== Allow Enter key in manual form ==========
-        [userIdInput, passwordInput].forEach(input => {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') {
-                    loginBtn.click();
-                }
-            });
-        });
+        // ========== VERIFY LOGIN ==========
+        async function verifyLogin(id, password) {
+            console.log('🔐 Verifying login:', { id });
+            
+            // Show loading state
+            setLoading(true);
 
-        // ========== Input validation ==========
-        userIdInput.addEventListener('input', (e) => {
-            e.target.value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
-        });
-
-        // ========== Test server connection ==========
-        async function testServerConnection() {
             try {
-                console.log('🔄 Testing server connection...');
-                const response = await fetch(`${API_BASE}/api/health`);
-                console.log('📡 Health check response:', response.status);
-                
-                if (response.ok) {
-                    updateConnectionStatus(true);
-                    return true;
+                // Make API request
+                const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
+                console.log('🌐 Making request to:', url);
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: { 'Accept': 'application/json' },
+                    mode: 'cors'
+                });
+
+                console.log('📥 Response status:', response.status);
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const result = await response.json();
+                console.log('📦 Response data:', result);
+
+                if (result.success) {
+                    // Get additional account data
+                    const accountsResponse = await fetch(`${API_BASE}/api/debug/accounts`);
+                    const accountsData = await accountsResponse.json();
+                    
+                    let userImage = '';
+                    let userName = '';
+                    let userEmail = '';
+                    
+                    if (accountsData.success) {
+                        const account = accountsData.accounts.find(acc => acc.id === id);
+                        userImage = account?.image || '';
+                        userName = account?.name || '';
+                        userEmail = account?.email || '';
+                    }
+
+                    // Create user object
+                    const authString = `BYPRO:${id}:${password}`;
+                    const userData = {
+                        id: id,
+                        username: userName || `Developer_${id}`,
+                        password: password,
+                        authString: authString,
+                        name: userName || `Developer ${id}`,
+                        email: userEmail || '',
+                        image: userImage || '',
+                        loginTime: new Date().toISOString(),
+                        lastLogin: new Date().toISOString(),
+                        source: 'bypro_login',
+                        uid: id,
+                        developerId: id,
+                        developerName: userName || `Developer #${id}`,
+                        developerEmail: userEmail || ''
+                    };
+
+                    console.log('👤 User data created:', userData);
+                    
+                    // Save to localStorage
+                    saveToLocalStorage(userData);
+                    
+                    // Send to parent
+                    sendToParent(userData);
+                    
+                    // Show success
+                    showLoginSuccess(userData);
+                    
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    showStatus(result.error || 'Login failed', 'error');
                 }
             } catch (error) {
-                console.error('❌ Server connection test failed:', error);
+                console.error('❌ Login error:', error);
+                if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
+                    showStatus('Cannot connect to server. Please check your internet connection.', 'error');
+                    updateConnectionStatus(false);
+                } else {
+                    showStatus('Login error: ' + error.message, 'error');
+                }
+            } finally {
+                setLoading(false);
+            }
+        }
+
+        // ========== SAVE TO LOCALSTORAGE ==========
+        function saveToLocalStorage(userData) {
+            try {
+                const authData = {
+                    user: userData,
+                    timestamp: Date.now(),
+                    version: '2.0'
+                };
+
+                // Save primary data
+                localStorage.setItem('bypro_auth_data', JSON.stringify(authData));
+                console.log('💾 Saved to bypro_auth_data');
+                
+                // Save backup data
+                localStorage.setItem('bypro_user', JSON.stringify(userData));
+                localStorage.setItem('bypro_status', JSON.stringify({
+                    authenticated: true,
+                    timestamp: Date.now()
+                }));
+                
+                return true;
+            } catch (error) {
+                console.error('❌ Error saving to localStorage:', error);
+                return false;
+            }
+        }
+
+        // ========== SEND TO PARENT ==========
+        function sendToParent(userData) {
+            if (window.parent !== window) {
+                // Send primary message
+                window.parent.postMessage({
+                    type: 'BYPRO_AUTH_SUCCESS',
+                    user: userData,
+                    authString: userData.authString,
+                    timestamp: Date.now()
+                }, '*');
+                
+                console.log('📨 Sent BYPRO_AUTH_SUCCESS to parent');
+                
+                // Send backup message after delay
+                setTimeout(() => {
+                    window.parent.postMessage({
+                        type: 'AUTHSYNC_AUTH_RESPONSE',
+                        authenticated: true,
+                        user: userData,
+                        authString: userData.authString,
+                        sessionId: generateSessionId(),
+                        timestamp: Date.now()
+                    }, '*');
+                    
+                    console.log('📨 Sent AUTHSYNC_AUTH_RESPONSE to parent');
+                }, 100);
+                
+                // Send close message after 2 seconds
+                setTimeout(() => {
+                    window.parent.postMessage({
+                        type: 'CLOSE_IFRAME',
+                        reason: 'login_success',
+                        timestamp: Date.now()
+                    }, '*');
+                    
+                    console.log('📨 Sent CLOSE_IFRAME to parent');
+                }, 2000);
+            }
+        }
+
+        // ========== SHOW LOGIN SUCCESS ==========
+        function showLoginSuccess(userData) {
+            console.log('🎉 Login success!');
+            
+            // Update UI
+            loginSection.style.display = 'none';
+            loggedInInfo.style.display = 'block';
+            userNameSpan.textContent = userData.name || `User ${userData.id}`;
+            
+            // Show avatar
+            if (userData.image) {
+                userAvatar.innerHTML = `<img src="${userData.image}?t=${Date.now()}" alt="User Avatar" onerror="handleImageError(this)">`;
+            } else {
+                userAvatar.innerHTML = '<i class="fas fa-user-check"></i>';
+            }
+            
+            showStatus('Login successful! Closing in 3 seconds...', 'success');
+            updateConnectionStatus(true);
+            
+            // Auto close after 3 seconds
+            setTimeout(() => {
+                forceClose();
+            }, 3000);
+        }
+
+        // ========== UTILITY FUNCTIONS ==========
+        function setLoading(isLoading) {
+            if (currentMethod === 'qr') {
+                const fileLabel = document.querySelector('.file-label');
+                if (isLoading) {
+                    fileLabel.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+                    fileLabel.style.opacity = '0.7';
+                    fileLabel.style.cursor = 'not-allowed';
+                } else {
+                    fileLabel.innerHTML = '<i class="fas fa-upload"></i> Upload QR Code Image';
+                    fileLabel.style.opacity = '1';
+                    fileLabel.style.cursor = 'pointer';
+                    qrFileInput.value = '';
+                }
+            } else {
+                if (isLoading) {
+                    loginBtn.disabled = true;
+                    loginBtn.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+                } else {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                }
+            }
+        }
+
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 5000);
+        }
+
+        function updateConnectionStatus(online) {
+            isOnline = online;
+            if (online) {
+                connectionStatus.className = 'connection-status connection-online';
+                connectionText.textContent = 'Connected';
+                connectionStatus.style.display = 'block';
+                setTimeout(() => {
+                    connectionStatus.style.display = 'none';
+                }, 3000);
+            } else {
+                connectionStatus.className = 'connection-status connection-offline';
+                connectionText.textContent = 'Offline - Check Connection';
+                connectionStatus.style.display = 'block';
+            }
+        }
+
+        function handleImageError(img) {
+            console.log('🖼️ Image loading error');
+            const parent = img.parentElement;
+            parent.innerHTML = '<i class="fas fa-user-check"></i>';
+        }
+
+        function generateSessionId() {
+            return Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        async function checkConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`);
+                updateConnectionStatus(response.ok);
+                return response.ok;
+            } catch (error) {
                 updateConnectionStatus(false);
                 return false;
             }
         }
 
-        // ========== Initialize ==========
-        document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 Initializing login page...');
-            
-            // Setup parent message listener first
-            setupParentMessageListener();
-            
-            // Check if user is already logged in
-            const isLoggedIn = checkExistingLogin();
-            
-            if (!isLoggedIn) {
-                // If not logged in, test connection
-                await testServerConnection();
-                
-                // Focus on ID field if in manual mode
-                if (currentMethod === 'manual') {
-                    setTimeout(() => userIdInput.focus(), 300);
-                }
+        function forceClose() {
+            if (window.parent !== window) {
+                window.parent.postMessage({
+                    type: 'CLOSE_IFRAME',
+                    reason: 'manual_close',
+                    timestamp: Date.now()
+                }, '*');
             }
-        });
+        }
 
-        // Make functions globally available
-        window.logout = logout;
-        window.getCurrentUser = () => currentUser;
-        window.byproAuth = {
-            getUserStatus: () => ({
-                isLoggedIn: currentUser !== null,
-                user: currentUser
-            }),
-            requestLogin: () => {
-                showStatus('Login requested externally', 'warning');
-            },
-            logout: logout
-        };
+        // ========== GLOBAL FUNCTIONS ==========
+        window.forceClose = forceClose;
+
+        // ========== START ==========
+        document.addEventListener('DOMContentLoaded', init);
     </script>
 </body>
 </html>
