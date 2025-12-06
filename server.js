@@ -8,45 +8,77 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Unified Accounts System with OTP...');
+console.log('🚀 Starting B.Y PRO Unified Accounts System with OTP and Admin Dashboard...');
 
-// Enhanced Middleware
+// ==================== ENHANCED CORS CONFIGURATION ====================
 app.use(cors({
-  origin: '*',
+  origin: ['https://yacine2007.github.io', 'http://localhost:5500', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'API-Key', 'X-Requested-With']
 }));
 
 app.options('*', cors());
+
+// ==================== ENHANCED MIDDLEWARE ====================
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(__dirname));
 
-// Enhanced logging middleware
+// Request logging
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url}`);
+  console.log(`📥 ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
   next();
 });
 
 console.log('✅ Middleware initialized');
 
-// ==================== ENHANCED EMAIL CONFIGURATION ====================
+// ==================== API KEY CONFIGURATION ====================
+const API_KEY = 'BYPRO_SECURE_KEY_2007';
+const ADMIN_PASSWORD = '20070909';
+
+// Middleware للتحقق من API Key
+const verifyApiKey = (req, res, next) => {
+  const apiKey = req.headers['api-key'] || req.query.apiKey || req.body.apiKey;
+  
+  console.log('🔐 API Key Check:', { 
+    received: apiKey ? 'Present' : 'Missing',
+    path: req.path,
+    method: req.method 
+  });
+  
+  // السماح لبعض المسارات العامة بدون API Key
+  const publicPaths = ['/api/health', '/api/verify-account', '/api/send-otp', '/api/verify-otp'];
+  
+  if (publicPaths.includes(req.path)) {
+    return next();
+  }
+  
+  if (apiKey === API_KEY) {
+    next();
+  } else {
+    console.error('❌ Invalid API Key');
+    res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Invalid or missing API Key'
+    });
+  }
+};
+
+// ==================== EMAIL CONFIGURATION ====================
 const createEmailTransporter = () => {
-  return nodemailer.createTransporter({
+  return nodemailer.createTransport({
     service: 'gmail',
     auth: {
       user: 'byprosprt2007@gmail.com',
-      pass: 'nspr xhfv yhxu vtwa' // App Password
+      pass: 'nspr xhfv yhxu vtwa'
     }
   });
 };
 
-// In-memory storage for verification codes and OTP
+// ==================== STORAGE CONFIGURATION ====================
 const verificationCodes = new Map();
-const otpStorage = new Map(); // تخزين OTPs
-
-// ==================== RULES SYSTEM ====================
+const otpStorage = new Map();
 const acceptedRules = new Set();
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
@@ -99,34 +131,6 @@ console.log('🔐 Google Drive configuration loaded');
 // Google Drive service
 let driveService = null;
 
-async function ensureCSVFileExists() {
-  try {
-    await driveService.files.get({
-      fileId: FILE_ID,
-      fields: 'id,name'
-    });
-    console.log('✅ CSV file exists');
-    return true;
-  } catch (error) {
-    console.log('📝 CSV file not found, creating new file...');
-    
-    const initialContent = 'id,ps,email,name,image\n';
-    
-    const media = {
-      mimeType: 'text/csv',
-      body: initialContent
-    };
-
-    await driveService.files.update({
-      fileId: FILE_ID,
-      media: media
-    });
-    
-    console.log('✅ Created new CSV file with headers');
-    return true;
-  }
-}
-
 async function initializeDriveService() {
   try {
     console.log('🔄 Initializing Google Drive service...');
@@ -138,113 +142,44 @@ async function initializeDriveService() {
     
     driveService = google.drive({ version: 'v3', auth });
     
+    // Verify file exists
     await driveService.files.get({
       fileId: FILE_ID,
       fields: 'id,name,mimeType,modifiedTime'
     });
     
-    await ensureCSVFileExists();
-    
     console.log('✅ Google Drive service initialized successfully');
     return driveService;
   } catch (error) {
     console.error('❌ Failed to initialize Google Drive service:', error.message);
-    console.error('💡 Please check:');
-    console.error('   1. Google Drive API is enabled');
-    console.error('   2. Service account has access to the file');
-    console.error('   3. File ID is correct');
-    console.error('   4. Private key is valid');
     throw new Error('Google Drive initialization failed');
   }
 }
 
-// Initialize drive service on startup
+// Initialize drive service
 initializeDriveService().catch(error => {
   console.error('🚨 CRITICAL: Cannot start without Google Drive');
   process.exit(1);
 });
 
-// Enhanced CSV operations
-async function readCSVFromDrive(fileId) {
+// ==================== CSV OPERATIONS ====================
+async function readCSVFromDrive() {
   if (!driveService) {
     throw new Error("Google Drive service is not initialized");
   }
 
   try {
-    console.log(`📖 Reading CSV from Drive (File ID: ${fileId})`);
-    
     const response = await driveService.files.get({
-      fileId: fileId,
+      fileId: FILE_ID,
       alt: 'media'
     });
 
-    const data = response.data;
-    console.log(`✅ Successfully read CSV data, length: ${data.length}`);
-    return data;
+    return response.data;
   } catch (error) {
-    console.error('❌ Error reading CSV from Drive:', error.message);
     if (error.message.includes('404')) {
       return '';
     }
     throw new Error(`Unable to read from Google Drive: ${error.message}`);
-  }
-}
-
-async function writeCSVToDrive(fileId, accounts) {
-  if (!driveService) {
-    throw new Error("Google Drive service is not initialized");
-  }
-
-  try {
-    console.log(`💾 Writing ${accounts.length} accounts to Drive...`);
-    
-    const headers = ['id', 'ps', 'email', 'name', 'image'];
-    const csvContent = [
-      headers.join(','),
-      ...accounts.map(account => headers.map(header => 
-        account[header] ? `"${account[header].toString().replace(/"/g, '""')}"` : '""'
-      ).join(','))
-    ].join('\n');
-
-    const media = {
-      mimeType: 'text/csv',
-      body: csvContent
-    };
-
-    await driveService.files.update({
-      fileId: fileId,
-      media: media,
-      fields: 'id,modifiedTime'
-    });
-
-    console.log(`✅ Successfully wrote ${accounts.length} accounts to Google Drive`);
-    return true;
-  } catch (error) {
-    console.error('❌ Error writing CSV to Drive:', error.message);
-    throw new Error(`Unable to write to Google Drive: ${error.message}`);
-  }
-}
-
-// Enhanced account management functions
-async function getNextAvailableId() {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    if (accounts.length === 0) {
-      return "1001";
-    }
-    
-    const ids = accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
-    if (ids.length === 0) {
-      return "1001";
-    }
-    
-    const maxId = Math.max(...ids);
-    return (maxId + 1).toString();
-  } catch (error) {
-    console.error('❌ Error getting next ID:', error.message);
-    return (1000 + Math.floor(Math.random() * 9000)).toString();
   }
 }
 
@@ -261,11 +196,27 @@ function parseCSVToAccounts(csvData) {
       const line = lines[i].trim();
       if (!line) continue;
       
-      if (i === 0 && (line.includes('id,ps,email,name,image') || line.includes('"id","ps","email","name","image"'))) {
+      // Skip header
+      if (i === 0 && line.includes('id,ps,email,name,image')) {
         continue;
       }
       
-      const values = line.split(',').map(val => val.trim().replace(/^"|"$/g, ''));
+      // Parse CSV line
+      const values = [];
+      let current = '';
+      let inQuotes = false;
+      
+      for (let char of line) {
+        if (char === '"') {
+          inQuotes = !inQuotes;
+        } else if (char === ',' && !inQuotes) {
+          values.push(current);
+          current = '';
+        } else {
+          current += char;
+        }
+      }
+      values.push(current);
       
       if (values.length >= 2) {
         const account = {
@@ -282,7 +233,6 @@ function parseCSVToAccounts(csvData) {
       }
     }
     
-    console.log(`✅ Parsed ${accounts.length} accounts from CSV`);
     return accounts;
   } catch (error) {
     console.error('❌ Error parsing CSV:', error.message);
@@ -290,52 +240,11 @@ function parseCSVToAccounts(csvData) {
   }
 }
 
-async function addNewAccount(accountData) {
-  try {
-    console.log(`💾 Attempting to save account to Google Drive: ${accountData.id} - ${accountData.name}`);
-    
-    let csvData;
-    try {
-      csvData = await readCSVFromDrive(FILE_ID);
-    } catch (error) {
-      console.log('📝 Starting with empty CSV data');
-      csvData = '';
-    }
-    
-    let accounts = parseCSVToAccounts(csvData);
-    
-    if (accountData.email) {
-      const existingAccount = accounts.find(acc => acc.email === accountData.email);
-      if (existingAccount) {
-        throw new Error("An account with this email already exists");
-      }
-    }
-    
-    const existingId = accounts.find(acc => acc.id === accountData.id);
-    if (existingId) {
-      const newId = await getNextAvailableId();
-      console.log(`🆕 ID conflict, generated new ID: ${newId}`);
-      accountData.id = newId;
-      accountData.image = accountData.image.replace(/\/\d+\.png$/, `/${newId}.png`);
-    }
-    
-    accounts.push(accountData);
-    
-    const saved = await saveAllAccounts(accounts);
-    
-    if (saved) {
-      console.log(`✅ Account ${accountData.id} saved successfully to Google Drive`);
-      return true;
-    } else {
-      throw new Error("Failed to save account to Google Drive");
-    }
-  } catch (error) {
-    console.error('❌ Error adding new account to Google Drive:', error.message);
-    throw error;
-  }
-}
-
 async function saveAllAccounts(accounts) {
+  if (!driveService) {
+    throw new Error("Google Drive service is not initialized");
+  }
+
   try {
     const headers = ['id', 'ps', 'email', 'name', 'image'];
     const csvLines = [
@@ -349,8 +258,6 @@ async function saveAllAccounts(accounts) {
     
     const csvContent = csvLines.join('\n');
     
-    console.log(`💾 Writing ${accounts.length} accounts to Google Drive...`);
-    
     const media = {
       mimeType: 'text/csv',
       body: csvContent
@@ -362,7 +269,6 @@ async function saveAllAccounts(accounts) {
       fields: 'id,modifiedTime'
     });
 
-    console.log(`✅ Successfully wrote ${accounts.length} accounts to Google Drive`);
     return true;
   } catch (error) {
     console.error('❌ Error saving accounts to Google Drive:', error.message);
@@ -370,7 +276,100 @@ async function saveAllAccounts(accounts) {
   }
 }
 
-// ==================== ENHANCED OTP EMAIL SERVICE ====================
+async function getNextAvailableId() {
+  try {
+    const csvData = await readCSVFromDrive();
+    const accounts = parseCSVToAccounts(csvData);
+    
+    if (accounts.length === 0) {
+      return "1001";
+    }
+    
+    const ids = accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
+    if (ids.length === 0) {
+      return "1001";
+    }
+    
+    const maxId = Math.max(...ids);
+    return (maxId + 1).toString();
+  } catch (error) {
+    return (1000 + Math.floor(Math.random() * 9000)).toString();
+  }
+}
+
+// ==================== ACCOUNT MANAGEMENT ====================
+async function addNewAccount(accountData) {
+  try {
+    const csvData = await readCSVFromDrive();
+    let accounts = parseCSVToAccounts(csvData);
+    
+    // Check for duplicate email
+    if (accountData.email) {
+      const existingAccount = accounts.find(acc => acc.email === accountData.email);
+      if (existingAccount) {
+        throw new Error("An account with this email already exists");
+      }
+    }
+    
+    // Check for duplicate ID
+    const existingId = accounts.find(acc => acc.id === accountData.id);
+    if (existingId) {
+      const newId = await getNextAvailableId();
+      accountData.id = newId;
+    }
+    
+    accounts.push(accountData);
+    
+    await saveAllAccounts(accounts);
+    
+    return true;
+  } catch (error) {
+    console.error('❌ Error adding new account:', error.message);
+    throw error;
+  }
+}
+
+async function verifyAccountCredentials(id, password) {
+  try {
+    const csvData = await readCSVFromDrive();
+    const accounts = parseCSVToAccounts(csvData);
+    
+    const account = accounts.find(acc => {
+      const idMatch = acc.id && acc.id.toString() === id.toString();
+      const passwordMatch = acc.ps && acc.ps === password;
+      return idMatch && passwordMatch;
+    });
+    
+    if (account) {
+      const hasAcceptedRules = acceptedRules.has(account.id);
+      
+      return {
+        success: true,
+        account: {
+          id: account.id,
+          name: account.name || `User ${account.id}`,
+          email: account.email || `${account.id}@bypro.com`,
+          image: account.image || ''
+        },
+        accepted_rules: hasAcceptedRules,
+        rules_url: hasAcceptedRules ? null : `/rules-popup?userId=${account.id}`
+      };
+    } else {
+      return {
+        success: false,
+        error: "Invalid credentials provided"
+      };
+    }
+  } catch (error) {
+    console.error('❌ Error verifying account:', error.message);
+    return {
+      success: false,
+      error: "Authentication service temporarily unavailable"
+    };
+  }
+}
+
+// ==================== OTP FUNCTIONS ====================
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
@@ -406,24 +405,13 @@ async function sendOTPEmail(email, otpCode) {
                 <strong>⚠️ Important:</strong> This code will expire in <strong>10 minutes</strong>. Do not share this code with anyone.
               </p>
             </div>
-            
-            <p style="color: #777; font-size: 14px; text-align: center; margin-top: 25px;">
-              If you didn't request this code, please ignore this email.
-            </p>
-          </div>
-          
-          <div style="background: #34495e; color: white; padding: 20px; text-align: center; border-radius: 0 0 10px 10px; margin-top: 2px;">
-            <p style="margin: 0; font-size: 12px; opacity: 0.8;">
-              &copy; 2024 B.Y PRO Accounts System. All rights reserved.<br>
-              This is an automated message, please do not reply.
-            </p>
           </div>
         </div>
       `
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ OTP email sent to: ${email} | Code: ${otpCode}`);
+    console.log(`✅ OTP email sent to: ${email}`);
     return { success: true, messageId: result.messageId };
   } catch (error) {
     console.error('❌ OTP email sending failed:', error);
@@ -431,32 +419,23 @@ async function sendOTPEmail(email, otpCode) {
   }
 }
 
-// ==================== ENHANCED QR CODE SERVICE ====================
+// ==================== QR CODE FUNCTIONS ====================
 async function generateEnhancedQRCode(qrData, options = {}) {
   try {
-    const {
-      width = 200,
-      height = 200,
-      colorDark = "#1a237e",
-      colorLight = "#ffffff",
-      correctLevel = 'H'
-    } = options;
-
     const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-      width: width,
+      width: options.width || 200,
       margin: 2,
       color: {
-        dark: colorDark,
-        light: colorLight
+        dark: options.colorDark || "#1a237e",
+        light: options.colorLight || "#ffffff"
       },
-      errorCorrectionLevel: correctLevel
+      errorCorrectionLevel: 'H'
     });
 
     return {
       success: true,
       qrCode: qrCodeDataURL,
-      qrData: qrData,
-      options: options
+      qrData: qrData
     };
   } catch (error) {
     console.error('QR Code generation error:', error);
@@ -469,151 +448,278 @@ async function generateEnhancedQRCode(qrData, options = {}) {
 
 // ==================== ROUTES ====================
 
-// Serve static files
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
+// Health check
+app.get('/api/health', async (req, res) => {
+  try {
+    const csvData = await readCSVFromDrive();
+    const accounts = parseCSVToAccounts(csvData);
+    
+    res.json({ 
+      status: 'operational',
+      service: 'B.Y PRO Unified Accounts System',
+      timestamp: new Date().toISOString(),
+      total_accounts: accounts.length,
+      version: '6.0.0',
+      features: ['admin_dashboard', 'otp_verification', 'qr_codes', 'rules_system']
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'error',
+      error: "Google Drive service unavailable"
+    });
+  }
 });
 
-app.get('/login.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'login.html'));
+// ==================== ADMIN DASHBOARD ROUTES ====================
+
+// JSONP Support for legacy adminboard
+app.get('/api/jsonp', async (req, res) => {
+  try {
+    const { action, apiKey, callback } = req.query;
+    
+    if (apiKey !== API_KEY) {
+      return res.send(`${callback}(${JSON.stringify({ error: 'Invalid API Key' })})`);
+    }
+    
+    let result;
+    
+    switch (action) {
+      case 'getAccounts':
+        const csvData = await readCSVFromDrive();
+        const accounts = parseCSVToAccounts(csvData);
+        const formattedAccounts = accounts.map(account => ({
+          id: account.id,
+          name: account.name || '',
+          email: account.email || '',
+          hasImage: !!account.image
+        }));
+        result = { success: true, accounts: formattedAccounts };
+        break;
+        
+      case 'nextId':
+        const nextId = await getNextAvailableId();
+        result = { success: true, nextId: nextId };
+        break;
+        
+      default:
+        result = { error: 'Invalid action' };
+    }
+    
+    res.send(`${callback}(${JSON.stringify(result)})`);
+  } catch (error) {
+    res.send(`${callback}(${JSON.stringify({ error: error.message })})`);
+  }
 });
 
-app.get('/signup.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'signup.html'));
+// REST API Routes
+app.get('/api/accounts', verifyApiKey, async (req, res) => {
+  try {
+    const csvData = await readCSVFromDrive();
+    const accounts = parseCSVToAccounts(csvData);
+    
+    const formattedAccounts = accounts.map(account => ({
+      id: account.id,
+      name: account.name || '',
+      email: account.email || '',
+      password: account.ps || '',
+      hasImage: !!account.image
+    }));
+    
+    res.json({
+      success: true,
+      accounts: formattedAccounts,
+      count: formattedAccounts.length
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'adminboard.html'));
+app.get('/api/next-id', verifyApiKey, async (req, res) => {
+  try {
+    const nextId = await getNextAvailableId();
+    res.json({
+      success: true,
+      nextId: nextId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
-app.get('/adminboard.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'adminboard.html'));
+app.post('/api/accounts', verifyApiKey, async (req, res) => {
+  try {
+    const { id, name, email, password } = req.body;
+    
+    if (!id || !name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        error: "All fields are required"
+      });
+    }
+
+    const accountData = {
+      id: id.toString(),
+      ps: password,
+      email: email,
+      name: name,
+      image: `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${id}.png`
+    };
+
+    await addNewAccount(accountData);
+    
+    res.json({
+      success: true,
+      message: "Account created successfully",
+      account: accountData
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
-// Serve QR Code library locally
-app.get('/qrcode.min.js', (req, res) => {
-  res.setHeader('Content-Type', 'application/javascript');
-  res.send(`
-    // QR Code Generator for B.Y PRO Accounts
-    (function(){
-      window.QRCode = {
-        toCanvas: function(canvas, text, options, callback) {
-          try {
-            const ctx = canvas.getContext('2d');
-            const width = canvas.width;
-            const height = canvas.height;
-            
-            ctx.fillStyle = options.color.light || '#FFFFFF';
-            ctx.fillRect(0, 0, width, height);
-            
-            ctx.fillStyle = options.color.dark || '#1a237e';
-            
-            const size = 8;
-            const cols = Math.floor(width / size);
-            const rows = Math.floor(height / size);
-            
-            let hash = 0;
-            for (let i = 0; i < text.length; i++) {
-              hash = text.charCodeAt(i) + ((hash << 5) - hash);
-            }
-            
-            for (let row = 0; row < rows; row++) {
-              for (let col = 0; col < cols; col++) {
-                if ((row * col + hash) % 3 === 0) {
-                  ctx.fillRect(col * size, row * size, size - 1, size - 1);
-                }
-              }
-            }
-            
-            ctx.fillStyle = '#1a237e';
-            ctx.font = 'bold 14px Arial';
-            ctx.textAlign = 'center';
-            ctx.fillText('B.Y PRO Account', width / 2, height - 20);
-            
-            if (callback) callback(null);
-          } catch (error) {
-            if (callback) callback(error);
-          }
-        }
-      };
-    })();
-  `);
+app.put('/api/accounts/:id', verifyApiKey, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { name, email, password } = req.body;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "Account ID is required"
+      });
+    }
+
+    const csvData = await readCSVFromDrive();
+    let accounts = parseCSVToAccounts(csvData);
+    
+    const accountIndex = accounts.findIndex(acc => acc.id === id.toString());
+    
+    if (accountIndex === -1) {
+      return res.status(404).json({
+        success: false,
+        error: "Account not found"
+      });
+    }
+    
+    // Update data
+    if (name) accounts[accountIndex].name = name;
+    if (email) accounts[accountIndex].email = email;
+    if (password) accounts[accountIndex].ps = password;
+    
+    await saveAllAccounts(accounts);
+    
+    res.json({
+      success: true,
+      message: "Account updated successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
 });
 
-// ==================== ENHANCED OTP ROUTES ====================
+app.delete('/api/accounts/:id', verifyApiKey, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "Account ID is required"
+      });
+    }
 
-// إرسال كود OTP
+    const csvData = await readCSVFromDrive();
+    let accounts = parseCSVToAccounts(csvData);
+    
+    const initialLength = accounts.length;
+    accounts = accounts.filter(acc => acc.id !== id.toString());
+    
+    if (accounts.length === initialLength) {
+      return res.status(404).json({
+        success: false,
+        error: "Account not found"
+      });
+    }
+    
+    await saveAllAccounts(accounts);
+    
+    res.json({
+      success: true,
+      message: "Account deleted successfully"
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ==================== EXISTING ROUTES (KEEP AS IS) ====================
+
+// OTP Routes
 app.post('/api/send-otp', async (req, res) => {
   try {
     const { email } = req.body;
     
-    console.log(`📧 OTP requested for: ${email}`);
-    
     if (!email) {
       return res.status(400).json({
         success: false,
-        error: "البريد الإلكتروني مطلوب"
+        error: "Email is required"
       });
     }
 
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return res.status(400).json({
-        success: false,
-        error: "يرجى تقديم بريد إلكتروني صحيح"
-      });
-    }
-
-    // إنشاء كود OTP
     const otp = generateOTP();
     
-    // حفظ الكود لمدة 10 دقائق
     otpStorage.set(email, {
       otp: otp,
-      expires: Date.now() + 10 * 60 * 1000, // 10 دقائق
-      attempts: 0 // عدد محاولات التحقق
+      expires: Date.now() + 10 * 60 * 1000,
+      attempts: 0
     });
 
-    console.log(`✅ Generated OTP for ${email}: ${otp}`);
-
-    // إرسال البريد الإلكتروني
     const emailResult = await sendOTPEmail(email, otp);
     
     if (emailResult.success) {
       res.json({
         success: true,
-        message: "تم إرسال كود التحقق إلى بريدك الإلكتروني",
-        email: email
+        message: "Verification code sent to your email"
       });
     } else {
-      // تنظيف التخزين إذا فشل الإرسال
       otpStorage.delete(email);
       res.status(500).json({
         success: false,
-        error: "خدمة البريد الإلكتروني غير متاحة حالياً. يرجى المحاولة لاحقاً."
+        error: "Email service is currently unavailable"
       });
     }
-    
   } catch (error) {
-    console.error('❌ OTP sending error:', error.message);
     res.status(500).json({
       success: false,
-      error: "الخدمة غير متاحة حالياً. يرجى المحاولة لاحقاً."
+      error: error.message
     });
   }
 });
 
-// التحقق من كود OTP
 app.post('/api/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
     
-    console.log(`🔍 Verifying OTP for: ${email}`);
-    
     if (!email || !otp) {
       return res.status(400).json({
         success: false,
-        error: "البريد الإلكتروني والكود مطلوبان"
+        error: "Email and code are required"
       });
     }
 
@@ -622,110 +728,111 @@ app.post('/api/verify-otp', async (req, res) => {
     if (!storedData) {
       return res.status(400).json({
         success: false,
-        error: "لم يتم العثور على كود تحقق لهذا البريد. يرجى طلب كود جديد."
+        error: "No verification code found for this email"
       });
     }
 
-    // التحقق من انتهاء الصلاحية
     if (Date.now() > storedData.expires) {
       otpStorage.delete(email);
       return res.status(400).json({
         success: false,
-        error: "كود التحقق منتهي الصلاحية. يرجى طلب كود جديد."
+        error: "Verification code has expired"
       });
     }
 
-    // زيادة عدد المحاولات
     storedData.attempts += 1;
     
-    // التحقق من تجاوز الحد الأقصى للمحاولات
     if (storedData.attempts > 5) {
       otpStorage.delete(email);
       return res.status(400).json({
         success: false,
-        error: "تم تجاوز الحد الأقصى لمحاولات التحقق. يرجى طلب كود جديد."
+        error: "Too many attempts. Please request a new code."
       });
     }
 
-    // التحقق من صحة الكود
     if (storedData.otp === otp) {
       otpStorage.delete(email);
       res.json({
         success: true,
-        message: "تم التحقق بنجاح"
+        message: "Verification successful"
       });
     } else {
       res.status(400).json({
         success: false,
-        error: "كود التحقق غير صحيح. يرجى المحاولة مرة أخرى.",
-        attempts: storedData.attempts,
+        error: "Invalid verification code",
         remainingAttempts: 5 - storedData.attempts
       });
     }
-    
   } catch (error) {
-    console.error('❌ OTP verification error:', error.message);
     res.status(500).json({
       success: false,
-      error: "خدمة التحقق غير متاحة حالياً."
+      error: error.message
     });
   }
 });
 
-// إعادة إرسال كود OTP
-app.post('/api/resend-otp', async (req, res) => {
+// Account verification
+app.get('/api/verify-account', async (req, res) => {
   try {
-    const { email } = req.body;
+    const { id, password } = req.query;
     
-    if (!email) {
+    if (!id || !password) {
+      return res.json({ 
+        success: false, 
+        error: "ID and password are required" 
+      });
+    }
+
+    const result = await verifyAccountCredentials(id, password);
+    res.json(result);
+  } catch (error) {
+    res.json({ 
+      success: false, 
+      error: "Authentication service unavailable" 
+    });
+  }
+});
+
+// Create account
+app.post('/api/create-account', async (req, res) => {
+  try {
+    const { id, name, email, password, image } = req.body;
+    
+    if (!id || !name || !email || !password) {
       return res.status(400).json({
         success: false,
-        error: "البريد الإلكتروني مطلوب"
+        error: "All fields are required"
       });
     }
 
-    // حذف أي كود موجود مسبقاً
-    otpStorage.delete(email);
+    const accountData = {
+      id: id.toString(),
+      ps: password,
+      email: email,
+      name: name,
+      image: image || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${id}.png`
+    };
+
+    await addNewAccount(accountData);
     
-    // إنشاء كود جديد
-    const otp = generateOTP();
-    
-    // حفظ الكود الجديد
-    otpStorage.set(email, {
-      otp: otp,
-      expires: Date.now() + 10 * 60 * 1000,
-      attempts: 0
+    const qrData = `BYPRO:${accountData.id}:${accountData.ps}`;
+    const qrResult = await generateEnhancedQRCode(qrData);
+
+    res.json({
+      success: true,
+      message: "Account created successfully",
+      account: accountData,
+      qrCode: qrResult.qrCode
     });
-
-    console.log(`🔄 Resent OTP for ${email}: ${otp}`);
-
-    const emailResult = await sendOTPEmail(email, otp);
-    
-    if (emailResult.success) {
-      res.json({
-        success: true,
-        message: "تم إعادة إرسال كود التحقق بنجاح"
-      });
-    } else {
-      otpStorage.delete(email);
-      res.status(500).json({
-        success: false,
-        error: "فشل إعادة الإرسال. يرجى المحاولة لاحقاً."
-      });
-    }
-    
   } catch (error) {
-    console.error('❌ OTP resend error:', error.message);
     res.status(500).json({
       success: false,
-      error: "خدمة إعادة الإرسال غير متاحة."
+      error: error.message
     });
   }
 });
 
-// ==================== RULES SYSTEM ROUTES ====================
-
-// مسار التحقق من قبول القوانين
+// Rules system
 app.get('/api/check-rules', async (req, res) => {
   try {
     const { userId } = req.query;
@@ -741,21 +848,16 @@ app.get('/api/check-rules', async (req, res) => {
     
     res.json({
       success: true,
-      accepted: hasAccepted,
-      userId: userId,
-      message: hasAccepted ? "Rules already accepted" : "Rules not accepted yet"
+      accepted: hasAccepted
     });
-    
   } catch (error) {
-    console.error('❌ Error checking rules:', error.message);
     res.status(500).json({
       success: false,
-      error: "Rules service unavailable"
+      error: error.message
     });
   }
 });
 
-// مسار قبول القوانين
 app.post('/api/accept-rules', async (req, res) => {
   try {
     const { userId } = req.body;
@@ -769,401 +871,51 @@ app.post('/api/accept-rules', async (req, res) => {
 
     acceptedRules.add(userId);
     
-    console.log(`✅ User ${userId} accepted the rules`);
-    
     res.json({
       success: true,
-      message: "Rules accepted successfully",
-      userId: userId
-    });
-    
-  } catch (error) {
-    console.error('❌ Error accepting rules:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Unable to accept rules"
-    });
-  }
-});
-
-// Health check endpoint
-app.get('/api/health', async (req, res) => {
-  let driveStatus = 'checking';
-  let lastModified = null;
-  
-  try {
-    if (driveService) {
-      const fileInfo = await driveService.files.get({ 
-        fileId: FILE_ID, 
-        fields: 'id,name,modifiedTime' 
-      });
-      driveStatus = 'connected';
-      lastModified = fileInfo.data.modifiedTime;
-    } else {
-      driveStatus = 'disconnected';
-    }
-    
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    res.json({ 
-      status: 'operational',
-      service: 'B.Y PRO Unified Accounts System with OTP',
-      timestamp: new Date().toISOString(),
-      services: {
-        database: driveStatus,
-        storage: 'google_drive_only',
-        email_service: 'nodemailer_otp',
-        total_accounts: accounts.length,
-        last_modified: lastModified
-      },
-      version: '5.0.0',
-      features: ['otp_verification', 'qr_codes', 'rules_system']
+      message: "Rules accepted successfully"
     });
   } catch (error) {
     res.status(500).json({
-      status: 'error',
-      service: 'B.Y PRO Unified Accounts System',
-      error: "Google Drive service unavailable",
-      services: {
-        database: 'error',
-        storage: 'google_drive_only',
-        email_service: 'nodemailer_otp'
-      }
-    });
-  }
-});
-
-// Account verification route
-app.get('/api/verify-account', async (req, res) => {
-  try {
-    const { id, password } = req.query;
-    
-    console.log(`🔐 Login attempt - ID: ${id}`);
-    
-    if (!id || !password) {
-      return res.json({ 
-        success: false, 
-        error: "ID and password are required" 
-      });
-    }
-
-    const result = await verifyAccountCredentials(id, password);
-    res.json(result);
-    
-  } catch (error) {
-    console.error('❌ Server error in verify-account:', error.message);
-    res.json({ 
-      success: false, 
-      error: "Authentication service unavailable. Please try again later." 
-    });
-  }
-});
-
-// Get next available ID
-app.get('/api/next-id', async (req, res) => {
-  try {
-    const nextId = await getNextAvailableId();
-    res.json({
-      success: true,
-      nextId: nextId,
-      storage: 'google_drive'
-    });
-  } catch (error) {
-    console.error('❌ Error getting next ID:', error.message);
-    res.status(500).json({
       success: false,
-      error: "Unable to generate account ID. Google Drive service unavailable."
+      error: error.message
     });
   }
 });
 
-// Create new account - MAIN ROUTE
-app.post('/api/accounts', async (req, res) => {
-  try {
-    const { id, name, email, password, image } = req.body;
-    
-    console.log(`👤 Creating new account in Google Drive: ${id} - ${name} - ${email}`);
-    
-    if (!id || !name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: "All fields are required to create an account"
-      });
-    }
-
-    const accountData = {
-      id: id.toString(),
-      ps: password,
-      email: email,
-      name: name,
-      image: image || `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${id}.png`
-    };
-
-    console.log('💾 Starting account save process to Google Drive...');
-    
-    const saved = await addNewAccount(accountData);
-    
-    if (saved) {
-      console.log(`✅ Account creation successful: ${accountData.id}`);
-      
-      const qrData = `BYPRO:${accountData.id}:${accountData.ps}`;
-      const qrResult = await generateEnhancedQRCode(qrData, {
-        colorDark: "#1a237e",
-        colorLight: "#ffffff"
-      });
-
-      const csvData = await readCSVFromDrive(FILE_ID);
-      const allAccounts = parseCSVToAccounts(csvData);
-      const savedAccount = allAccounts.find(acc => acc.id === accountData.id);
-      
-      res.json({
-        success: true,
-        message: "Account created and saved to Google Drive successfully",
-        account: accountData,
-        qrCode: qrResult.qrCode,
-        verified: !!savedAccount,
-        storage: 'google_drive',
-        totalAccounts: allAccounts.length,
-        show_rules: true,
-        rules_url: `/rules-popup?userId=${accountData.id}`
-      });
-    } else {
-      throw new Error("Failed to save account to Google Drive");
-    }
-  } catch (error) {
-    console.error('❌ Error creating account:', error.message);
-    res.status(500).json({
-      success: false,
-      error: error.message || "Unable to create account. Google Drive service unavailable.",
-      storage: 'google_drive_error'
-    });
-  }
+// Static files
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-// Get all accounts for dashboard
-app.get('/api/accounts', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    const formattedAccounts = accounts.map(account => ({
-      id: account.id,
-      name: account.name,
-      password: account.ps,
-      email: account.email,
-      image: account.image
-    }));
-    
-    console.log(`📊 Serving ${formattedAccounts.length} accounts from Google Drive`);
-    res.json(formattedAccounts);
-  } catch (error) {
-    console.error('❌ Dashboard API Error:', error.message);
-    res.status(500).json([]);
-  }
+app.get('/admin', (req, res) => {
+  res.sendFile(path.join(__dirname, 'adminboard.html'));
 });
 
-// Generate QR Code endpoint
-app.post('/api/generate-qr', async (req, res) => {
-  try {
-    const { id, password } = req.body;
-    
-    if (!id || !password) {
-      return res.status(400).json({
-        success: false,
-        error: "ID and password are required"
-      });
-    }
-
-    const qrData = `BYPRO:${id}:${password}`;
-    
-    try {
-      const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-        width: 300,
-        margin: 2,
-        color: {
-          dark: '#1a237e',
-          light: '#FFFFFF'
-        }
-      });
-      
-      res.json({
-        success: true,
-        qrCode: qrCodeDataURL,
-        qrData: qrData
-      });
-    } catch (qrError) {
-      console.error('QR Generation Error:', qrError);
-      res.json({
-        success: true,
-        qrCode: '',
-        qrData: qrData,
-        fallback: true
-      });
-    }
-    
-  } catch (error) {
-    console.error('❌ QR Generation Error:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "QR code generation failed"
-    });
-  }
-});
-
-// Upload image route
-app.post('/api/upload-image', async (req, res) => {
-  try {
-    const { accountId, imageData } = req.body;
-    
-    console.log(`🖼️ Image upload for account: ${accountId}`);
-    
-    if (!accountId) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-
-    const imageUrl = `https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/${accountId}.png`;
-    
-    try {
-      const csvData = await readCSVFromDrive(FILE_ID);
-      const accounts = parseCSVToAccounts(csvData);
-      
-      const account = accounts.find(acc => acc.id === accountId);
-      if (account) {
-        account.image = imageUrl;
-        await saveAllAccounts(accounts);
-        
-        console.log(`✅ Image URL updated for account ${accountId}`);
-      }
-    } catch (driveError) {
-      console.error('❌ Error updating account image:', driveError);
-    }
-
-    res.json({
-      success: true,
-      imageUrl: imageUrl,
-      message: "Image URL updated successfully"
-    });
-    
-  } catch (error) {
-    console.error('❌ Error uploading image:', error.message);
-    res.status(500).json({
-      success: false,
-      error: "Image service temporarily unavailable"
-    });
-  }
-});
-
-// Dashboard API - Get statistics
-app.get('/api/admin/stats', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    res.json({
-      success: true,
-      totalAccounts: accounts.length,
-      accountsWithImages: accounts.filter(acc => acc.image && acc.image !== '').length,
-      lastUpdated: new Date().toISOString(),
-      databaseStatus: 'connected',
-      storage: 'google_drive',
-      otpService: 'active'
-    });
-  } catch (error) {
-    res.status(500).json({ 
-      success: false,
-      error: "Cannot fetch statistics from Google Drive" 
-    });
-  }
-});
-
-// Enhanced 404 handler
+// 404 handler
 app.use('*', (req, res) => {
-  console.log(`❌ 404 - Route not found: ${req.originalUrl}`);
   res.status(404).json({
     success: false,
-    error: "The requested resource was not found",
-    path: req.originalUrl
+    error: "Route not found"
   });
 });
 
-// Enhanced error handler
+// Error handler
 app.use((err, req, res, next) => {
-  console.error('💥 Unhandled error:', err);
+  console.error('💥 Error:', err);
   res.status(500).json({
     success: false,
-    error: "An unexpected error occurred. Please try again later.",
-    reference: Date.now().toString(36)
+    error: "Internal server error"
   });
 });
-
-// Keep-alive to prevent shutdown
-const keepAlive = () => {
-  setInterval(() => {
-    console.log('🔄 Keep-alive ping - OTP service active');
-  }, 240000);
-};
-
-// Start keep-alive
-keepAlive();
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
   console.log('🚀 B.Y PRO UNIFIED ACCOUNTS SYSTEM');
-  console.log('✅ Server started successfully!');
-  console.log(`🔗 Port: ${PORT}`);
-  console.log('💾 Storage: Google Drive ONLY');
-  console.log('📧 Features: OTP + Login + Signup + Dashboard');
-  console.log('🔐 Auth: OTP + QR Code + Password');
-  console.log('📨 Email: Nodemailer + OTP System');
-  console.log('⚖️ Rules System: Active');
+  console.log(`✅ Server running on port: ${PORT}`);
+  console.log(`🔗 Admin Dashboard API: http://localhost:${PORT}/api`);
+  console.log('💾 Storage: Google Drive');
+  console.log('🔐 API Key Authentication: Active');
   console.log('🎉 =================================\n');
 });
-
-// ==================== HELPER FUNCTIONS ====================
-
-async function verifyAccountCredentials(id, password) {
-  try {
-    const csvData = await readCSVFromDrive(FILE_ID);
-    const accounts = parseCSVToAccounts(csvData);
-    
-    const account = accounts.find(acc => {
-      const idMatch = acc.id && acc.id.toString() === id.toString();
-      const passwordMatch = acc.ps && acc.ps === password;
-      return idMatch && passwordMatch;
-    });
-    
-    if (account) {
-      // التحقق من قبول القوانين
-      const hasAcceptedRules = acceptedRules.has(account.id);
-      
-      return {
-        success: true,
-        account: {
-          id: account.id,
-          name: account.name || `User ${account.id}`,
-          email: account.email || `${account.id}@bypro.com`,
-          image: account.image || ''
-        },
-        storage: 'google_drive',
-        accepted_rules: hasAcceptedRules,
-        rules_url: hasAcceptedRules ? null : `/rules-popup?userId=${account.id}`
-      };
-    } else {
-      return {
-        success: false,
-        error: "Invalid credentials provided"
-      };
-    }
-  } catch (error) {
-    console.error('❌ Error verifying account:', error.message);
-    return {
-      success: false,
-      error: "Authentication service temporarily unavailable. Please try again later."
-    };
-  }
-}
