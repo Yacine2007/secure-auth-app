@@ -20,8 +20,8 @@
             --danger-color: #e74c3c;
             --warning-color: #f39c12;
             --success-color: #2ecc71;
-            --radius: 8px;
-            --shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            --radius: 12px;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         }
 
         * {
@@ -38,54 +38,64 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 15px;
+            padding: 20px;
             line-height: 1.5;
+            overflow-x: hidden;
         }
 
         /* الحاوية الرئيسية */
         .page-container {
             width: 100%;
-            max-width: 400px;
+            max-width: 450px;
             min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
             margin: 0 auto;
         }
 
         .login-container {
-            background: rgba(20, 20, 20, 0.95);
-            padding: 25px;
+            background: rgba(17, 17, 17, 0.95);
+            padding: 30px 25px;
             border-radius: var(--radius);
             width: 100%;
-            border: 1px solid rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
             box-shadow: var(--shadow);
+            backdrop-filter: blur(15px);
             position: relative;
+            overflow: hidden;
         }
 
         .logo {
             text-align: center;
             margin-bottom: 25px;
-            padding-bottom: 20px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
         }
 
         .logo-header {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 12px;
-            margin-bottom: 8px;
+            gap: 10px;
+            margin-bottom: 5px;
         }
 
         .logo-img {
-            width: 36px;
-            height: 36px;
+            width: 32px;
+            height: 32px;
             object-fit: contain;
         }
 
         .logo h1 {
             color: var(--primary-color);
-            font-size: 1.6rem;
+            font-size: 1.7rem;
             margin: 0;
-            font-weight: 600;
+            font-weight: 700;
+            letter-spacing: 0.5px;
         }
 
         .logo p {
@@ -94,21 +104,48 @@
             font-weight: 300;
         }
 
+        /* نقطة اتصال صغيرة */
+        .connection-dot {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            z-index: 1000;
+            display: none;
+        }
+
+        .connection-online {
+            background-color: var(--success-color);
+            display: block;
+            box-shadow: 0 0 10px var(--success-color);
+        }
+
+        .connection-offline {
+            background-color: var(--danger-color);
+            display: block;
+            box-shadow: 0 0 10px var(--danger-color);
+        }
+
         .login-methods {
             display: flex;
             gap: 8px;
             margin-bottom: 25px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 4px;
+            border-radius: 50px;
         }
 
         .method-btn {
             flex: 1;
-            padding: 12px;
-            background: rgba(255, 255, 255, 0.05);
+            padding: 12px 16px;
+            background: transparent;
             color: var(--text-muted);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: var(--radius);
+            border: none;
+            border-radius: 50px;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -120,16 +157,21 @@
         .method-btn.active {
             background: var(--primary-color);
             color: white;
-            border-color: var(--primary-color);
         }
 
         .method-btn:hover:not(.active) {
+            color: var(--primary-color);
             background: rgba(52, 152, 219, 0.1);
-            border-color: var(--primary-color);
         }
 
         .login-form {
             display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         .login-form.active {
@@ -137,31 +179,45 @@
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: var(--text-muted);
             font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1rem;
         }
 
         .form-group input {
             width: 100%;
-            padding: 12px 15px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 14px 20px 14px 48px;
+            border: 1px solid var(--border-color);
             border-radius: var(--radius);
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(0, 0, 0, 0.4);
             color: var(--text-color);
             font-size: 0.95rem;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
         }
 
         .form-group input:focus {
             outline: none;
             border-color: var(--primary-color);
-            background: rgba(0, 0, 0, 0.5);
+            background: rgba(0, 0, 0, 0.6);
         }
 
         .login-btn {
@@ -169,12 +225,12 @@
             background: var(--primary-color);
             color: white;
             border: none;
-            padding: 14px;
+            padding: 16px;
             border-radius: var(--radius);
             cursor: pointer;
             font-size: 1rem;
             font-weight: 600;
-            transition: background 0.2s ease;
+            transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -193,42 +249,44 @@
 
         .qr-instruction {
             color: var(--text-muted);
-            margin-bottom: 20px;
+            margin-bottom: 25px;
             font-size: 0.9rem;
+            line-height: 1.5;
             text-align: center;
         }
 
         .qr-upload-area {
-            border: 2px dashed rgba(255, 255, 255, 0.2);
+            border: 2px dashed var(--border-color);
             border-radius: var(--radius);
-            padding: 30px 15px;
+            padding: 35px 20px;
             text-align: center;
             cursor: pointer;
-            transition: all 0.2s ease;
+            transition: all 0.3s ease;
             background: rgba(0, 0, 0, 0.2);
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
 
         .qr-upload-area:hover {
             border-color: var(--primary-color);
-            background: rgba(0, 0, 0, 0.3);
+            background: rgba(52, 152, 219, 0.05);
         }
 
         .qr-upload-area i {
-            font-size: 2rem;
+            font-size: 2.5rem;
             color: var(--primary-color);
-            margin-bottom: 10px;
+            margin-bottom: 12px;
         }
 
         .qr-upload-area p {
             color: var(--text-color);
-            font-size: 0.95rem;
+            font-size: 1rem;
+            font-weight: 500;
             margin-bottom: 5px;
         }
 
         .qr-upload-area span {
             color: var(--text-muted);
-            font-size: 0.8rem;
+            font-size: 0.85rem;
         }
 
         .qr-file-input {
@@ -236,47 +294,53 @@
         }
 
         .status-message {
-            padding: 12px 15px;
-            margin: 15px 0;
+            padding: 15px 20px;
+            margin: 20px 0;
             border-radius: var(--radius);
             text-align: center;
             display: none;
+            animation: slideIn 0.3s ease;
+            font-weight: 500;
             font-size: 0.9rem;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(-15px); }
+            to { opacity: 1; transform: translateX(0); }
         }
 
         .status-success {
             background: rgba(46, 204, 113, 0.15);
             color: var(--success-color);
-            border: 1px solid rgba(46, 204, 113, 0.3);
         }
 
         .status-error {
             background: rgba(231, 76, 60, 0.15);
             color: var(--danger-color);
-            border: 1px solid rgba(231, 76, 60, 0.3);
         }
 
         .status-warning {
             background: rgba(243, 156, 18, 0.15);
             color: var(--warning-color);
-            border: 1px solid rgba(243, 156, 18, 0.3);
         }
 
         .logged-in-info {
             display: none;
             text-align: center;
-            padding: 20px 0;
+            padding: 30px 20px;
+            animation: fadeIn 0.5s ease;
+            width: 100%;
         }
 
-        /* صورة المستخدم - بسيطة ودائرية فقط */
+        /* صورة المستخدم - دائرة بسيطة */
         .user-avatar {
-            width: 100px;
-            height: 100px;
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
             margin: 0 auto 20px;
             overflow: hidden;
-            border: none;
-            background: rgba(255, 255, 255, 0.05);
+            border: 3px solid var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.1);
         }
 
         .user-avatar img {
@@ -286,73 +350,64 @@
             display: block;
         }
 
+        /* أيقونة افتراضية */
+        .default-avatar {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: var(--primary-color);
+            color: white;
+            font-size: 3rem;
+        }
+
         .logged-in-info h3 {
             color: var(--text-color);
             margin-bottom: 15px;
-            font-size: 1.4rem;
+            font-size: 1.5rem;
             font-weight: 600;
         }
 
         .welcome-message {
             color: var(--success-color);
-            margin-bottom: 20px;
-            font-size: 0.95rem;
+            margin-bottom: 25px;
+            font-size: 1rem;
+            font-weight: 500;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
         }
 
         .logout-btn {
             background: var(--danger-color);
             color: white;
             border: none;
-            padding: 12px 30px;
-            border-radius: var(--radius);
+            padding: 14px 35px;
+            border-radius: 50px;
             cursor: pointer;
             font-size: 0.95rem;
             font-weight: 600;
-            transition: background 0.2s ease;
+            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            margin-top: 15px;
+            margin-top: 20px;
         }
 
         .logout-btn:hover {
             background: #c0392b;
         }
 
-        /* نقطة الاتصال (بدون رسالة) */
-        .connection-dot {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            width: 10px;
-            height: 10px;
-            border-radius: 50%;
-            z-index: 1000;
-            display: none;
-        }
-
-        .connection-online {
-            background: var(--success-color);
-            box-shadow: 0 0 8px var(--success-color);
-        }
-
-        .connection-offline {
-            background: var(--danger-color);
-            box-shadow: 0 0 8px var(--danger-color);
-        }
-
         .loading-spinner {
             display: inline-block;
-            width: 18px;
-            height: 18px;
-            border: 2px solid rgba(255, 255, 255, 0.3);
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
-            animation: spin 1s linear infinite;
+            animation: spin 1s ease-in-out infinite;
         }
 
         @keyframes spin {
@@ -361,14 +416,14 @@
 
         .signup-section {
             text-align: center;
-            margin-top: 25px;
-            padding-top: 20px;
+            margin-top: 30px;
+            padding-top: 25px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .signup-text {
             color: var(--text-muted);
-            margin-bottom: 15px;
+            margin-bottom: 18px;
             font-size: 0.85rem;
         }
 
@@ -376,11 +431,11 @@
             background: var(--primary-color);
             color: white;
             border: none;
-            padding: 12px 25px;
-            border-radius: var(--radius);
+            padding: 13px 28px;
+            border-radius: 50px;
             cursor: pointer;
             font-weight: 500;
-            transition: background 0.2s ease;
+            transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
@@ -395,22 +450,43 @@
         .qr-error-details {
             background: rgba(231, 76, 60, 0.1);
             border: 1px solid rgba(231, 76, 60, 0.3);
-            border-radius: var(--radius);
-            padding: 12px;
-            margin-top: 12px;
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
             text-align: left;
             display: none;
+        }
+
+        .qr-error-details h4 {
+            color: var(--danger-color);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .qr-error-details ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .qr-error-details li {
+            color: var(--text-muted);
+            margin-bottom: 8px;
             font-size: 0.8rem;
         }
 
-        /* للشاشات الصغيرة */
+        /* تحسينات للشاشات الصغيرة */
         @media (max-width: 480px) {
+            body {
+                padding: 15px;
+            }
+            
             .page-container {
                 max-width: 100%;
+                min-width: 280px;
             }
             
             .login-container {
-                padding: 20px;
+                padding: 20px 15px;
             }
             
             .logo h1 {
@@ -418,8 +494,57 @@
             }
             
             .logo-img {
-                width: 32px;
-                height: 32px;
+                width: 28px;
+                height: 28px;
+            }
+            
+            .login-methods {
+                flex-direction: column;
+                background: transparent;
+                padding: 0;
+                gap: 8px;
+            }
+            
+            .method-btn {
+                border-radius: var(--radius);
+                background: rgba(0, 0, 0, 0.3);
+            }
+            
+            .user-avatar {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .default-avatar {
+                font-size: 2.5rem;
+            }
+            
+            .logged-in-info h3 {
+                font-size: 1.3rem;
+            }
+            
+            .connection-dot {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .qr-upload-area {
+                padding: 25px 15px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .login-container {
+                padding: 15px 12px;
+            }
+            
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+            
+            .logo-img {
+                width: 24px;
+                height: 24px;
             }
             
             .method-btn {
@@ -431,46 +556,15 @@
                 width: 90px;
                 height: 90px;
             }
-        }
-
-        @media (max-width: 360px) {
-            .login-container {
-                padding: 15px;
-            }
             
-            .logo-header {
-                flex-direction: column;
-                gap: 6px;
+            .default-avatar {
+                font-size: 2rem;
             }
-            
-            .logo h1 {
-                font-size: 1.2rem;
-            }
-            
-            .user-avatar {
-                width: 80px;
-                height: 80px;
-            }
-        }
-
-        /* صورة افتراضية */
-        .avatar-placeholder {
-            width: 100%;
-            height: 100%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: rgba(52, 152, 219, 0.1);
-        }
-
-        .avatar-placeholder i {
-            font-size: 2rem;
-            color: var(--primary-color);
         }
     </style>
 </head>
 <body>
-    <!-- نقطة الاتصال فقط -->
+    <!-- نقطة الاتصال الصغيرة -->
     <div class="connection-dot" id="connectionDot"></div>
 
     <div class="page-container">
@@ -486,13 +580,11 @@
             <!-- معلومات تسجيل الدخول -->
             <div class="logged-in-info" id="loggedInInfo">
                 <div class="user-avatar" id="userAvatar">
-                    <div class="avatar-placeholder">
-                        <i class="fas fa-user"></i>
-                    </div>
+                    <!-- سيتم تحميل الصورة هنا -->
                 </div>
                 <h3>Welcome, <span id="userName">User</span>!</h3>
                 <div class="welcome-message">
-                    <i class="fas fa-check"></i>
+                    <i class="fas fa-check-circle"></i>
                     <span>Successfully logged in</span>
                 </div>
                 <button class="logout-btn" onclick="logout()">
@@ -526,12 +618,12 @@
 
                     <!-- تفاصيل خطأ QR -->
                     <div class="qr-error-details" id="qrErrorDetails">
-                        <h4><i class="fas fa-exclamation-triangle"></i> Possible reasons for error:</h4>
+                        <h4>Possible reasons for error:</h4>
                         <ul>
-                            <li><i class="fas fa-times"></i> Image doesn't contain a QR code</li>
-                            <li><i class="fas fa-times"></i> QR code is not valid for B.Y PRO system</li>
-                            <li><i class="fas fa-times"></i> Image is corrupted or blurry</li>
-                            <li><i class="fas fa-times"></i> QR code has been modified</li>
+                            <li>Image doesn't contain a QR code</li>
+                            <li>QR code is not valid for B.Y PRO system</li>
+                            <li>Image is corrupted or blurry</li>
+                            <li>QR code has been modified</li>
                         </ul>
                     </div>
                 </div>
@@ -540,11 +632,17 @@
                 <div class="login-form" id="manualForm">
                     <div class="form-group">
                         <label for="userIdInput">Account ID</label>
-                        <input type="text" id="userIdInput" placeholder="Enter your account ID" autocomplete="username">
+                        <div class="input-with-icon">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" id="userIdInput" placeholder="Enter your account ID" autocomplete="username">
+                        </div>
                     </div>
                     <div class="form-group">
                         <label for="passwordInput">Password</label>
-                        <input type="password" id="passwordInput" placeholder="Enter your password" autocomplete="current-password">
+                        <div class="input-with-icon">
+                            <i class="fas fa-key input-icon"></i>
+                            <input type="password" id="passwordInput" placeholder="Enter your password" autocomplete="current-password">
+                        </div>
                     </div>
 
                     <!-- رسالة الحالة -->
@@ -595,23 +693,16 @@
 
         // متغيرات
         let currentMethod = 'qr';
-        let isOnline = false;
         let currentUser = null;
 
-        // ========== تخزين آمن ==========
+        // ========== تخزين بسيط ==========
         const safeStorage = {
             setItem: (key, value) => {
                 try {
                     localStorage.setItem(key, JSON.stringify(value));
                     return true;
                 } catch (e) {
-                    try {
-                        sessionStorage.setItem(key, JSON.stringify(value));
-                        return true;
-                    } catch (e2) {
-                        window[key] = value;
-                        return false;
-                    }
+                    return false;
                 }
             },
 
@@ -620,12 +711,7 @@
                     const item = localStorage.getItem(key);
                     return item ? JSON.parse(item) : null;
                 } catch (e) {
-                    try {
-                        const item = sessionStorage.getItem(key);
-                        return item ? JSON.parse(item) : null;
-                    } catch (e2) {
-                        return window[key] || null;
-                    }
+                    return null;
                 }
             },
 
@@ -633,78 +719,48 @@
                 try {
                     localStorage.removeItem(key);
                 } catch (e) {
-                    try {
-                        sessionStorage.removeItem(key);
-                    } catch (e2) {
-                        delete window[key];
-                    }
+                    // تجاهل الخطأ
                 }
             }
         };
 
-        // ========== تحميل صورة المستخدم - نسخة مبسطة ==========
-        async function loadUserAvatar(userId) {
+        // ========== تحميل صورة المستخدم بشكل بسيط ==========
+        function loadUserAvatar(userId) {
             const imageUrl = `${GITHUB_IMAGE_BASE}${userId}.png?t=${Date.now()}`;
             
-            return new Promise((resolve) => {
-                const img = new Image();
-                
-                img.onload = () => {
-                    console.log('✅ تم تحميل صورة المستخدم');
-                    
-                    // إنشاء عنصر صورة جديد
-                    const avatarImg = document.createElement('img');
-                    avatarImg.src = imageUrl;
-                    avatarImg.alt = 'User Avatar';
-                    avatarImg.style.width = '100%';
-                    avatarImg.style.height = '100%';
-                    avatarImg.style.objectFit = 'cover';
-                    avatarImg.style.display = 'block';
-                    
-                    // استبدال محتوى الصورة
-                    userAvatar.innerHTML = '';
-                    userAvatar.appendChild(avatarImg);
-                    resolve(true);
-                };
-                
-                img.onerror = () => {
-                    console.log('⚠️ استخدام الصورة الافتراضية');
-                    userAvatar.innerHTML = `
-                        <div class="avatar-placeholder">
-                            <i class="fas fa-user"></i>
-                        </div>
-                    `;
-                    resolve(false);
-                };
-                
-                // تحميل الصورة
-                img.src = imageUrl;
-                
-                // مهلة 3 ثواني
-                setTimeout(() => {
-                    if (!img.complete) {
-                        console.log('⏰ وقت التحمل تجاوز');
-                        img.onerror = null;
-                        userAvatar.innerHTML = `
-                            <div class="avatar-placeholder">
-                                <i class="fas fa-user"></i>
-                            </div>
-                        `;
-                        resolve(false);
-                    }
-                }, 3000);
-            });
+            // تنظيف الحاوية أولاً
+            userAvatar.innerHTML = '';
+            
+            // إنشاء عنصر الصورة
+            const img = new Image();
+            img.onload = () => {
+                console.log('✅ تم تحميل الصورة:', userId);
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                img.style.display = 'block';
+                userAvatar.appendChild(img);
+            };
+            
+            img.onerror = () => {
+                console.log('⚠️ لم يتم العثور على الصورة، استخدام الصورة الافتراضية');
+                userAvatar.innerHTML = `
+                    <div class="default-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                `;
+            };
+            
+            img.src = imageUrl;
         }
 
         // ========== تحديث نقطة الاتصال ==========
-        function updateConnectionDot(online) {
-            isOnline = online;
+        function updateConnectionStatus(online) {
+            connectionDot.className = 'connection-dot';
             if (online) {
-                connectionDot.className = 'connection-dot connection-online';
-                connectionDot.style.display = 'block';
+                connectionDot.classList.add('connection-online');
             } else {
-                connectionDot.className = 'connection-dot connection-offline';
-                connectionDot.style.display = 'block';
+                connectionDot.classList.add('connection-offline');
             }
         }
 
@@ -731,43 +787,29 @@
                     return true;
                 }
             } catch (error) {
-                console.error('خطأ في التحقق من تسجيل الدخول:', error);
+                console.error('Error checking login:', error);
             }
             
             return false;
         }
 
         // ========== عرض حالة تسجيل الدخول ==========
-        async function showLoggedInState(user) {
+        function showLoggedInState(user) {
             loginSection.style.display = 'none';
             loggedInInfo.style.display = 'block';
             userNameSpan.textContent = user.name || `User ${user.id}`;
             
             // تحميل صورة المستخدم
-            await loadUserAvatar(user.id);
+            loadUserAvatar(user.id);
             
-            // بث حالة المستخدم
-            broadcastUserStatus(user, true);
-        }
-
-        // ========== بث حالة المستخدم ==========
-        function broadcastUserStatus(userData, isLoggedIn) {
+            // حفظ حالة المستخدم
             safeStorage.setItem('bypro_user_status', {
-                user: userData,
-                isLoggedIn: isLoggedIn,
-                timestamp: Date.now(),
-                appId: APP_ID
+                user: user,
+                isLoggedIn: true,
+                timestamp: Date.now()
             });
             
-            if (window.parent !== window) {
-                window.parent.postMessage({
-                    type: 'BYPRO_USER_STATUS',
-                    user: userData,
-                    isLoggedIn: isLoggedIn,
-                    timestamp: Date.now(),
-                    source: 'bypro_login'
-                }, '*');
-            }
+            showStatus(`Welcome ${user.name || user.id}!`, 'success');
         }
 
         // ========== تسجيل الخروج ==========
@@ -783,8 +825,6 @@
             passwordInput.value = '';
             qrFileInput.value = '';
             qrErrorDetails.style.display = 'none';
-            
-            broadcastUserStatus(null, false);
             
             showStatus('Logged out successfully', 'success');
         }
@@ -804,7 +844,7 @@
                     qrForm.classList.add('active');
                 } else {
                     manualForm.classList.add('active');
-                    setTimeout(() => userIdInput.focus(), 100);
+                    setTimeout(() => userIdInput.focus(), 300);
                 }
             });
         });
@@ -821,19 +861,19 @@
             qrErrorDetails.style.display = 'none';
             
             if (file.size > 5 * 1024 * 1024) {
-                showStatus('Image size too large', 'error');
+                showStatus('Image size too large.', 'error');
                 return;
             }
 
             if (!file.type.match('image.*')) {
-                showStatus('Please select an image file', 'error');
+                showStatus('Please select an image file.', 'error');
                 return;
             }
 
             // عرض حالة التحميل
             qrUploadArea.innerHTML = `
-                <div class="loading-spinner" style="margin: 15px auto; width: 30px; height: 30px;"></div>
-                <p>Processing...</p>
+                <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
+                <p>Processing image...</p>
             `;
 
             try {
@@ -897,7 +937,7 @@
                     const password = parts[2];
                     
                     if (id && password) {
-                        showStatus('QR code detected', 'success');
+                        showStatus('QR code detected!', 'success');
                         await verifyLogin(id, password);
                     } else {
                         throw new Error('INVALID_QR_FORMAT');
@@ -914,22 +954,26 @@
         function handleQRProcessingError(error) {
             switch(error.message) {
                 case 'NO_QR_FOUND':
-                    showStatus('No QR code found', 'error');
+                    showStatus('No QR code found.', 'error');
                     qrErrorDetails.style.display = 'block';
                     break;
                     
                 case 'NOT_BYPRO_QR':
-                    showStatus('Invalid QR code', 'error');
+                    showStatus('Invalid QR code.', 'error');
                     qrErrorDetails.style.display = 'block';
                     break;
                     
                 case 'INVALID_QR_FORMAT':
-                    showStatus('Invalid format', 'error');
+                    showStatus('Invalid QR format.', 'error');
                     qrErrorDetails.style.display = 'block';
                     break;
                     
+                case 'IMAGE_LOAD_ERROR':
+                    showStatus('Error loading image.', 'error');
+                    break;
+                    
                 default:
-                    showStatus('Error processing QR', 'error');
+                    showStatus('Error processing QR code.', 'error');
             }
         }
 
@@ -942,7 +986,6 @@
                 <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
             `;
             
-            // إعادة إضافة المستمع
             qrUploadArea.addEventListener('click', () => {
                 qrFileInput.click();
             });
@@ -951,14 +994,13 @@
         // ========== التحقق من بيانات تسجيل الدخول ==========
         async function verifyLogin(id, password) {
             if (!id || !password) {
-                showStatus('ID and password required', 'error');
+                showStatus('ID and password are required.', 'error');
                 return;
             }
 
-            // عرض حالة التحميل
             if (currentMethod === 'qr') {
                 qrUploadArea.innerHTML = `
-                    <div class="loading-spinner" style="margin: 15px auto; width: 30px; height: 30px;"></div>
+                    <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
                     <p>Verifying...</p>
                 `;
             } else {
@@ -968,12 +1010,14 @@
 
             try {
                 const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
-                
                 const response = await fetch(url, {
                     method: 'GET',
                     headers: {'Accept': 'application/json'},
-                    mode: 'cors'
                 });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
 
                 const result = await response.json();
 
@@ -982,8 +1026,6 @@
                         id: result.account.id,
                         name: result.account.name,
                         email: result.account.email,
-                        password: password,
-                        image: `${GITHUB_IMAGE_BASE}${result.account.id}.png`,
                         loginTime: new Date().toISOString()
                     };
                     
@@ -991,19 +1033,19 @@
                     currentUser = userData;
                     
                     showStatus('Login successful!', 'success');
-                    updateConnectionDot(true);
+                    updateConnectionStatus(true);
                     
-                    await showLoggedInState(userData);
+                    showLoggedInState(userData);
                     
                 } else {
-                    showStatus(result.error || 'Login failed', 'error');
+                    showStatus(result.error || 'Login failed.', 'error');
                 }
             } catch (error) {
-                if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
-                    showStatus('Cannot connect to server', 'error');
-                    updateConnectionDot(false);
+                if (error.message.includes('Failed to fetch')) {
+                    showStatus('Cannot connect to server.', 'error');
+                    updateConnectionStatus(false);
                 } else {
-                    showStatus('Login error', 'error');
+                    showStatus('Login error.', 'error');
                 }
             } finally {
                 if (currentMethod !== 'qr') {
@@ -1019,13 +1061,13 @@
             const password = passwordInput.value.trim();
             
             if (!id) {
-                showStatus('Please enter account ID', 'error');
+                showStatus('Please enter your account ID.', 'error');
                 userIdInput.focus();
                 return;
             }
             
             if (!password) {
-                showStatus('Please enter password', 'error');
+                showStatus('Please enter your password.', 'error');
                 passwordInput.focus();
                 return;
             }
@@ -1047,26 +1089,26 @@
             try {
                 const response = await fetch(`${API_BASE}/api/health`);
                 if (response.ok) {
-                    updateConnectionDot(true);
+                    updateConnectionStatus(true);
                     return true;
                 } else {
-                    throw new Error(`HTTP ${response.status}`);
+                    throw new Error();
                 }
             } catch (error) {
-                updateConnectionDot(false);
+                updateConnectionStatus(false);
                 return false;
             }
         }
 
         // ========== التهيئة ==========
-        document.addEventListener('DOMContentLoaded', async () => {
+        document.addEventListener('DOMContentLoaded', () => {
             const isLoggedIn = checkExistingLogin();
             
             if (!isLoggedIn) {
-                await testServerConnection();
+                testServerConnection();
                 
                 if (currentMethod === 'manual') {
-                    setTimeout(() => userIdInput.focus(), 100);
+                    setTimeout(() => userIdInput.focus(), 300);
                 }
             }
         });
