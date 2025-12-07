@@ -43,20 +43,22 @@
             overflow-x: hidden;
         }
 
-        /* Container for better mobile alignment */
+        /* الحاوية الرئيسية الثابتة */
         .page-container {
             width: 100%;
-            max-width: 500px;
-            min-height: auto;
+            max-width: 450px;
+            min-width: 320px;
+            min-height: 500px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
+            margin: 0 auto;
         }
 
         .login-container {
             background: rgba(17, 17, 17, 0.95);
-            padding: clamp(25px, 5vw, 40px) clamp(20px, 4vw, 35px);
+            padding: 30px 25px;
             border-radius: var(--radius);
             width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -64,27 +66,6 @@
             backdrop-filter: blur(15px);
             position: relative;
             overflow: hidden;
-            margin: auto;
-        }
-
-        /* For very short screens */
-        @media (max-height: 600px) {
-            body {
-                padding: 10px;
-                align-items: flex-start;
-                overflow-y: auto;
-            }
-            
-            .page-container {
-                min-height: 100vh;
-                justify-content: flex-start;
-                padding-top: 20px;
-            }
-            
-            .login-container {
-                margin-top: 0;
-                margin-bottom: 20px;
-            }
         }
 
         .login-container::before {
@@ -100,43 +81,59 @@
 
         .logo {
             text-align: center;
-            margin-bottom: clamp(20px, 4vw, 30px);
+            margin-bottom: 25px;
             position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .logo-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 8px;
+        }
+
+        .logo-img {
+            width: 40px;
+            height: 40px;
+            object-fit: contain;
+            display: block;
         }
 
         .logo h1 {
             color: var(--primary-color);
-            font-size: clamp(1.6rem, 5vw, 2.2rem);
-            margin-bottom: 8px;
+            font-size: 1.8rem;
+            margin: 0;
             font-weight: 700;
             background: linear-gradient(90deg, var(--primary-color), var(--success-color));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             letter-spacing: 0.5px;
-            line-height: 1.3;
+            line-height: 1;
         }
 
         .logo p {
             color: var(--text-muted);
-            font-size: clamp(0.9rem, 3vw, 1rem);
+            font-size: 0.95rem;
             font-weight: 300;
         }
 
         .login-methods {
             display: flex;
             gap: 8px;
-            margin-bottom: clamp(20px, 4vw, 25px);
-            flex-wrap: wrap;
+            margin-bottom: 25px;
             background: rgba(0, 0, 0, 0.3);
             padding: 4px;
             border-radius: 50px;
-            justify-content: center;
         }
 
         .method-btn {
             flex: 1;
-            min-width: 120px;
-            padding: clamp(10px, 3vw, 14px) clamp(15px, 3vw, 20px);
+            padding: 12px 16px;
             background: transparent;
             color: var(--text-muted);
             border: none;
@@ -147,9 +144,8 @@
             align-items: center;
             justify-content: center;
             gap: 8px;
-            font-size: clamp(0.85rem, 3vw, 0.95rem);
+            font-size: 0.9rem;
             font-weight: 500;
-            position: relative;
             white-space: nowrap;
         }
 
@@ -180,14 +176,14 @@
         }
 
         .form-group {
-            margin-bottom: clamp(18px, 4vw, 25px);
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 8px;
             color: var(--text-muted);
-            font-size: clamp(0.85rem, 3vw, 0.9rem);
+            font-size: 0.85rem;
             font-weight: 500;
             letter-spacing: 0.3px;
         }
@@ -202,18 +198,18 @@
             top: 50%;
             transform: translateY(-50%);
             color: var(--text-muted);
-            font-size: clamp(1rem, 3vw, 1.1rem);
+            font-size: 1rem;
             transition: color 0.3s;
         }
 
         .form-group input {
             width: 100%;
-            padding: clamp(12px, 3vw, 16px) 20px clamp(12px, 3vw, 16px) 48px;
+            padding: 14px 20px 14px 48px;
             border: 2px solid transparent;
             border-radius: var(--radius);
             background: rgba(0, 0, 0, 0.4);
             color: var(--text-color);
-            font-size: clamp(0.95rem, 3vw, 1rem);
+            font-size: 0.95rem;
             transition: all 0.3s ease;
             backdrop-filter: blur(10px);
         }
@@ -230,10 +226,10 @@
             background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
             border: none;
-            padding: clamp(14px, 3vw, 18px);
+            padding: 16px;
             border-radius: var(--radius);
             cursor: pointer;
-            font-size: clamp(1rem, 3vw, 1.1rem);
+            font-size: 1rem;
             font-weight: 600;
             transition: all 0.3s ease;
             display: flex;
@@ -262,13 +258,13 @@
 
         .qr-scanner {
             text-align: center;
-            padding: clamp(15px, 3vw, 20px);
+            padding: 20px;
         }
 
         .qr-instruction {
             color: var(--text-muted);
-            margin-bottom: clamp(20px, 4vw, 25px);
-            font-size: clamp(0.9rem, 3vw, 0.95rem);
+            margin-bottom: 25px;
+            font-size: 0.9rem;
             line-height: 1.5;
             text-align: center;
         }
@@ -276,12 +272,12 @@
         .qr-upload-area {
             border: 2px dashed var(--border-color);
             border-radius: var(--radius);
-            padding: clamp(25px, 5vw, 40px) clamp(15px, 3vw, 20px);
+            padding: 35px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
             background: rgba(0, 0, 0, 0.2);
-            margin-bottom: clamp(15px, 3vw, 20px);
+            margin-bottom: 20px;
             position: relative;
             overflow: hidden;
         }
@@ -293,7 +289,7 @@
         }
 
         .qr-upload-area i {
-            font-size: clamp(2.5rem, 6vw, 3.5rem);
+            font-size: 2.5rem;
             color: var(--primary-color);
             margin-bottom: 12px;
             opacity: 0.8;
@@ -301,14 +297,14 @@
 
         .qr-upload-area p {
             color: var(--text-color);
-            font-size: clamp(1rem, 3vw, 1.1rem);
+            font-size: 1rem;
             font-weight: 500;
             margin-bottom: 5px;
         }
 
         .qr-upload-area span {
             color: var(--text-muted);
-            font-size: clamp(0.85rem, 3vw, 0.9rem);
+            font-size: 0.85rem;
         }
 
         .qr-file-input {
@@ -316,15 +312,15 @@
         }
 
         .status-message {
-            padding: clamp(12px, 3vw, 15px) clamp(15px, 3vw, 20px);
-            margin: clamp(15px, 3vw, 20px) 0;
+            padding: 15px 20px;
+            margin: 20px 0;
             border-radius: var(--radius);
             text-align: center;
             display: none;
             animation: slideIn 0.3s ease;
             font-weight: 500;
             border-left: 4px solid transparent;
-            font-size: clamp(0.9rem, 3vw, 1rem);
+            font-size: 0.9rem;
         }
 
         @keyframes slideIn {
@@ -353,15 +349,16 @@
         .logged-in-info {
             display: none;
             text-align: center;
-            padding: clamp(25px, 5vw, 30px) clamp(15px, 3vw, 20px);
+            padding: 30px 20px;
             animation: fadeIn 0.5s ease;
+            width: 100%;
         }
 
         .user-avatar {
-            width: clamp(100px, 25vw, 140px);
-            height: clamp(100px, 25vw, 140px);
+            width: 120px;
+            height: 120px;
             border-radius: 50%;
-            margin: 0 auto clamp(20px, 4vw, 25px);
+            margin: 0 auto 25px;
             position: relative;
             border: 4px solid transparent;
             background: linear-gradient(45deg, var(--primary-color), var(--success-color)) border-box;
@@ -375,6 +372,7 @@
             display: flex;
             align-items: center;
             justify-content: center;
+            background-color: rgba(52, 152, 219, 0.1);
         }
 
         .user-avatar img {
@@ -385,50 +383,44 @@
             display: block;
         }
 
-        .user-avatar i {
-            font-size: clamp(2.5rem, 6vw, 4rem);
-            color: white;
-            opacity: 0.8;
-        }
-
         .logged-in-info h3 {
             color: var(--text-color);
-            margin-bottom: clamp(12px, 3vw, 15px);
-            font-size: clamp(1.3rem, 4vw, 1.8rem);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
             font-weight: 600;
             line-height: 1.3;
         }
 
         .welcome-message {
             color: var(--success-color);
-            margin-bottom: clamp(20px, 4vw, 25px);
-            font-size: clamp(1rem, 3vw, 1.1rem);
+            margin-bottom: 25px;
+            font-size: 1rem;
             font-weight: 500;
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 10px;
             background: rgba(46, 204, 113, 0.1);
-            padding: clamp(10px, 3vw, 12px) clamp(15px, 3vw, 20px);
+            padding: 12px 20px;
             border-radius: 50px;
             width: fit-content;
-            margin: 0 auto clamp(20px, 4vw, 25px);
+            margin: 0 auto 25px;
         }
 
         .logout-btn {
             background: linear-gradient(135deg, var(--danger-color), #c0392b);
             color: white;
             border: none;
-            padding: clamp(12px, 3vw, 15px) clamp(30px, 5vw, 40px);
+            padding: 14px 35px;
             border-radius: 50px;
             cursor: pointer;
-            font-size: clamp(0.95rem, 3vw, 1rem);
+            font-size: 0.95rem;
             font-weight: 600;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
             gap: 8px;
-            margin-top: clamp(15px, 3vw, 20px);
+            margin-top: 20px;
             box-shadow: 0 6px 15px rgba(231, 76, 60, 0.3);
         }
 
@@ -439,11 +431,11 @@
 
         .connection-status {
             position: fixed;
-            top: clamp(10px, 3vw, 20px);
-            right: clamp(10px, 3vw, 20px);
-            padding: clamp(8px, 2vw, 12px) clamp(15px, 3vw, 20px);
+            top: 15px;
+            right: 15px;
+            padding: 10px 18px;
             border-radius: 50px;
-            font-size: clamp(0.75rem, 2.5vw, 0.85rem);
+            font-size: 0.8rem;
             font-weight: 500;
             z-index: 1000;
             display: none;
@@ -466,8 +458,8 @@
 
         .loading-spinner {
             display: inline-block;
-            width: clamp(18px, 4vw, 22px);
-            height: clamp(18px, 4vw, 22px);
+            width: 20px;
+            height: 20px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
@@ -480,22 +472,22 @@
 
         .signup-section {
             text-align: center;
-            margin-top: clamp(25px, 5vw, 30px);
-            padding-top: clamp(20px, 4vw, 25px);
+            margin-top: 30px;
+            padding-top: 25px;
             border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .signup-text {
             color: var(--text-muted);
-            margin-bottom: clamp(15px, 3vw, 18px);
-            font-size: clamp(0.85rem, 3vw, 0.95rem);
+            margin-bottom: 18px;
+            font-size: 0.85rem;
         }
 
         .signup-btn {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
             border: none;
-            padding: clamp(12px, 3vw, 14px) clamp(25px, 4vw, 30px);
+            padding: 13px 28px;
             border-radius: 50px;
             cursor: pointer;
             font-weight: 500;
@@ -504,7 +496,7 @@
             align-items: center;
             gap: 8px;
             text-decoration: none;
-            font-size: clamp(0.95rem, 3vw, 1rem);
+            font-size: 0.95rem;
             box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
         }
 
@@ -517,8 +509,8 @@
             background: rgba(231, 76, 60, 0.1);
             border: 1px solid rgba(231, 76, 60, 0.3);
             border-radius: 10px;
-            padding: clamp(12px, 3vw, 15px);
-            margin-top: clamp(12px, 3vw, 15px);
+            padding: 15px;
+            margin-top: 15px;
             text-align: left;
             display: none;
         }
@@ -526,7 +518,7 @@
         .qr-error-details h4 {
             color: var(--danger-color);
             margin-bottom: 10px;
-            font-size: clamp(0.9rem, 3vw, 1rem);
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
             gap: 8px;
@@ -540,7 +532,7 @@
         .qr-error-details li {
             color: var(--text-muted);
             margin-bottom: 8px;
-            font-size: clamp(0.8rem, 2.5vw, 0.9rem);
+            font-size: 0.8rem;
             display: flex;
             align-items: flex-start;
             gap: 8px;
@@ -552,27 +544,70 @@
             flex-shrink: 0;
         }
 
-        /* Enhanced responsiveness */
+        /* تحسينات للشاشات الصغيرة */
         @media (max-width: 768px) {
-            .login-methods {
-                flex-direction: row;
-                justify-content: space-between;
+            .page-container {
+                max-width: 400px;
+                min-width: 300px;
+                min-height: 450px;
+            }
+            
+            .login-container {
+                padding: 25px 20px;
+            }
+            
+            .logo h1 {
+                font-size: 1.6rem;
+            }
+            
+            .logo-img {
+                width: 35px;
+                height: 35px;
             }
             
             .method-btn {
-                min-width: calc(50% - 4px);
-                margin-bottom: 0;
+                padding: 10px 14px;
+                font-size: 0.85rem;
+            }
+            
+            .user-avatar {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .logged-in-info h3 {
+                font-size: 1.3rem;
             }
         }
 
         @media (max-width: 480px) {
             body {
                 padding: 15px;
-                min-height: 100vh;
             }
             
             .page-container {
-                min-height: calc(100vh - 30px);
+                max-width: 100%;
+                min-width: 280px;
+                min-height: auto;
+            }
+            
+            .login-container {
+                padding: 20px 15px;
+            }
+            
+            .logo-header {
+                flex-direction: column;
+                gap: 8px;
+            }
+            
+            .logo h1 {
+                font-size: 1.4rem;
+                text-align: center;
+            }
+            
+            .logo-img {
+                width: 30px;
+                height: 30px;
             }
             
             .login-methods {
@@ -583,17 +618,18 @@
             }
             
             .method-btn {
-                min-width: 100%;
                 border-radius: var(--radius);
                 background: rgba(0, 0, 0, 0.3);
             }
             
             .user-avatar {
+                width: 90px;
+                height: 90px;
                 margin-bottom: 20px;
             }
             
             .logged-in-info h3 {
-                font-size: 1.4rem;
+                font-size: 1.2rem;
             }
             
             .connection-status {
@@ -603,16 +639,25 @@
                 text-align: center;
                 width: calc(100% - 20px);
             }
+            
+            .qr-upload-area {
+                padding: 25px 15px;
+            }
         }
 
-        /* For very small screens (iPhone SE, etc) */
+        /* للشاشات الصغيرة جداً */
         @media (max-width: 360px) {
             .login-container {
-                padding: 20px 15px;
+                padding: 15px 12px;
             }
             
             .logo h1 {
-                font-size: 1.4rem;
+                font-size: 1.2rem;
+            }
+            
+            .logo-img {
+                width: 25px;
+                height: 25px;
             }
             
             .logo p {
@@ -620,26 +665,26 @@
             }
             
             .method-btn {
-                padding: 10px 12px;
+                padding: 8px 12px;
                 font-size: 0.8rem;
             }
             
             .user-avatar {
-                width: 90px;
-                height: 90px;
+                width: 80px;
+                height: 80px;
             }
             
             .logged-in-info h3 {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
             }
             
             .welcome-message {
                 font-size: 0.9rem;
-                padding: 8px 15px;
+                padding: 10px 15px;
             }
         }
 
-        /* Fix for landscape mode */
+        /* وضع أفقي (لاندسكيب) */
         @media (max-height: 500px) and (orientation: landscape) {
             body {
                 padding: 10px;
@@ -647,35 +692,37 @@
             }
             
             .page-container {
-                flex-direction: row;
-                justify-content: center;
-                align-items: center;
-                gap: 20px;
+                min-height: auto;
+                padding: 20px 0;
             }
             
             .login-container {
                 max-width: 90%;
-                margin: 0;
+            }
+            
+            .logo-header {
+                flex-direction: row;
             }
             
             .logged-in-info .user-avatar {
-                width: 80px;
-                height: 80px;
+                width: 70px;
+                height: 70px;
                 margin-bottom: 15px;
             }
             
             .logged-in-info h3 {
-                font-size: 1.2rem;
+                font-size: 1.1rem;
                 margin-bottom: 10px;
             }
             
             .welcome-message {
                 margin-bottom: 15px;
                 font-size: 0.9rem;
+                padding: 8px 15px;
             }
         }
 
-        /* Fix image loading */
+        /* حل مشكلة تحميل الصور */
         .avatar-placeholder {
             width: 100%;
             height: 100%;
@@ -690,22 +737,35 @@
             font-size: 2.5rem;
             color: white;
         }
+        
+        /* تأمين تحميل الصورة */
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            border-radius: 50%;
+            display: block;
+            background-color: rgba(52, 152, 219, 0.1);
+        }
     </style>
 </head>
 <body>
     <div class="page-container">
-        <!-- Connection Status -->
+        <!-- حالة الاتصال -->
         <div class="connection-status" id="connectionStatus">
             <i class="fas fa-wifi"></i> <span id="connectionText">Connected</span>
         </div>
 
         <div class="login-container">
             <div class="logo">
-                <h1><i class="fas fa-user-shield"></i> B.Y PRO Accounts</h1>
+                <div class="logo-header">
+                    <img src="https://bypro.kesug.com/B.Y%20PRO.png" alt="B.Y PRO Logo" class="logo-img">
+                    <h1>B.Y PRO Accounts</h1>
+                </div>
                 <p>Secure Login System</p>
             </div>
 
-            <!-- Logged In Info -->
+            <!-- معلومات تسجيل الدخول -->
             <div class="logged-in-info" id="loggedInInfo">
                 <div class="user-avatar" id="userAvatar">
                     <div class="avatar-placeholder">
@@ -722,7 +782,7 @@
                 </button>
             </div>
 
-            <!-- Login Section -->
+            <!-- قسم تسجيل الدخول -->
             <div id="loginSection">
                 <div class="login-methods">
                     <button class="method-btn active" data-method="qr">
@@ -733,7 +793,7 @@
                     </button>
                 </div>
 
-                <!-- QR Code Login -->
+                <!-- تسجيل الدخول بالرمز QR -->
                 <div class="login-form active" id="qrForm">
                     <p class="qr-instruction">
                         Upload your account QR code image to login
@@ -746,7 +806,7 @@
                         <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
                     </div>
 
-                    <!-- QR Error Details -->
+                    <!-- تفاصيل خطأ QR -->
                     <div class="qr-error-details" id="qrErrorDetails">
                         <h4><i class="fas fa-exclamation-triangle"></i> Possible reasons for error:</h4>
                         <ul>
@@ -758,7 +818,7 @@
                     </div>
                 </div>
 
-                <!-- Manual Login -->
+                <!-- تسجيل الدخول اليدوي -->
                 <div class="login-form" id="manualForm">
                     <div class="form-group">
                         <label for="userIdInput"><i class="fas fa-id-card"></i> Account ID</label>
@@ -775,16 +835,16 @@
                         </div>
                     </div>
 
-                    <!-- Status Message -->
+                    <!-- رسالة الحالة -->
                     <div id="statusMessage" class="status-message"></div>
 
-                    <!-- Login Button -->
+                    <!-- زر تسجيل الدخول -->
                     <button class="login-btn" id="loginBtn">
                         <i class="fas fa-sign-in-alt"></i> Login
                     </button>
                 </div>
 
-                <!-- Signup Section -->
+                <!-- قسم التسجيل -->
                 <div class="signup-section">
                     <p class="signup-text">Don't have an account?</p>
                     <a href="https://yacine2007.github.io/secure-auth-app/signup.html" class="signup-btn">
@@ -795,16 +855,16 @@
         </div>
     </div>
 
-    <!-- QR Code Scanner Library -->
+    <!-- مكتبة مسح الرمز QR -->
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
     
     <script>
-        // ========== SYSTEM CONFIGURATION ==========
+        // ========== تكوين النظام ==========
         const APP_ID = 'bypro_login_system';
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
         const GITHUB_IMAGE_BASE = 'https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/';
 
-        // DOM Elements
+        // عناصر DOM
         const loginSection = document.getElementById('loginSection');
         const loggedInInfo = document.getElementById('loggedInInfo');
         const methodBtns = document.querySelectorAll('.method-btn');
@@ -822,12 +882,12 @@
         const connectionStatus = document.getElementById('connectionStatus');
         const connectionText = document.getElementById('connectionText');
 
-        // Variables
+        // متغيرات
         let currentMethod = 'qr';
         let isOnline = false;
         let currentUser = null;
 
-        // ========== SAFE STORAGE ==========
+        // ========== تخزين آمن ==========
         const safeStorage = {
             setItem: (key, value) => {
                 try {
@@ -871,33 +931,41 @@
             }
         };
 
-        // ========== FIXED: LOAD USER AVATAR WITH CACHE BUSTING ==========
+        // ========== تحميل صورة المستخدم مع معالجة الأخطاء ==========
         async function loadUserAvatar(userId) {
             const imageUrl = `${GITHUB_IMAGE_BASE}${userId}.png?t=${Date.now()}`;
             
             return new Promise((resolve) => {
                 const img = new Image();
-                img.crossOrigin = "anonymous"; // Enable CORS
                 
+                // إعداد معالجات الأحداث
                 img.onload = () => {
-                    console.log('✅ Avatar loaded successfully:', imageUrl);
-                    // Create new image element
-                    const avatarImg = document.createElement('img');
-                    avatarImg.src = imageUrl;
-                    avatarImg.alt = 'User Avatar';
-                    avatarImg.style.width = '100%';
-                    avatarImg.style.height = '100%';
-                    avatarImg.style.objectFit = 'cover';
-                    avatarImg.style.borderRadius = '50%';
+                    console.log('✅ تم تحميل الصورة بنجاح:', imageUrl);
                     
-                    // Replace avatar content
+                    // تأكد من أن الصورة مرئية
+                    img.style.opacity = '1';
+                    img.style.transition = 'opacity 0.3s ease';
+                    
+                    // تنظيف الحاوية أولاً
                     userAvatar.innerHTML = '';
-                    userAvatar.appendChild(avatarImg);
+                    
+                    // إضافة الصورة
+                    img.classList.add('avatar-img');
+                    img.alt = 'User Avatar';
+                    
+                    // التأكد من أن الصورة تغطي الحاوية بالكامل
+                    img.style.width = '100%';
+                    img.style.height = '100%';
+                    img.style.objectFit = 'cover';
+                    img.style.borderRadius = '50%';
+                    img.style.display = 'block';
+                    
+                    userAvatar.appendChild(img);
                     resolve(true);
                 };
                 
                 img.onerror = () => {
-                    console.log('⚠️ Avatar not found, using default');
+                    console.log('⚠️ لم يتم العثور على الصورة، استخدام الصورة الافتراضية');
                     userAvatar.innerHTML = `
                         <div class="avatar-placeholder">
                             <i class="fas fa-user-check"></i>
@@ -906,10 +974,15 @@
                     resolve(false);
                 };
                 
-                // Set a timeout to prevent hanging
+                // محاولة تحميل الصورة مع CORS
+                img.crossOrigin = 'anonymous';
+                img.referrerPolicy = 'no-referrer';
+                img.src = imageUrl;
+                
+                // مهلة لتحميل الصورة
                 setTimeout(() => {
                     if (!img.complete) {
-                        console.log('⏰ Avatar loading timeout');
+                        console.log('⏰ تجاوز وقت تحميل الصورة');
                         img.onerror = null;
                         userAvatar.innerHTML = `
                             <div class="avatar-placeholder">
@@ -918,13 +991,11 @@
                         `;
                         resolve(false);
                     }
-                }, 3000);
-                
-                img.src = imageUrl;
+                }, 5000);
             });
         }
 
-        // ========== UPDATE CONNECTION STATUS ==========
+        // ========== تحديث حالة الاتصال ==========
         function updateConnectionStatus(online) {
             isOnline = online;
             if (online) {
@@ -941,7 +1012,7 @@
             }
         }
 
-        // ========== SHOW STATUS MESSAGE ==========
+        // ========== عرض رسالة الحالة ==========
         function showStatus(message, type) {
             statusMessage.textContent = message;
             statusMessage.className = `status-message status-${type}`;
@@ -952,45 +1023,45 @@
             }, 5000);
         }
 
-        // ========== CHECK EXISTING LOGIN ==========
+        // ========== التحقق من تسجيل الدخول الحالي ==========
         function checkExistingLogin() {
-            console.log('🔍 Checking for existing login...');
+            console.log('🔍 التحقق من تسجيل الدخول الحالي...');
             
             try {
                 const userData = safeStorage.getItem('bypro_user');
                 const userStatus = safeStorage.getItem('bypro_user_status');
                 
                 if (userData && userStatus && userStatus.isLoggedIn && userData.id) {
-                    console.log('✅ Found existing user:', userData.name || userData.id);
+                    console.log('✅ تم العثور على مستخدم:', userData.name || userData.id);
                     currentUser = userData;
                     showLoggedInState(userData);
                     return true;
                 }
             } catch (error) {
-                console.error('❌ Error checking existing login:', error);
+                console.error('❌ خطأ في التحقق من تسجيل الدخول:', error);
             }
             
             return false;
         }
 
-        // ========== SHOW LOGGED IN STATE ==========
+        // ========== عرض حالة تسجيل الدخول ==========
         async function showLoggedInState(user) {
-            console.log('🎉 Showing logged in state for:', user.name || user.id);
+            console.log('🎉 عرض حالة تسجيل الدخول لـ:', user.name || user.id);
             
             loginSection.style.display = 'none';
             loggedInInfo.style.display = 'block';
             userNameSpan.textContent = user.name || `User ${user.id}`;
             
-            // Load avatar from GitHub
+            // تحميل الصورة من GitHub
             await loadUserAvatar(user.id);
             
-            // Broadcast user status
+            // بث حالة المستخدم
             broadcastUserStatus(user, true);
             
             showStatus(`Welcome ${user.name || user.id}! Login successful`, 'success');
         }
 
-        // ========== BROADCAST USER STATUS ==========
+        // ========== بث حالة المستخدم ==========
         function broadcastUserStatus(userData, isLoggedIn) {
             safeStorage.setItem('bypro_user_status', {
                 user: userData,
@@ -1018,9 +1089,9 @@
             }));
         }
 
-        // ========== LOGOUT FUNCTION ==========
+        // ========== وظيفة تسجيل الخروج ==========
         function logout() {
-            console.log('🚪 Logging out...');
+            console.log('🚪 تسجيل الخروج...');
             
             safeStorage.removeItem('bypro_user');
             safeStorage.removeItem('bypro_user_status');
@@ -1039,7 +1110,7 @@
             showStatus('Logged out successfully', 'success');
         }
 
-        // ========== SWITCH BETWEEN LOGIN METHODS ==========
+        // ========== التبديل بين طرق تسجيل الدخول ==========
         methodBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 methodBtns.forEach(b => b.classList.remove('active'));
@@ -1059,7 +1130,7 @@
             });
         });
 
-        // ========== HANDLE QR CODE UPLOAD ==========
+        // ========== معالجة تحميل رمز QR ==========
         qrUploadArea.addEventListener('click', () => {
             qrFileInput.click();
         });
@@ -1080,7 +1151,7 @@
                 return;
             }
 
-            // Show loading state
+            // عرض حالة التحميل
             qrUploadArea.innerHTML = `
                 <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
                 <p>Processing image...</p>
@@ -1103,7 +1174,7 @@
             }
         });
 
-        // ========== READ IMAGE FILE ==========
+        // ========== قراءة ملف الصورة ==========
         function readImageFile(file) {
             return new Promise((resolve, reject) => {
                 const reader = new FileReader();
@@ -1113,7 +1184,7 @@
             });
         }
 
-        // ========== SCAN QR CODE ==========
+        // ========== مسح رمز QR ==========
         function scanQRCode(imageData) {
             return new Promise((resolve, reject) => {
                 const img = new Image();
@@ -1138,9 +1209,9 @@
             });
         }
 
-        // ========== PROCESS QR CODE ==========
+        // ========== معالجة رمز QR ==========
         async function processQRCode(data) {
-            console.log('📱 QR Code detected:', data);
+            console.log('📱 تم اكتشاف رمز QR:', data);
             
             if (data.startsWith('BYPRO:')) {
                 const parts = data.split(':');
@@ -1162,9 +1233,9 @@
             }
         }
 
-        // ========== HANDLE QR PROCESSING ERRORS ==========
+        // ========== معالجة أخطاء QR ==========
         function handleQRProcessingError(error) {
-            console.error('❌ QR processing error:', error.message);
+            console.error('❌ خطأ في معالجة QR:', error.message);
             
             switch(error.message) {
                 case 'NO_QR_FOUND':
@@ -1195,7 +1266,7 @@
             }
         }
 
-        // ========== RESET QR UPLOAD AREA ==========
+        // ========== إعادة تعيين منطقة تحميل QR ==========
         function resetQRUploadArea() {
             qrUploadArea.innerHTML = `
                 <i class="fas fa-cloud-upload-alt"></i>
@@ -1203,16 +1274,21 @@
                 <span>PNG, JPG up to 5MB</span>
                 <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
             `;
+            
+            // إعادة إضافة مستمع الحدث
+            qrUploadArea.addEventListener('click', () => {
+                qrFileInput.click();
+            });
         }
 
-        // ========== VERIFY LOGIN CREDENTIALS ==========
+        // ========== التحقق من بيانات تسجيل الدخول ==========
         async function verifyLogin(id, password) {
             if (!id || !password) {
                 showStatus('ID and password are required', 'error');
                 return;
             }
 
-            // Show loading state
+            // عرض حالة التحميل
             if (currentMethod === 'qr') {
                 qrUploadArea.innerHTML = `
                     <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
@@ -1225,7 +1301,7 @@
 
             try {
                 const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
-                console.log('🔐 Making request to:', url);
+                console.log('🔐 جارٍ الاتصال بـ:', url);
 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -1240,7 +1316,7 @@
                 }
 
                 const result = await response.json();
-                console.log('📦 Response data:', result);
+                console.log('📦 بيانات الاستجابة:', result);
 
                 if (result.success) {
                     const userData = {
@@ -1266,7 +1342,7 @@
                     showStatus(result.error || 'Login failed', 'error');
                 }
             } catch (error) {
-                console.error('❌ Login error:', error);
+                console.error('❌ خطأ في تسجيل الدخول:', error);
                 if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
                     showStatus('Cannot connect to server. Please check your internet connection.', 'error');
                     updateConnectionStatus(false);
@@ -1281,7 +1357,7 @@
             }
         }
 
-        // ========== MANUAL LOGIN ==========
+        // ========== تسجيل الدخول اليدوي ==========
         loginBtn.addEventListener('click', () => {
             const id = userIdInput.value.trim();
             const password = passwordInput.value.trim();
@@ -1301,7 +1377,7 @@
             verifyLogin(id, password);
         });
 
-        // ========== ALLOW ENTER KEY ==========
+        // ========== السماح بمفتاح الإدخال ==========
         [userIdInput, passwordInput].forEach(input => {
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -1310,17 +1386,17 @@
             });
         });
 
-        // ========== INPUT VALIDATION ==========
+        // ========== التحقق من صحة الإدخال ==========
         userIdInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
         });
 
-        // ========== TEST SERVER CONNECTION ==========
+        // ========== اختبار اتصال الخادم ==========
         async function testServerConnection() {
             try {
-                console.log('🔄 Testing server connection...');
+                console.log('🔄 جارٍ اختبار اتصال الخادم...');
                 const response = await fetch(`${API_BASE}/api/health`);
-                console.log('📡 Health check response:', response.status);
+                console.log('📡 استجابة التحقق من الصحة:', response.status);
                 
                 if (response.ok) {
                     updateConnectionStatus(true);
@@ -1329,15 +1405,15 @@
                     throw new Error(`HTTP ${response.status}`);
                 }
             } catch (error) {
-                console.error('❌ Server connection test failed:', error);
+                console.error('❌ فشل اختبار اتصال الخادم:', error);
                 updateConnectionStatus(false);
                 return false;
             }
         }
 
-        // ========== INITIALIZATION ==========
+        // ========== التهيئة ==========
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 Initializing login page...');
+            console.log('🚀 تهيئة صفحة تسجيل الدخول...');
             
             const isLoggedIn = checkExistingLogin();
             
@@ -1350,7 +1426,7 @@
             }
         });
 
-        // Global functions
+        // وظائف عامة
         window.logout = logout;
         window.getCurrentUser = () => currentUser;
         window.byproAuth = {
