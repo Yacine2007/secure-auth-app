@@ -13,108 +13,30 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Unified Accounts System with Image Upload to GitHub...');
+console.log('🚀 Starting B.Y PRO Accounts System with Email Verification...');
 
-// ==================== ENHANCED CORS CONFIGURATION ====================
+// ==================== CORS CONFIGURATION ====================
 app.use(cors({
   origin: ['https://yacine2007.github.io', 'http://localhost:5500', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'API-Key', 'X-Requested-With']
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin']
 }));
 
 app.options('*', cors());
 
-// ==================== ENHANCED MIDDLEWARE ====================
+// ==================== MIDDLEWARE ====================
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use(express.static(__dirname));
 
 // Request logging
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url} - Origin: ${req.headers.origin}`);
+  console.log(`📥 ${req.method} ${req.url}`);
   next();
 });
 
 console.log('✅ Middleware initialized');
-
-// ==================== API KEY CONFIGURATION ====================
-const API_KEY = 'BYPRO_SECURE_KEY_2007';
-const ADMIN_PASSWORD = '20070909';
-
-// Middleware للتحقق من API Key
-const verifyApiKey = (req, res, next) => {
-  const apiKey = req.headers['api-key'] || req.query.apiKey || req.body.apiKey;
-  
-  console.log('🔐 API Key Check:', { 
-    received: apiKey ? 'Present' : 'Missing',
-    path: req.path,
-    method: req.method 
-  });
-  
-  // السماح لبعض المسارات العامة بدون API Key
-  const publicPaths = ['/api/health', '/api/verify-account', '/api/send-otp', '/api/verify-otp'];
-  
-  if (publicPaths.includes(req.path)) {
-    return next();
-  }
-  
-  if (apiKey === API_KEY) {
-    next();
-  } else {
-    console.error('❌ Invalid API Key');
-    res.status(401).json({
-      success: false,
-      error: 'Unauthorized: Invalid or missing API Key'
-    });
-  }
-};
-
-// ==================== EMAIL CONFIGURATION ====================
-const createEmailTransporter = () => {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'byprosprt2007@gmail.com',
-      pass: 'nspr xhfv yhxu vtwa'
-    }
-  });
-};
-
-// ==================== STORAGE CONFIGURATION ====================
-const verificationCodes = new Map();
-const otpStorage = new Map();
-const acceptedRules = new Set();
-
-// ==================== GITHUB CONFIGURATION ====================
-const GITHUB_CONFIG = {
-  REPO: 'Yacine2007/B.Y-PRO-Accounts-pic',
-  BRANCH: 'main',
-  API_BASE: 'https://api.github.com',
-  IMAGE_BASE_URL: 'https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/'
-};
-
-// GitHub Token - يمكن تخزينه في متغيرات البيئة في Render
-const GITHUB_TOKEN = process.env.GITHUB_TOKEN || '';
-
-// ==================== IMAGE UPLOAD CONFIGURATION ====================
-const upload = multer({
-  storage: multer.memoryStorage(),
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-  fileFilter: (req, file, cb) => {
-    const allowedTypes = /jpeg|jpg|png|gif/;
-    const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = allowedTypes.test(file.mimetype);
-    
-    if (mimetype && extname) {
-      return cb(null, true);
-    } else {
-      cb(new Error('Only image files (jpeg, jpg, png, gif) are allowed'));
-    }
-  }
-});
 
 // ==================== GOOGLE DRIVE CONFIGURATION ====================
 const serviceAccount = {
@@ -162,9 +84,23 @@ const SCOPES = ["https://www.googleapis.com/auth/drive"];
 const FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
 
 console.log('🔐 Google Drive configuration loaded');
-console.log('🖼️ GitHub Repository:', GITHUB_CONFIG.REPO);
 
-// Google Drive service
+// ==================== NODEMAILER CONFIGURATION ====================
+const createEmailTransporter = () => {
+  return nodemailer.createTransport({
+    service: 'gmail',
+    auth: {
+      user: 'byprosprt2007@gmail.com',
+      pass: 'nspr xhfv yhxu vtwa'
+    }
+  });
+};
+
+// ==================== STORAGE ====================
+const otpStorage = new Map();
+const acceptedRules = new Set();
+
+// ==================== GOOGLE DRIVE FUNCTIONS ====================
 let driveService = null;
 
 async function initializeDriveService() {
@@ -178,7 +114,6 @@ async function initializeDriveService() {
     
     driveService = google.drive({ version: 'v3', auth });
     
-    // Verify file exists
     await driveService.files.get({
       fileId: FILE_ID,
       fields: 'id,name,mimeType,modifiedTime'
@@ -192,140 +127,10 @@ async function initializeDriveService() {
   }
 }
 
-// Initialize drive service
 initializeDriveService().catch(error => {
   console.error('🚨 CRITICAL: Cannot start without Google Drive');
   process.exit(1);
 });
-
-// ==================== GITHUB FUNCTIONS ====================
-async function uploadImageToGitHub(imageBuffer, accountId, githubToken = null) {
-  try {
-    const tokenToUse = githubToken || GITHUB_TOKEN;
-    
-    if (!tokenToUse) {
-      throw new Error('GitHub token is required for image upload');
-    }
-
-    const imageName = `${accountId}.png`;
-    const imagePath = imageName;
-    
-    // Convert buffer to base64
-    const base64Image = imageBuffer.toString('base64');
-    
-    // Check if file exists
-    let sha = null;
-    try {
-      const existingFile = await getGitHubFile(imagePath, tokenToUse);
-      sha = existingFile.sha;
-      console.log(`📄 Updating existing image for account ${accountId}`);
-    } catch (error) {
-      console.log(`📄 Creating new image for account ${accountId}`);
-    }
-    
-    // Prepare request
-    const url = `${GITHUB_CONFIG.API_BASE}/repos/${GITHUB_CONFIG.REPO}/contents/${imagePath}`;
-    const message = sha ? `Update image for account ${accountId}` : `Add image for account ${accountId}`;
-    
-    const response = await axios.put(url, {
-      message: message,
-      content: base64Image,
-      sha: sha,
-      branch: GITHUB_CONFIG.BRANCH
-    }, {
-      headers: {
-        'Authorization': `token ${tokenToUse}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-    
-    console.log(`✅ Image uploaded to GitHub: ${accountId}.png`);
-    return {
-      success: true,
-      url: `${GITHUB_CONFIG.IMAGE_BASE_URL}${imageName}`,
-      githubUrl: response.data.content.html_url
-    };
-  } catch (error) {
-    console.error('❌ GitHub upload error:', error.response?.data || error.message);
-    throw new Error(`GitHub upload failed: ${error.response?.data?.message || error.message}`);
-  }
-}
-
-async function getGitHubFile(filePath, githubToken = null) {
-  try {
-    const tokenToUse = githubToken || GITHUB_TOKEN;
-    const url = `${GITHUB_CONFIG.API_BASE}/repos/${GITHUB_CONFIG.REPO}/contents/${filePath}?ref=${GITHUB_CONFIG.BRANCH}`;
-    
-    const headers = {
-      'Accept': 'application/vnd.github.v3+json'
-    };
-    
-    if (tokenToUse) {
-      headers['Authorization'] = `token ${tokenToUse}`;
-    }
-    
-    const response = await axios.get(url, { headers });
-    return response.data;
-  } catch (error) {
-    throw error;
-  }
-}
-
-async function checkImageExistsOnGitHub(accountId) {
-  try {
-    const imageUrl = `${GITHUB_CONFIG.IMAGE_BASE_URL}${accountId}.png`;
-    const response = await axios.head(imageUrl);
-    return response.status === 200;
-  } catch (error) {
-    return false;
-  }
-}
-
-async function deleteImageFromGitHub(accountId, githubToken = null) {
-  try {
-    const tokenToUse = githubToken || GITHUB_TOKEN;
-    
-    if (!tokenToUse) {
-      throw new Error('GitHub token is required for image deletion');
-    }
-
-    const imageName = `${accountId}.png`;
-    const imagePath = imageName;
-    
-    // Get file SHA first
-    let sha;
-    try {
-      const fileInfo = await getGitHubFile(imagePath, tokenToUse);
-      sha = fileInfo.sha;
-    } catch (error) {
-      console.log(`Image ${accountId}.png does not exist on GitHub`);
-      return { success: true, message: 'Image does not exist' };
-    }
-    
-    // Delete file
-    const url = `${GITHUB_CONFIG.API_BASE}/repos/${GITHUB_CONFIG.REPO}/contents/${imagePath}`;
-    
-    const response = await axios.delete(url, {
-      data: {
-        message: `Delete image for account ${accountId}`,
-        sha: sha,
-        branch: GITHUB_CONFIG.BRANCH
-      },
-      headers: {
-        'Authorization': `token ${tokenToUse}`,
-        'Content-Type': 'application/json',
-        'Accept': 'application/vnd.github.v3+json'
-      }
-    });
-    
-    console.log(`✅ Image deleted from GitHub: ${accountId}.png`);
-    return { success: true };
-  } catch (error) {
-    console.error('❌ GitHub delete error:', error.response?.data || error.message);
-    throw new Error(`GitHub delete failed: ${error.response?.data?.message || error.message}`);
-  }
-}
 
 // ==================== CSV OPERATIONS ====================
 async function readCSVFromDrive() {
@@ -362,7 +167,7 @@ function parseCSVToAccounts(csvData) {
       if (!line) continue;
       
       // Skip header
-      if (i === 0 && line.includes('id,ps,email,name,image')) {
+      if (i === 0 && line.includes('id,ps,email,name')) {
         continue;
       }
       
@@ -388,8 +193,7 @@ function parseCSVToAccounts(csvData) {
           id: values[0] || '',
           ps: values[1] || '',
           email: values[2] || '',
-          name: values[3] || '',
-          image: values[4] || ''
+          name: values[3] || ''
         };
         
         if (account.id && account.ps) {
@@ -411,7 +215,7 @@ async function saveAllAccounts(accounts) {
   }
 
   try {
-    const headers = ['id', 'ps', 'email', 'name', 'image'];
+    const headers = ['id', 'ps', 'email', 'name'];
     const csvLines = [
       headers.join(','),
       ...accounts.map(account => 
@@ -462,7 +266,6 @@ async function getNextAvailableId() {
   }
 }
 
-// ==================== ACCOUNT MANAGEMENT ====================
 async function addNewAccount(accountData) {
   try {
     const csvData = await readCSVFromDrive();
@@ -481,11 +284,6 @@ async function addNewAccount(accountData) {
     if (existingId) {
       const newId = await getNextAvailableId();
       accountData.id = newId;
-    }
-    
-    // Set default image URL if not provided
-    if (!accountData.image) {
-      accountData.image = `${GITHUB_CONFIG.IMAGE_BASE_URL}${accountData.id}.png`;
     }
     
     accounts.push(accountData);
@@ -518,8 +316,7 @@ async function verifyAccountCredentials(id, password) {
         account: {
           id: account.id,
           name: account.name || `User ${account.id}`,
-          email: account.email || `${account.id}@bypro.com`,
-          image: account.image || `${GITHUB_CONFIG.IMAGE_BASE_URL}${account.id}.png`
+          email: account.email || `${account.id}@bypro.com`
         },
         accepted_rules: hasAcceptedRules,
         rules_url: hasAcceptedRules ? null : `/rules-popup?userId=${account.id}`
@@ -590,14 +387,14 @@ async function sendOTPEmail(email, otpCode) {
 }
 
 // ==================== QR CODE FUNCTIONS ====================
-async function generateEnhancedQRCode(qrData, options = {}) {
+async function generateQRCode(qrData) {
   try {
     const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-      width: options.width || 200,
+      width: 200,
       margin: 2,
       color: {
-        dark: options.colorDark || "#1a237e",
-        light: options.colorLight || "#ffffff"
+        dark: "#1a237e",
+        light: "#ffffff"
       },
       errorCorrectionLevel: 'H'
     });
@@ -626,12 +423,11 @@ app.get('/api/health', async (req, res) => {
     
     res.json({ 
       status: 'operational',
-      service: 'B.Y PRO Unified Accounts System with GitHub Images',
+      service: 'B.Y PRO Accounts System',
       timestamp: new Date().toISOString(),
       total_accounts: accounts.length,
-      github_repo: GITHUB_CONFIG.REPO,
-      version: '7.0.0',
-      features: ['admin_dashboard', 'image_upload', 'otp_verification', 'qr_codes', 'rules_system']
+      version: '2.4.0',
+      features: ['signup', 'login', 'otp_verification', 'qr_codes']
     });
   } catch (error) {
     res.status(500).json({
@@ -641,352 +437,7 @@ app.get('/api/health', async (req, res) => {
   }
 });
 
-// ==================== ADMIN DASHBOARD ROUTES ====================
-
-// JSONP Support for legacy adminboard
-app.get('/api/jsonp', async (req, res) => {
-  try {
-    const { action, apiKey, callback } = req.query;
-    
-    if (apiKey !== API_KEY) {
-      return res.send(`${callback}(${JSON.stringify({ error: 'Invalid API Key' })})`);
-    }
-    
-    let result;
-    
-    switch (action) {
-      case 'getAccounts':
-        const csvData = await readCSVFromDrive();
-        const accounts = parseCSVToAccounts(csvData);
-        const formattedAccounts = accounts.map(account => ({
-          id: account.id,
-          name: account.name || '',
-          email: account.email || '',
-          hasImage: !!account.image
-        }));
-        result = { success: true, accounts: formattedAccounts };
-        break;
-        
-      case 'nextId':
-        const nextId = await getNextAvailableId();
-        result = { success: true, nextId: nextId };
-        break;
-        
-      default:
-        result = { error: 'Invalid action' };
-    }
-    
-    res.send(`${callback}(${JSON.stringify(result)})`);
-  } catch (error) {
-    res.send(`${callback}(${JSON.stringify({ error: error.message })})`);
-  }
-});
-
-// REST API Routes
-app.get('/api/accounts', verifyApiKey, async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive();
-    const accounts = parseCSVToAccounts(csvData);
-    
-    const formattedAccounts = await Promise.all(accounts.map(async (account) => {
-      const hasImage = await checkImageExistsOnGitHub(account.id);
-      return {
-        id: account.id,
-        name: account.name || '',
-        email: account.email || '',
-        password: account.ps || '',
-        hasImage: hasImage,
-        imageUrl: account.image || `${GITHUB_CONFIG.IMAGE_BASE_URL}${account.id}.png`
-      };
-    }));
-    
-    res.json({
-      success: true,
-      accounts: formattedAccounts,
-      count: formattedAccounts.length,
-      githubRepo: GITHUB_CONFIG.REPO
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-app.get('/api/next-id', verifyApiKey, async (req, res) => {
-  try {
-    const nextId = await getNextAvailableId();
-    res.json({
-      success: true,
-      nextId: nextId
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Create account with image upload
-app.post('/api/accounts', verifyApiKey, upload.single('image'), async (req, res) => {
-  try {
-    const { id, name, email, password, githubToken } = req.body;
-    const imageFile = req.file;
-    
-    if (!id || !name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        error: "All fields are required"
-      });
-    }
-
-    let imageUrl = `${GITHUB_CONFIG.IMAGE_BASE_URL}${id}.png`;
-    
-    // Upload image to GitHub if provided
-    if (imageFile) {
-      try {
-        const uploadResult = await uploadImageToGitHub(imageFile.buffer, id, githubToken);
-        imageUrl = uploadResult.url;
-      } catch (uploadError) {
-        console.error('⚠️ Image upload failed, but account will be created:', uploadError.message);
-        // Continue without image upload
-      }
-    }
-
-    const accountData = {
-      id: id.toString(),
-      ps: password,
-      email: email,
-      name: name,
-      image: imageUrl
-    };
-
-    await addNewAccount(accountData);
-    
-    res.json({
-      success: true,
-      message: "Account created successfully",
-      account: accountData,
-      imageUploaded: !!imageFile
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Update account
-app.put('/api/accounts/:id', verifyApiKey, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { name, email, password } = req.body;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-
-    const csvData = await readCSVFromDrive();
-    let accounts = parseCSVToAccounts(csvData);
-    
-    const accountIndex = accounts.findIndex(acc => acc.id === id.toString());
-    
-    if (accountIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        error: "Account not found"
-      });
-    }
-    
-    // Update data
-    if (name) accounts[accountIndex].name = name;
-    if (email) accounts[accountIndex].email = email;
-    if (password) accounts[accountIndex].ps = password;
-    
-    await saveAllAccounts(accounts);
-    
-    res.json({
-      success: true,
-      message: "Account updated successfully"
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Upload image for existing account
-app.post('/api/accounts/:id/upload-image', verifyApiKey, upload.single('image'), async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { githubToken } = req.body;
-    const imageFile = req.file;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-    
-    if (!imageFile) {
-      return res.status(400).json({
-        success: false,
-        error: "Image file is required"
-      });
-    }
-    
-    // Upload image to GitHub
-    const uploadResult = await uploadImageToGitHub(imageFile.buffer, id, githubToken);
-    
-    // Update account in CSV with new image URL
-    const csvData = await readCSVFromDrive();
-    let accounts = parseCSVToAccounts(csvData);
-    
-    const accountIndex = accounts.findIndex(acc => acc.id === id.toString());
-    
-    if (accountIndex === -1) {
-      return res.status(404).json({
-        success: false,
-        error: "Account not found"
-      });
-    }
-    
-    accounts[accountIndex].image = uploadResult.url;
-    await saveAllAccounts(accounts);
-    
-    res.json({
-      success: true,
-      message: "Image uploaded successfully",
-      imageUrl: uploadResult.url,
-      githubUrl: uploadResult.githubUrl
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Delete account and image
-app.delete('/api/accounts/:id', verifyApiKey, async (req, res) => {
-  try {
-    const { id } = req.params;
-    const { githubToken } = req.body;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-
-    const csvData = await readCSVFromDrive();
-    let accounts = parseCSVToAccounts(csvData);
-    
-    const initialLength = accounts.length;
-    accounts = accounts.filter(acc => acc.id !== id.toString());
-    
-    if (accounts.length === initialLength) {
-      return res.status(404).json({
-        success: false,
-        error: "Account not found"
-      });
-    }
-    
-    // Try to delete image from GitHub
-    try {
-      await deleteImageFromGitHub(id, githubToken);
-    } catch (imageError) {
-      console.log('⚠️ Image deletion failed, but account will be deleted:', imageError.message);
-    }
-    
-    await saveAllAccounts(accounts);
-    
-    res.json({
-      success: true,
-      message: "Account deleted successfully"
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Check if image exists on GitHub
-app.get('/api/accounts/:id/check-image', verifyApiKey, async (req, res) => {
-  try {
-    const { id } = req.params;
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: "Account ID is required"
-      });
-    }
-    
-    const exists = await checkImageExistsOnGitHub(id);
-    
-    res.json({
-      success: true,
-      exists: exists,
-      imageUrl: `${GITHUB_CONFIG.IMAGE_BASE_URL}${id}.png`
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// Sync all images with GitHub
-app.post('/api/images/sync', verifyApiKey, async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive();
-    const accounts = parseCSVToAccounts(csvData);
-    
-    const results = await Promise.all(accounts.map(async (account) => {
-      const exists = await checkImageExistsOnGitHub(account.id);
-      return {
-        id: account.id,
-        name: account.name,
-        hasImage: exists,
-        imageUrl: account.image || `${GITHUB_CONFIG.IMAGE_BASE_URL}${account.id}.png`
-      };
-    }));
-    
-    const withImages = results.filter(r => r.hasImage).length;
-    
-    res.json({
-      success: true,
-      total: results.length,
-      withImages: withImages,
-      withoutImages: results.length - withImages,
-      accounts: results
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
-  }
-});
-
-// ==================== EXISTING ROUTES (KEEP AS IS) ====================
-
-// OTP Routes
+// Send OTP
 app.post('/api/send-otp', async (req, res) => {
   try {
     const { email } = req.body;
@@ -1028,6 +479,7 @@ app.post('/api/send-otp', async (req, res) => {
   }
 });
 
+// Verify OTP
 app.post('/api/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -1109,10 +561,26 @@ app.get('/api/verify-account', async (req, res) => {
   }
 });
 
+// Get next ID
+app.get('/api/next-id', async (req, res) => {
+  try {
+    const nextId = await getNextAvailableId();
+    res.json({
+      success: true,
+      nextId: nextId
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Create account
 app.post('/api/create-account', async (req, res) => {
   try {
-    const { id, name, email, password, image } = req.body;
+    const { id, name, email, password } = req.body;
     
     if (!id || !name || !email || !password) {
       return res.status(400).json({
@@ -1125,14 +593,13 @@ app.post('/api/create-account', async (req, res) => {
       id: id.toString(),
       ps: password,
       email: email,
-      name: name,
-      image: image || `${GITHUB_CONFIG.IMAGE_BASE_URL}${id}.png`
+      name: name
     };
 
     await addNewAccount(accountData);
     
     const qrData = `BYPRO:${accountData.id}:${accountData.ps}`;
-    const qrResult = await generateEnhancedQRCode(qrData);
+    const qrResult = await generateQRCode(qrData);
 
     res.json({
       success: true,
@@ -1204,10 +671,6 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
 
-app.get('/admin', (req, res) => {
-  res.sendFile(path.join(__dirname, 'adminboard.html'));
-});
-
 // 404 handler
 app.use('*', (req, res) => {
   res.status(404).json({
@@ -1228,13 +691,10 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO UNIFIED ACCOUNTS SYSTEM');
+  console.log('🚀 B.Y PRO ACCOUNTS SYSTEM');
   console.log(`✅ Server running on port: ${PORT}`);
-  console.log(`🔗 Admin Dashboard API: http://localhost:${PORT}/api`);
+  console.log(`🔗 API: http://localhost:${PORT}/api`);
   console.log('💾 Storage: Google Drive');
-  console.log('🖼️ Images: GitHub Repository');
-  console.log(`📁 GitHub Repo: ${GITHUB_CONFIG.REPO}`);
-  console.log('🔐 API Key Authentication: Active');
-  console.log('🔐 Image Upload: Enabled');
+  console.log('📧 Email: Nodemailer (Gmail)');
   console.log('🎉 =================================\n');
 });
