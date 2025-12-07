@@ -20,18 +20,19 @@
             --danger-color: #e74c3c;
             --warning-color: #f39c12;
             --success-color: #2ecc71;
-            --border-radius: 12px;
+            --radius: 15px;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
         }
 
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #000000 0%, #1a1a2e 50%, #16213e 100%);
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
             color: var(--text-color);
             min-height: 100vh;
             display: flex;
@@ -42,31 +43,50 @@
         }
 
         .login-container {
-            background-color: var(--card-bg);
-            padding: 40px 30px;
-            border-radius: var(--border-radius);
+            background: rgba(17, 17, 17, 0.9);
+            padding: 40px 35px;
+            border-radius: var(--radius);
             width: 100%;
-            max-width: 450px;
-            border: 1px solid var(--border-color);
-            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
-            backdrop-filter: blur(10px);
+            max-width: 480px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(20px);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            border-radius: var(--radius) var(--radius) 0 0;
         }
 
         .logo {
             text-align: center;
             margin-bottom: 30px;
+            position: relative;
         }
 
         .logo h1 {
             color: var(--primary-color);
-            font-size: 2rem;
+            font-size: 2.2rem;
             margin-bottom: 10px;
             font-weight: 700;
+            background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 0.5px;
         }
 
         .logo p {
             color: var(--text-muted);
             font-size: 1rem;
+            font-weight: 300;
         }
 
         .login-methods {
@@ -74,45 +94,50 @@
             gap: 10px;
             margin-bottom: 25px;
             flex-wrap: wrap;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 5px;
+            border-radius: 50px;
         }
 
         .method-btn {
             flex: 1;
-            min-width: 120px;
-            padding: 14px 16px;
-            background-color: transparent;
-            color: var(--text-color);
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
+            min-width: 130px;
+            padding: 14px 20px;
+            background: transparent;
+            color: var(--text-muted);
+            border: none;
+            border-radius: 50px;
             cursor: pointer;
-            transition: all 0.3s ease;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            font-size: 0.9rem;
+            gap: 10px;
+            font-size: 0.95rem;
             font-weight: 500;
+            position: relative;
+            z-index: 1;
         }
 
         .method-btn.active {
-            background-color: var(--primary-color);
-            border-color: var(--primary-color);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            color: white;
+            box-shadow: 0 4px 20px rgba(52, 152, 219, 0.4);
+            transform: translateY(-1px);
         }
 
-        .method-btn:hover {
-            border-color: var(--primary-color);
-            transform: translateY(-1px);
+        .method-btn:hover:not(.active) {
+            color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.1);
         }
 
         .login-form {
             display: none;
-            animation: fadeIn 0.5s ease;
+            animation: slideUp 0.5s ease;
         }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -121,33 +146,49 @@
         }
 
         .form-group {
-            margin-bottom: 20px;
+            margin-bottom: 25px;
         }
 
         .form-group label {
             display: block;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
             color: var(--text-muted);
             font-size: 0.9rem;
             font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .input-with-icon {
+            position: relative;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 18px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: var(--text-muted);
+            font-size: 1.1rem;
+            transition: color 0.3s;
         }
 
         .form-group input {
             width: 100%;
-            padding: 14px 16px;
-            border: 2px solid var(--border-color);
-            border-radius: var(--border-radius);
-            background-color: rgba(0, 0, 0, 0.3);
+            padding: 16px 20px 16px 50px;
+            border: 2px solid transparent;
+            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.4);
             color: var(--text-color);
             font-size: 1rem;
             transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
         }
 
         .form-group input:focus {
             outline: none;
             border-color: var(--primary-color);
+            background: rgba(0, 0, 0, 0.6);
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
-            background-color: rgba(0, 0, 0, 0.5);
         }
 
         .login-btn {
@@ -155,22 +196,40 @@
             background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
             border: none;
-            padding: 16px;
-            border-radius: var(--border-radius);
+            padding: 18px;
+            border-radius: var(--radius);
             cursor: pointer;
-            font-size: 1rem;
+            font-size: 1.1rem;
             font-weight: 600;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 12px;
             margin-top: 10px;
+            letter-spacing: 0.5px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .login-btn::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+            transition: left 0.7s;
+        }
+
+        .login-btn:hover::after {
+            left: 100%;
         }
 
         .login-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(52, 152, 219, 0.4);
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
         }
 
         .login-btn:active {
@@ -184,44 +243,74 @@
             box-shadow: none;
         }
 
-        .qr-scanner {
-            text-align: center;
-        }
-
-        .file-upload {
-            margin: 20px 0;
-        }
-
-        .file-input {
+        .login-btn:disabled::after {
             display: none;
         }
 
-        .file-label {
-            display: block;
-            padding: 14px 20px;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
-            color: white;
-            border-radius: var(--border-radius);
+        .qr-scanner {
+            text-align: center;
+            padding: 20px;
+        }
+
+        .qr-instruction {
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            text-align: center;
+        }
+
+        .qr-upload-area {
+            border: 3px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 40px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            font-weight: 500;
-            border: 2px solid transparent;
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
+            position: relative;
+            overflow: hidden;
         }
 
-        .file-label:hover {
+        .qr-upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.05);
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+        }
+
+        .qr-upload-area i {
+            font-size: 3.5rem;
+            color: var(--primary-color);
+            margin-bottom: 15px;
+            opacity: 0.8;
+        }
+
+        .qr-upload-area p {
+            color: var(--text-color);
+            font-size: 1.1rem;
+            font-weight: 500;
+            margin-bottom: 5px;
+        }
+
+        .qr-upload-area span {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .qr-file-input {
+            display: none;
         }
 
         .status-message {
-            padding: 12px 16px;
-            margin: 15px 0;
-            border-radius: var(--border-radius);
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: var(--radius);
             text-align: center;
             display: none;
             animation: slideIn 0.3s ease;
             font-weight: 500;
+            border-left: 4px solid transparent;
         }
 
         @keyframes slideIn {
@@ -230,44 +319,53 @@
         }
 
         .status-success {
-            background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(39, 174, 96, 0.2));
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.15), rgba(39, 174, 96, 0.1));
             color: var(--success-color);
-            border: 2px solid var(--success-color);
+            border-color: var(--success-color);
         }
 
         .status-error {
-            background: linear-gradient(135deg, rgba(231, 76, 60, 0.2), rgba(192, 57, 43, 0.2));
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.15), rgba(192, 57, 43, 0.1));
             color: var(--danger-color);
-            border: 2px solid var(--danger-color);
+            border-color: var(--danger-color);
         }
 
         .status-warning {
-            background: linear-gradient(135deg, rgba(243, 156, 18, 0.2), rgba(211, 84, 0, 0.2));
+            background: linear-gradient(135deg, rgba(243, 156, 18, 0.15), rgba(211, 84, 0, 0.1));
             color: var(--warning-color);
-            border: 2px solid var(--warning-color);
+            border-color: var(--warning-color);
         }
 
         .logged-in-info {
             display: none;
             text-align: center;
             padding: 30px 20px;
-            animation: fadeIn 0.5s ease;
+            animation: fadeIn 0.6s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
 
         .user-avatar {
-            width: 120px;
-            height: 120px;
+            width: 140px;
+            height: 140px;
             border-radius: 50%;
-            margin: 0 auto 20px;
+            margin: 0 auto 25px;
+            position: relative;
+            border: 5px solid transparent;
+            background: linear-gradient(45deg, var(--primary-color), var(--success-color)) border-box;
+            -webkit-mask: 
+                linear-gradient(#fff 0 0) padding-box, 
+                linear-gradient(#fff 0 0);
+            -webkit-mask-composite: destination-out;
+            mask-composite: exclude;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
-            color: white;
-            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            overflow: hidden;
-            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
         }
 
         .user-avatar img {
@@ -275,55 +373,98 @@
             height: 100%;
             object-fit: cover;
             border-radius: 50%;
+            transition: transform 0.3s ease;
+        }
+
+        .user-avatar:hover img {
+            transform: scale(1.05);
+        }
+
+        .user-avatar i {
+            font-size: 4rem;
+            color: white;
+            opacity: 0.8;
         }
 
         .logged-in-info h3 {
             color: var(--text-color);
-            margin-bottom: 10px;
-            font-size: 1.5rem;
+            margin-bottom: 15px;
+            font-size: 1.8rem;
+            font-weight: 600;
         }
 
-        .success-message {
+        .welcome-message {
             color: var(--success-color);
-            margin-bottom: 20px;
-            font-size: 1rem;
+            margin-bottom: 25px;
+            font-size: 1.1rem;
             font-weight: 500;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
+            background: rgba(46, 204, 113, 0.1);
+            padding: 12px 20px;
+            border-radius: 50px;
+            width: fit-content;
+            margin: 0 auto 25px;
+        }
+
+        .logout-btn {
+            background: linear-gradient(135deg, var(--danger-color), #c0392b);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 20px;
+            box-shadow: 0 8px 20px rgba(231, 76, 60, 0.3);
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 25px rgba(231, 76, 60, 0.4);
         }
 
         .connection-status {
             position: fixed;
             top: 20px;
             right: 20px;
-            padding: 10px 15px;
-            border-radius: var(--border-radius);
-            font-size: 0.8rem;
+            padding: 12px 20px;
+            border-radius: 50px;
+            font-size: 0.85rem;
             font-weight: 500;
             z-index: 1000;
             display: none;
             animation: slideIn 0.3s ease;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
         }
 
         .connection-online {
-            background: var(--success-color);
+            background: linear-gradient(135deg, rgba(46, 204, 113, 0.9), rgba(39, 174, 96, 0.8));
             color: white;
+            border: 2px solid rgba(46, 204, 113, 0.5);
         }
 
         .connection-offline {
-            background: var(--danger-color);
+            background: linear-gradient(135deg, rgba(231, 76, 60, 0.9), rgba(192, 57, 43, 0.8));
             color: white;
+            border: 2px solid rgba(231, 76, 60, 0.5);
         }
 
         .loading-spinner {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid #ffffff;
+            width: 22px;
+            height: 22px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
-            border-top-color: transparent;
+            border-top-color: white;
             animation: spin 1s ease-in-out infinite;
         }
 
@@ -333,77 +474,127 @@
 
         .signup-section {
             text-align: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid var(--border-color);
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .signup-text {
             color: var(--text-muted);
-            margin-bottom: 15px;
-            font-size: 0.9rem;
+            margin-bottom: 18px;
+            font-size: 0.95rem;
         }
 
         .signup-btn {
             background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
             color: white;
             border: none;
-            padding: 12px 24px;
-            border-radius: var(--border-radius);
+            padding: 14px 30px;
+            border-radius: 50px;
             cursor: pointer;
             font-weight: 500;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             text-decoration: none;
+            font-size: 1rem;
+            box-shadow: 0 6px 20px rgba(52, 152, 219, 0.3);
         }
 
         .signup-btn:hover {
             transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.3);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.4);
+        }
+
+        .qr-error-details {
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
+            display: none;
+        }
+
+        .qr-error-details h4 {
+            color: var(--danger-color);
+            margin-bottom: 10px;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .qr-error-details ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .qr-error-details li {
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .qr-error-details li i {
+            color: var(--danger-color);
+            margin-top: 2px;
         }
 
         /* تحسينات للتجاوب */
         @media (max-width: 768px) {
             .login-container {
-                padding: 30px 20px;
-                margin: 10px;
+                padding: 30px 25px;
+                margin: 15px;
                 max-width: 100%;
             }
 
             .logo h1 {
-                font-size: 1.8rem;
+                font-size: 1.9rem;
             }
 
             .method-btn {
-                min-width: 140px;
-                padding: 12px 14px;
-                font-size: 0.85rem;
+                min-width: 120px;
+                padding: 12px 15px;
+                font-size: 0.9rem;
             }
 
             .user-avatar {
-                width: 100px;
-                height: 100px;
-                font-size: 2.5rem;
+                width: 120px;
+                height: 120px;
+            }
+
+            .user-avatar i {
+                font-size: 3.5rem;
             }
 
             .logged-in-info h3 {
-                font-size: 1.3rem;
+                font-size: 1.5rem;
+            }
+
+            .connection-status {
+                top: 15px;
+                right: 15px;
+                left: 15px;
+                text-align: center;
             }
         }
 
         @media (max-width: 480px) {
             body {
-                padding: 10px;
+                padding: 15px;
             }
 
             .login-container {
-                padding: 25px 15px;
+                padding: 25px 20px;
             }
 
             .logo h1 {
-                font-size: 1.6rem;
+                font-size: 1.7rem;
             }
 
             .logo p {
@@ -412,28 +603,39 @@
 
             .login-methods {
                 flex-direction: column;
+                background: transparent;
+                padding: 0;
+                gap: 8px;
             }
 
             .method-btn {
                 min-width: auto;
                 width: 100%;
+                border-radius: var(--radius);
+                background: rgba(0, 0, 0, 0.3);
             }
 
             .form-group input {
-                padding: 12px 14px;
-                font-size: 0.9rem;
+                padding: 14px 20px 14px 50px;
+                font-size: 0.95rem;
             }
 
             .login-btn {
-                padding: 14px;
-                font-size: 0.9rem;
+                padding: 16px;
+                font-size: 1rem;
             }
 
-            .connection-status {
-                top: 10px;
-                right: 10px;
-                left: 10px;
-                text-align: center;
+            .qr-upload-area {
+                padding: 30px 15px;
+            }
+
+            .qr-upload-area i {
+                font-size: 3rem;
+            }
+
+            .signup-btn {
+                padding: 12px 25px;
+                font-size: 0.95rem;
             }
         }
     </style>
@@ -455,17 +657,17 @@
             <div class="user-avatar" id="userAvatar">
                 <i class="fas fa-user-check"></i>
             </div>
-            <h3>Welcome back, <span id="userName">User</span>!</h3>
-            <div class="success-message">
+            <h3>مرحباً، <span id="userName">User</span>!</h3>
+            <div class="welcome-message">
                 <i class="fas fa-check-circle"></i>
-                <span>You are successfully logged in</span>
+                <span>تم تسجيل الدخول بنجاح</span>
             </div>
-            <button class="login-btn" onclick="logout()" style="margin-top: 20px; background: var(--danger-color);">
-                <i class="fas fa-sign-out-alt"></i> Logout
+            <button class="logout-btn" onclick="logout()">
+                <i class="fas fa-sign-out-alt"></i> تسجيل الخروج
             </button>
         </div>
 
-        <!-- Login Methods -->
+        <!-- Login Section -->
         <div id="loginSection">
             <div class="login-methods">
                 <button class="method-btn active" data-method="qr">
@@ -478,17 +680,26 @@
 
             <!-- QR Code Login -->
             <div class="login-form active" id="qrForm">
-                <div class="qr-scanner">
-                    <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">
-                        Upload QR code image to login
-                    </p>
-                    
-                    <div class="file-upload">
-                        <input type="file" id="qr-file" class="file-input" accept="image/*">
-                        <label for="qr-file" class="file-label">
-                            <i class="fas fa-upload"></i> Upload QR Code Image
-                        </label>
-                    </div>
+                <p class="qr-instruction">
+                    قم برفع صورة رمز QR الخاص بحسابك لتسجيل الدخول
+                </p>
+                
+                <div class="qr-upload-area" id="qrUploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p>انقر لرفع صورة QR Code</p>
+                    <span>PNG, JPG حتى 5MB</span>
+                    <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
+                </div>
+
+                <!-- QR Error Details -->
+                <div class="qr-error-details" id="qrErrorDetails">
+                    <h4><i class="fas fa-exclamation-triangle"></i> أسباب الخطأ:</h4>
+                    <ul>
+                        <li><i class="fas fa-times-circle"></i> الصورة لا تحتوي على رمز QR</li>
+                        <li><i class="fas fa-times-circle"></i> رمز QR غير صالح لنظام B.Y PRO</li>
+                        <li><i class="fas fa-times-circle"></i> الصورة تالفة أو غير واضحة</li>
+                        <li><i class="fas fa-times-circle"></i> تم تعديل رمز QR</li>
+                    </ul>
                 </div>
             </div>
 
@@ -496,11 +707,17 @@
             <div class="login-form" id="manualForm">
                 <div class="form-group">
                     <label for="userIdInput"><i class="fas fa-id-card"></i> Account ID</label>
-                    <input type="text" id="userIdInput" placeholder="Enter your account ID" autocomplete="username">
+                    <div class="input-with-icon">
+                        <i class="fas fa-user input-icon"></i>
+                        <input type="text" id="userIdInput" placeholder="Enter your account ID" autocomplete="username">
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="passwordInput"><i class="fas fa-lock"></i> Password</label>
-                    <input type="password" id="passwordInput" placeholder="Enter your password" autocomplete="current-password">
+                    <div class="input-with-icon">
+                        <i class="fas fa-key input-icon"></i>
+                        <input type="password" id="passwordInput" placeholder="Enter your password" autocomplete="current-password">
+                    </div>
                 </div>
 
                 <!-- Status Message -->
@@ -514,9 +731,9 @@
 
             <!-- Signup Section -->
             <div class="signup-section">
-                <p class="signup-text">Don't have an account?</p>
+                <p class="signup-text">ليس لديك حساب؟</p>
                 <a href="https://yacine2007.github.io/secure-auth-app/signup.html" class="signup-btn">
-                    <i class="fas fa-user-plus"></i> Sign Up Now
+                    <i class="fas fa-user-plus"></i> أنشئ حساب الآن
                 </a>
             </div>
         </div>
@@ -528,7 +745,7 @@
     <script>
         // ========== نظام الاتصال مع المشاريع الأخرى ==========
         
-        // معرف فريد للتطبيق (يجب تغييره لكل مشروع)
+        // معرف فريد للتطبيق
         const APP_ID = 'bypro_login_system';
         
         // DOM Elements
@@ -539,7 +756,9 @@
         const manualForm = document.getElementById('manualForm');
         const loginBtn = document.getElementById('loginBtn');
         const statusMessage = document.getElementById('statusMessage');
-        const qrFileInput = document.getElementById('qr-file');
+        const qrFileInput = document.getElementById('qrFileInput');
+        const qrUploadArea = document.getElementById('qrUploadArea');
+        const qrErrorDetails = document.getElementById('qrErrorDetails');
         const userIdInput = document.getElementById('userIdInput');
         const passwordInput = document.getElementById('passwordInput');
         const userNameSpan = document.getElementById('userName');
@@ -549,15 +768,15 @@
 
         // Server Configuration
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
+        const GITHUB_IMAGE_BASE = 'https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/';
 
         // Variables
         let currentMethod = 'qr';
         let isOnline = false;
         let currentUser = null;
 
-        // ========== Safe Storage for iframe ==========
+        // ========== Safe Storage ==========
         const safeStorage = {
-            // Try localStorage, fallback to sessionStorage, then memory
             setItem: (key, value) => {
                 try {
                     localStorage.setItem(key, JSON.stringify(value));
@@ -571,7 +790,6 @@
                         return true;
                     } catch (e2) {
                         console.log('⚠️ All storage blocked, using memory');
-                        // Store in memory only
                         window[key] = value;
                         return false;
                     }
@@ -605,9 +823,29 @@
             }
         };
 
+        // ========== تحديث صورة المستخدم ==========
+        function updateUserAvatar(userId) {
+            const imageUrl = `${GITHUB_IMAGE_BASE}${userId}.png`;
+            
+            // إنشاء عنصر img جديد
+            const img = new Image();
+            img.src = imageUrl;
+            img.alt = 'User Avatar';
+            
+            img.onload = () => {
+                console.log('🖼️ Image loaded successfully:', imageUrl);
+                userAvatar.innerHTML = '';
+                userAvatar.appendChild(img);
+            };
+            
+            img.onerror = () => {
+                console.log('🖼️ Image not found, using default avatar');
+                userAvatar.innerHTML = '<i class="fas fa-user-check"></i>';
+            };
+        }
+
         // ========== إرسال حالة المستخدم للمشاريع الأخرى ==========
         function broadcastUserStatus(userData, isLoggedIn) {
-            // تخزين الحالة محلياً
             safeStorage.setItem('bypro_user_status', {
                 user: userData,
                 isLoggedIn: isLoggedIn,
@@ -615,7 +853,6 @@
                 appId: APP_ID
             });
             
-            // إرسال للوالد (إذا كان في iframe)
             if (window.parent !== window) {
                 window.parent.postMessage({
                     type: 'BYPRO_USER_STATUS',
@@ -626,7 +863,6 @@
                 }, '*');
             }
             
-            // إرسال للنوافذ الأخرى في نفس النطاق
             window.dispatchEvent(new CustomEvent('byproUserStatus', {
                 detail: {
                     user: userData,
@@ -635,118 +871,54 @@
                 }
             }));
             
-            console.log('📢 تم بث حالة المستخدم:', { user: userData, isLoggedIn });
+            console.log('📢 تم بث حالة المستخدم:', { user: userData?.name || userData?.id, isLoggedIn });
         }
 
-        // ========== FIRST: Check if user is already logged in ==========
+        // ========== التحقق من تسجيل الدخول السابق ==========
         function checkExistingLogin() {
-            console.log('🔍 Checking for existing login...');
+            console.log('🔍 التحقق من تسجيل الدخول السابق...');
             
             try {
-                // First try to get from parent window via postMessage
-                requestUserDataFromParent();
-                
-                // Also check local storage
                 const userData = safeStorage.getItem('bypro_user');
                 const userStatus = safeStorage.getItem('bypro_user_status');
                 
                 if (userData && userStatus && userStatus.isLoggedIn) {
-                    console.log('✅ Found existing user in storage:', userData);
+                    console.log('✅ تم العثور على مستخدم مسجل:', userData.name || userData.id);
                     
-                    if (userData.id && userData.password) {
+                    if (userData.id) {
                         currentUser = userData;
                         showLoggedInState(userData);
                         return true;
-                    } else {
-                        console.log('❌ Invalid user data structure');
-                        safeStorage.removeItem('bypro_user');
-                        safeStorage.removeItem('bypro_user_status');
                     }
                 }
             } catch (error) {
-                console.error('❌ Error checking existing login:', error);
+                console.error('❌ خطأ في التحقق من تسجيل الدخول:', error);
             }
             
             return false;
         }
 
-        // ========== Request user data from parent window ==========
-        function requestUserDataFromParent() {
-            if (window.parent !== window) {
-                console.log('📨 Requesting user data from parent...');
-                window.parent.postMessage({
-                    type: 'GET_USER_DATA_REQUEST',
-                    timestamp: Date.now()
-                }, '*');
-            }
-        }
-
-        // ========== Setup message listener for parent communication ==========
-        function setupParentMessageListener() {
-            window.addEventListener('message', function(event) {
-                console.log('📨 Message from parent:', event.data);
-                
-                // Handle user data response from parent
-                if (event.data && event.data.type === 'USER_DATA_RESPONSE') {
-                    console.log('✅ Received user data from parent:', event.data.userData);
-                    if (event.data.userData) {
-                        currentUser = event.data.userData;
-                        showLoggedInState(event.data.userData);
-                    }
-                }
-                
-                // Handle logout command from parent
-                if (event.data && event.data.type === 'FORCE_LOGOUT') {
-                    console.log('🚪 Logout requested by parent');
-                    logout();
-                }
-                
-                // Handle status requests from other projects
-                if (event.data && event.data.type === 'GET_USER_STATUS') {
-                    console.log('📊 Status request received');
-                    const status = {
-                        isLoggedIn: currentUser !== null,
-                        user: currentUser,
-                        timestamp: Date.now()
-                    };
-                    event.source.postMessage({
-                        type: 'USER_STATUS_RESPONSE',
-                        ...status
-                    }, event.origin);
-                }
-                
-                // Handle login requests from other projects
-                if (event.data && event.data.type === 'REQUEST_LOGIN') {
-                    console.log('🔐 Login request received');
-                    // يمكنك تخصيص هذا الجزء حسب احتياجاتك
-                    showStatus('Login requested by external application', 'warning');
-                }
-            });
-        }
-
-        // ========== Show logged in state ==========
+        // ========== عرض حالة تسجيل الدخول ==========
         function showLoggedInState(user) {
-            console.log('🎉 Showing logged in state for:', user.name || user.id);
+            console.log('🎉 عرض حالة تسجيل الدخول ل:', user.name || user.id);
             
             loginSection.style.display = 'none';
             loggedInInfo.style.display = 'block';
             userNameSpan.textContent = user.name || `User ${user.id}`;
             
-            // Show user avatar if available
-            if (user.image) {
-                userAvatar.innerHTML = `<img src="${user.image}?t=${Date.now()}" alt="User Avatar" onerror="handleImageError(this)">`;
-            } else {
-                userAvatar.innerHTML = '<i class="fas fa-user-check"></i>';
-            }
+            // تحديث الصورة من GitHub
+            updateUserAvatar(user.id);
             
-            // Send login success message to parent
+            // إرسال رسالة نجاح
             sendLoginSuccessMessage(user);
             
-            // Broadcast user status to other projects
+            // بث حالة المستخدم
             broadcastUserStatus(user, true);
+            
+            showStatus(`مرحباً ${user.name || user.id}! تم تسجيل الدخول بنجاح`, 'success');
         }
 
-        // ========== Send login success message ==========
+        // ========== إرسال رسالة نجاح تسجيل الدخول ==========
         function sendLoginSuccessMessage(user) {
             try {
                 if (window.parent !== window) {
@@ -755,32 +927,29 @@
                         userData: user,
                         timestamp: Date.now()
                     }, '*');
-                    console.log('📨 Sent login success message to parent');
+                    console.log('📨 تم إرسال رسالة النجاح للوالد');
                 }
             } catch (error) {
-                console.log('⚠️ Could not send message to parent');
+                console.log('⚠️ لا يمكن إرسال الرسالة للوالد');
             }
         }
 
-        // ========== Logout function ==========
+        // ========== تسجيل الخروج ==========
         function logout() {
-            console.log('🚪 Logging out...');
+            console.log('🚪 جاري تسجيل الخروج...');
             
-            // Clear all storage
             safeStorage.removeItem('bypro_user');
             safeStorage.removeItem('bypro_user_status');
             currentUser = null;
             
-            // Reset UI
             loggedInInfo.style.display = 'none';
             loginSection.style.display = 'block';
             
-            // Clear form fields
             userIdInput.value = '';
             passwordInput.value = '';
             qrFileInput.value = '';
+            qrErrorDetails.style.display = 'none';
             
-            // Send logout message to parent
             try {
                 if (window.parent !== window) {
                     window.parent.postMessage({
@@ -789,23 +958,15 @@
                     }, '*');
                 }
             } catch (error) {
-                console.log('⚠️ Could not send logout message');
+                console.log('⚠️ لا يمكن إرسال رسالة الخروج');
             }
             
-            // Broadcast logout status to other projects
             broadcastUserStatus(null, false);
             
-            showStatus('You have been logged out', 'success');
+            showStatus('تم تسجيل الخروج بنجاح', 'success');
         }
 
-        // ========== Handle image loading errors ==========
-        function handleImageError(img) {
-            console.log('🖼️ Image loading error, using default avatar');
-            const parent = img.parentElement;
-            parent.innerHTML = '<i class="fas fa-user-check"></i>';
-        }
-
-        // ========== Update connection status ==========
+        // ========== تحديث حالة الاتصال ==========
         function updateConnectionStatus(online) {
             isOnline = online;
             if (online) {
@@ -822,7 +983,7 @@
             }
         }
 
-        // ========== Show status message ==========
+        // ========== عرض رسالة الحالة ==========
         function showStatus(message, type) {
             statusMessage.textContent = message;
             statusMessage.className = `status-message status-${type}`;
@@ -833,7 +994,7 @@
             }, 5000);
         }
 
-        // ========== Switch between login methods ==========
+        // ========== التحول بين طرق تسجيل الدخول ==========
         methodBtns.forEach(btn => {
             btn.addEventListener('click', () => {
                 methodBtns.forEach(b => b.classList.remove('active'));
@@ -842,6 +1003,7 @@
                 
                 qrForm.classList.remove('active');
                 manualForm.classList.remove('active');
+                qrErrorDetails.style.display = 'none';
                 
                 if (currentMethod === 'qr') {
                     qrForm.classList.add('active');
@@ -852,49 +1014,90 @@
             });
         });
 
-        // ========== Process uploaded QR code image ==========
-        qrFileInput.addEventListener('change', (event) => {
-            const file = event.target.files[0];
-            if (file) {
-                if (file.size > 5 * 1024 * 1024) {
-                    showStatus('Image size too large. Please select a smaller image.', 'error');
-                    return;
-                }
+        // ========== معالجة رفع صورة QR ==========
+        qrUploadArea.addEventListener('click', () => {
+            qrFileInput.click();
+        });
 
-                const reader = new FileReader();
-                reader.onload = (e) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const context = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        context.drawImage(img, 0, 0);
-                        
-                        const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, canvas.height);
-                        
-                        if (code) {
-                            processQRCode(code.data);
-                        } else {
-                            showStatus('No QR code found in the image', 'error');
-                        }
-                    };
-                    img.onerror = () => {
-                        showStatus('Error loading image', 'error');
-                    };
-                    img.src = e.target.result;
-                };
-                reader.onerror = () => {
-                    showStatus('Error reading file', 'error');
-                };
-                reader.readAsDataURL(file);
+        qrFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            qrErrorDetails.style.display = 'none';
+            
+            // التحقق من حجم الملف
+            if (file.size > 5 * 1024 * 1024) {
+                showStatus('حجم الصورة كبير جداً. الرجاء اختيار صورة أصغر.', 'error');
+                return;
+            }
+
+            // التحقق من نوع الملف
+            if (!file.type.match('image.*')) {
+                showStatus('الرجاء اختيار ملف صورة (PNG, JPG, JPEG)', 'error');
+                return;
+            }
+
+            // عرض حالة التحميل
+            qrUploadArea.innerHTML = `
+                <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
+                <p>جاري معالجة الصورة...</p>
+            `;
+
+            try {
+                const imageData = await readImageFile(file);
+                const qrCode = await scanQRCode(imageData);
+                
+                if (qrCode) {
+                    await processQRCode(qrCode);
+                } else {
+                    throw new Error('NO_QR_FOUND');
+                }
+                
+            } catch (error) {
+                handleQRProcessingError(error);
+            } finally {
+                resetQRUploadArea();
             }
         });
 
-        // ========== Process QR code data ==========
-        function processQRCode(data) {
-            console.log('📱 QR Code detected:', data);
+        // ========== قراءة ملف الصورة ==========
+        function readImageFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('FILE_READ_ERROR'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // ========== مسح رمز QR ==========
+        function scanQRCode(imageData) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    const context = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    context.drawImage(img, 0, 0);
+                    
+                    const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+                    const code = jsQR(imageData.data, imageData.width, canvas.height);
+                    
+                    if (code) {
+                        resolve(code.data);
+                    } else {
+                        reject(new Error('NO_QR_FOUND'));
+                    }
+                };
+                img.onerror = () => reject(new Error('IMAGE_LOAD_ERROR'));
+                img.src = imageData;
+            });
+        }
+
+        // ========== معالجة رمز QR ==========
+        async function processQRCode(data) {
+            console.log('📱 تم اكتشاف رمز QR:', data);
             
             if (data.startsWith('BYPRO:')) {
                 const parts = data.split(':');
@@ -903,40 +1106,83 @@
                     const password = parts[2];
                     
                     if (id && password) {
-                        showStatus('QR code detected! Verifying...', 'success');
-                        verifyLogin(id, password);
+                        showStatus('تم اكتشاف رمز QR! جاري التحقق...', 'success');
+                        await verifyLogin(id, password);
                     } else {
-                        showStatus('Invalid QR code format', 'error');
+                        throw new Error('INVALID_QR_FORMAT');
                     }
                 } else {
-                    showStatus('Invalid QR code format. Expected: BYPRO:ID:PASSWORD', 'error');
+                    throw new Error('INVALID_QR_FORMAT');
                 }
             } else {
-                showStatus('This is not a B.Y PRO QR code', 'error');
+                throw new Error('NOT_BYPRO_QR');
             }
         }
 
-        // ========== LAST: Verify login credentials and SAVE ==========
+        // ========== معالجة أخطاء QR ==========
+        function handleQRProcessingError(error) {
+            console.error('❌ خطأ في معالجة QR:', error.message);
+            
+            switch(error.message) {
+                case 'NO_QR_FOUND':
+                    showStatus('لم يتم العثور على رمز QR في الصورة', 'error');
+                    qrErrorDetails.style.display = 'block';
+                    break;
+                    
+                case 'NOT_BYPRO_QR':
+                    showStatus('هذا الرمز غير صالح لنظام B.Y PRO', 'error');
+                    qrErrorDetails.style.display = 'block';
+                    break;
+                    
+                case 'INVALID_QR_FORMAT':
+                    showStatus('صيغة رمز QR غير صحيحة', 'error');
+                    qrErrorDetails.style.display = 'block';
+                    break;
+                    
+                case 'IMAGE_LOAD_ERROR':
+                    showStatus('خطأ في تحميل الصورة', 'error');
+                    break;
+                    
+                case 'FILE_READ_ERROR':
+                    showStatus('خطأ في قراءة الملف', 'error');
+                    break;
+                    
+                default:
+                    showStatus('حدث خطأ في معالجة رمز QR', 'error');
+            }
+        }
+
+        // ========== إعادة تعيين منطقة رفع QR ==========
+        function resetQRUploadArea() {
+            qrUploadArea.innerHTML = `
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>انقر لرفع صورة QR Code</p>
+                <span>PNG, JPG حتى 5MB</span>
+                <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
+            `;
+        }
+
+        // ========== التحقق من بيانات تسجيل الدخول ==========
         async function verifyLogin(id, password) {
             if (!id || !password) {
-                showStatus('ID and password are required', 'error');
+                showStatus('مطلوب ID وكلمة المرور', 'error');
                 return;
             }
 
-            // Show loading state
+            // عرض حالة التحميل
             if (currentMethod === 'qr') {
-                const fileLabel = document.querySelector('.file-label');
-                fileLabel.innerHTML = '<div class="loading-spinner"></div> Verifying...';
-                fileLabel.style.opacity = '0.7';
-                fileLabel.style.cursor = 'not-allowed';
+                qrUploadArea.innerHTML = `
+                    <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
+                    <p>جاري التحقق من البيانات...</p>
+                `;
             } else {
                 loginBtn.disabled = true;
-                loginBtn.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+                loginBtn.innerHTML = '<div class="loading-spinner"></div> جاري التحقق...';
             }
 
             try {
                 const url = `${API_BASE}/api/verify-account?id=${encodeURIComponent(id)}&password=${encodeURIComponent(password)}`;
-                console.log('🔐 Making request to:', url);
+                console.log('🔐 جاري الاتصال بالسيرفر:', url);
 
                 const response = await fetch(url, {
                     method: 'GET',
@@ -946,92 +1192,67 @@
                     mode: 'cors'
                 });
 
-                console.log('📥 Response status:', response.status);
+                console.log('📥 حالة الرد:', response.status);
 
                 if (!response.ok) {
                     throw new Error(`HTTP Error: ${response.status} ${response.statusText}`);
                 }
 
                 const result = await response.json();
-                console.log('📦 Response data:', result);
+                console.log('📦 بيانات الرد:', result);
 
                 if (result.success) {
-                    // Get full account data
-                    const accountsResponse = await fetch(`${API_BASE}/api/debug/accounts`);
-                    const accountsData = await accountsResponse.json();
-                    
-                    let userImage = '';
-                    if (accountsData.success) {
-                        const account = accountsData.accounts.find(acc => acc.id === id);
-                        userImage = account?.image || '';
-                    }
-
-                    // ========== SAVE USER DATA ==========
                     const userData = {
                         id: result.account.id,
                         name: result.account.name,
                         email: result.account.email,
                         password: password,
-                        image: userImage,
+                        image: `${GITHUB_IMAGE_BASE}${result.account.id}.png`,
                         loginTime: new Date().toISOString(),
                         lastLogin: new Date().toISOString(),
                         source: 'bypro_login'
                     };
                     
-                    // Try to save locally
-                    const savedLocally = safeStorage.setItem('bypro_user', userData);
-                    
-                    if (!savedLocally) {
-                        console.log('💡 Storage not available, relying on parent window');
-                    }
-                    
+                    safeStorage.setItem('bypro_user', userData);
                     currentUser = userData;
                     
-                    showStatus('Login successful!', 'success');
+                    showStatus('تم تسجيل الدخول بنجاح!', 'success');
                     updateConnectionStatus(true);
                     
-                    // Show logged in state
                     showLoggedInState(userData);
                     
                 } else {
-                    showStatus(result.error || 'Login failed', 'error');
+                    showStatus(result.error || 'فشل تسجيل الدخول', 'error');
                 }
             } catch (error) {
-                console.error('❌ Login error:', error);
+                console.error('❌ خطأ في تسجيل الدخول:', error);
                 if (error.name === 'TypeError' || error.message.includes('Failed to fetch')) {
-                    showStatus('Cannot connect to server. Please check your internet connection.', 'error');
+                    showStatus('لا يمكن الاتصال بالسيرفر. الرجاء التحقق من اتصال الإنترنت.', 'error');
                     updateConnectionStatus(false);
                 } else {
-                    showStatus('Login error: ' + error.message, 'error');
+                    showStatus('خطأ في تسجيل الدخول: ' + error.message, 'error');
                 }
             } finally {
-                // Reset UI
-                if (currentMethod === 'qr') {
-                    const fileLabel = document.querySelector('.file-label');
-                    fileLabel.innerHTML = '<i class="fas fa-upload"></i> Upload QR Code Image';
-                    fileLabel.style.opacity = '1';
-                    fileLabel.style.cursor = 'pointer';
-                    qrFileInput.value = '';
-                } else {
+                if (currentMethod !== 'qr') {
                     loginBtn.disabled = false;
                     loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
                 }
             }
         }
 
-        // ========== Manual login ==========
+        // ========== تسجيل الدخول اليدوي ==========
         loginBtn.addEventListener('click', () => {
             const id = userIdInput.value.trim();
             const password = passwordInput.value.trim();
             
             if (!id) {
-                showStatus('Please enter your account ID', 'error');
+                showStatus('الرجاء إدخال ID الحساب', 'error');
                 userIdInput.focus();
                 return;
             }
             
             if (!password) {
-                showStatus('Please enter your password', 'error');
+                showStatus('الرجاء إدخال كلمة المرور', 'error');
                 passwordInput.focus();
                 return;
             }
@@ -1039,7 +1260,7 @@
             verifyLogin(id, password);
         });
 
-        // ========== Allow Enter key in manual form ==========
+        // ========== السماح بمفتاح Enter في النموذج اليدوي ==========
         [userIdInput, passwordInput].forEach(input => {
             input.addEventListener('keypress', (e) => {
                 if (e.key === 'Enter') {
@@ -1048,17 +1269,17 @@
             });
         });
 
-        // ========== Input validation ==========
+        // ========== التحقق من صحة الإدخال ==========
         userIdInput.addEventListener('input', (e) => {
             e.target.value = e.target.value.replace(/[^a-zA-Z0-9_-]/g, '');
         });
 
-        // ========== Test server connection ==========
+        // ========== اختبار اتصال السيرفر ==========
         async function testServerConnection() {
             try {
-                console.log('🔄 Testing server connection...');
+                console.log('🔄 اختبار اتصال السيرفر...');
                 const response = await fetch(`${API_BASE}/api/health`);
-                console.log('📡 Health check response:', response.status);
+                console.log('📡 استجابة فحص الحالة:', response.status);
                 
                 if (response.ok) {
                     updateConnectionStatus(true);
@@ -1067,34 +1288,28 @@
                     throw new Error(`HTTP ${response.status}`);
                 }
             } catch (error) {
-                console.error('❌ Server connection test failed:', error);
+                console.error('❌ فشل اختبار اتصال السيرفر:', error);
                 updateConnectionStatus(false);
                 return false;
             }
         }
 
-        // ========== Initialize ==========
+        // ========== التهيئة ==========
         document.addEventListener('DOMContentLoaded', async () => {
-            console.log('🚀 Initializing login page...');
+            console.log('🚀 تهيئة صفحة تسجيل الدخول...');
             
-            // Setup parent message listener first
-            setupParentMessageListener();
-            
-            // Check if user is already logged in
             const isLoggedIn = checkExistingLogin();
             
             if (!isLoggedIn) {
-                // If not logged in, test connection
                 await testServerConnection();
                 
-                // Focus on ID field if in manual mode
                 if (currentMethod === 'manual') {
                     setTimeout(() => userIdInput.focus(), 300);
                 }
             }
         });
 
-        // Make functions globally available
+        // جعل الدوال متاحة عالمياً
         window.logout = logout;
         window.getCurrentUser = () => currentUser;
         window.byproAuth = {
@@ -1103,8 +1318,7 @@
                 user: currentUser
             }),
             requestLogin: () => {
-                // يمكنك تخصيص هذا حسب احتياجاتك
-                showStatus('Login requested externally', 'warning');
+                showStatus('تم طلب تسجيل الدخول خارجياً', 'warning');
             },
             logout: logout
         };
