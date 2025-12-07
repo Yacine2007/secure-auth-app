@@ -75,7 +75,7 @@
 
         .signup-container {
             background: rgba(17, 17, 17, 0.95);
-            padding: 30px 25px;
+            padding: 30px;
             border-radius: var(--radius);
             width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.1);
@@ -148,15 +148,15 @@
             top: 50%;
             left: 0;
             right: 0;
-            height: 3px;
+            height: 2px;
             background: rgba(255, 255, 255, 0.1);
             transform: translateY(-50%);
             z-index: 1;
         }
 
         .progress-step {
-            width: 35px;
-            height: 35px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.1);
             color: var(--text-muted);
@@ -167,12 +167,12 @@
             position: relative;
             z-index: 2;
             transition: all 0.3s ease;
+            font-size: 0.9rem;
         }
 
         .progress-step.active {
             background: var(--primary-color);
             color: white;
-            transform: scale(1.1);
         }
 
         .progress-step.completed {
@@ -189,7 +189,7 @@
         }
 
         .form-group {
-            margin-bottom: 18px;
+            margin-bottom: 20px;
         }
 
         .form-group:last-child {
@@ -198,40 +198,42 @@
 
         .form-group label {
             display: block;
-            margin-bottom: 6px;
+            margin-bottom: 8px;
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             font-weight: 500;
         }
 
         .form-group input {
             width: 100%;
-            padding: 13px 15px;
+            padding: 14px 16px;
             border: 2px solid rgba(255, 255, 255, 0.1);
             border-radius: var(--radius);
             background: rgba(0, 0, 0, 0.3);
             color: var(--text-color);
-            font-size: 0.95rem;
+            font-size: 1rem;
             transition: all 0.3s ease;
         }
 
         .form-group input:focus {
             outline: none;
             border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
         .verification-code {
             display: flex;
-            gap: 8px;
-            margin-bottom: 10px;
+            gap: 10px;
+            margin-bottom: 15px;
         }
 
         .verification-code input {
             flex: 1;
             text-align: center;
-            font-size: 1.1rem;
-            letter-spacing: 6px;
+            font-size: 1.3rem;
+            letter-spacing: 10px;
             font-weight: bold;
+            padding: 15px;
         }
 
         .btn {
@@ -239,7 +241,7 @@
             background: var(--primary-color);
             color: white;
             border: none;
-            padding: 14px;
+            padding: 15px;
             border-radius: var(--radius);
             cursor: pointer;
             font-size: 1rem;
@@ -248,8 +250,8 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
-            margin-top: 10px;
+            gap: 10px;
+            margin-top: 5px;
         }
 
         .btn:hover {
@@ -276,13 +278,13 @@
             background: transparent;
             color: var(--primary-color);
             border: 1px solid var(--primary-color);
-            padding: 9px 15px;
+            padding: 10px 15px;
             border-radius: var(--radius);
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             transition: all 0.3s ease;
             width: 100%;
-            margin-top: 8px;
+            margin-top: 10px;
         }
 
         .resend-btn:hover {
@@ -296,28 +298,31 @@
         }
 
         .status-message {
-            padding: 12px 15px;
-            margin: 10px 0;
+            padding: 14px;
+            margin: 15px 0;
             border-radius: var(--radius);
             text-align: center;
             display: none;
             font-weight: 500;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
         }
 
         .status-success {
             background: rgba(46, 204, 113, 0.15);
             color: var(--success-color);
+            border: 1px solid var(--success-color);
         }
 
         .status-error {
             background: rgba(231, 76, 60, 0.15);
             color: var(--danger-color);
+            border: 1px solid var(--danger-color);
         }
 
         .status-warning {
             background: rgba(243, 156, 18, 0.15);
             color: var(--warning-color);
+            border: 1px solid var(--warning-color);
         }
 
         .success-section {
@@ -326,8 +331,8 @@
         }
 
         .qr-container {
-            margin: 20px auto;
-            padding: 15px;
+            margin: 25px auto;
+            padding: 20px;
             background: white;
             border-radius: var(--radius);
             display: inline-block;
@@ -335,14 +340,14 @@
         }
 
         #qrCode {
-            width: 180px;
-            height: 180px;
+            width: 200px;
+            height: 200px;
         }
 
         .loading-spinner {
             display: inline-block;
-            width: 18px;
-            height: 18px;
+            width: 20px;
+            height: 20px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
@@ -354,8 +359,8 @@
         }
 
         .password-strength {
-            margin-top: 6px;
-            height: 3px;
+            margin-top: 8px;
+            height: 4px;
             background: rgba(255, 255, 255, 0.1);
             border-radius: 2px;
             overflow: hidden;
@@ -373,16 +378,17 @@
 
         .info-box {
             background: rgba(52, 152, 219, 0.1);
-            padding: 12px;
+            padding: 15px;
             border-radius: var(--radius);
-            margin-bottom: 12px;
+            margin-bottom: 15px;
             border: 1px solid var(--primary-color);
         }
 
         .info-box p {
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             color: var(--text-muted);
             margin: 0;
+            line-height: 1.5;
         }
 
         /* الشروط - مخفية في البداية */
@@ -396,72 +402,86 @@
             color: var(--primary-color);
             border: none;
             cursor: pointer;
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             display: flex;
             align-items: center;
-            gap: 5px;
+            gap: 8px;
             margin: 0 auto;
+            padding: 10px;
         }
 
         .terms-section {
             margin: 15px 0;
-            padding: 15px;
+            padding: 20px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: var(--radius);
             max-height: 0;
             overflow: hidden;
             border: none;
-            transition: all 0.3s ease;
+            transition: all 0.5s ease;
+            opacity: 0;
         }
 
         .terms-section.show {
-            max-height: 200px;
+            max-height: 250px;
             border: 1px solid rgba(255, 255, 255, 0.1);
+            opacity: 1;
         }
 
         .terms-section h4 {
             color: var(--primary-color);
-            margin-bottom: 8px;
-            font-size: 0.9rem;
+            margin-bottom: 15px;
+            font-size: 1rem;
         }
 
         .terms-section p {
-            font-size: 0.8rem;
+            font-size: 0.85rem;
             color: var(--text-muted);
-            line-height: 1.4;
-            margin-bottom: 6px;
+            line-height: 1.5;
+            margin-bottom: 8px;
         }
 
         .terms-checkbox {
             display: flex;
             align-items: center;
-            gap: 8px;
-            margin: 12px 0;
-            padding: 10px;
+            gap: 12px;
+            margin: 20px 0;
+            padding: 15px;
             background: rgba(0, 0, 0, 0.3);
             border-radius: var(--radius);
+            border: 1px solid rgba(255, 255, 255, 0.1);
         }
 
         .terms-checkbox input[type="checkbox"] {
-            width: 16px;
-            height: 16px;
+            width: 18px;
+            height: 18px;
             cursor: pointer;
         }
 
         .terms-checkbox label {
             color: var(--text-muted);
-            font-size: 0.85rem;
+            font-size: 0.9rem;
             cursor: pointer;
+            line-height: 1.4;
         }
 
         .button-group {
             display: flex;
-            gap: 8px;
-            margin-top: 15px;
+            gap: 10px;
+            margin-top: 20px;
         }
 
         .button-group .btn {
             flex: 1;
+        }
+
+        .step-content {
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
 
         /* تحسينات للشاشات الصغيرة */
@@ -480,43 +500,46 @@
             }
             
             .logo-header {
-                flex-direction: column;
-                gap: 8px;
+                flex-direction: row;
+                gap: 10px;
             }
             
             .logo h1 {
-                font-size: 1.4rem;
-                text-align: center;
+                font-size: 1.5rem;
             }
             
             .logo-img {
-                width: 28px;
-                height: 28px;
+                width: 30px;
+                height: 30px;
             }
             
             .progress-step {
-                width: 30px;
-                height: 30px;
-                font-size: 0.9rem;
+                width: 32px;
+                height: 32px;
+                font-size: 0.85rem;
             }
             
             .verification-code {
-                flex-wrap: wrap;
+                flex-direction: column;
             }
             
             .verification-code input {
-                font-size: 1rem;
-                letter-spacing: 4px;
+                font-size: 1.2rem;
+                letter-spacing: 8px;
                 padding: 12px;
             }
             
             .qr-container {
-                padding: 12px;
+                padding: 15px;
             }
             
             #qrCode {
-                width: 160px;
-                height: 160px;
+                width: 180px;
+                height: 180px;
+            }
+            
+            .terms-checkbox {
+                padding: 12px;
             }
         }
 
@@ -526,22 +549,27 @@
             }
             
             .logo h1 {
-                font-size: 1.2rem;
+                font-size: 1.3rem;
             }
             
             .logo-img {
-                width: 24px;
-                height: 24px;
+                width: 26px;
+                height: 26px;
             }
             
             .progress-step {
                 width: 28px;
                 height: 28px;
-                font-size: 0.85rem;
+                font-size: 0.8rem;
             }
             
             .button-group {
                 flex-direction: column;
+            }
+            
+            .verification-code input {
+                font-size: 1.1rem;
+                letter-spacing: 6px;
             }
         }
     </style>
@@ -574,169 +602,180 @@
 
             <!-- الخطوة 1: الشروط والأحكام -->
             <div class="step active" id="step1-content">
-                <div class="form-group">
-                    <h3 style="color: var(--primary-color); text-align: center; margin-bottom: 15px;">
-                        <i class="fas fa-shield-alt"></i> Welcome to B.Y PRO
-                    </h3>
-                    
-                    <!-- زر لعرض الشروط -->
-                    <div class="terms-toggle">
-                        <button class="toggle-btn" id="toggleTermsBtn">
-                            <i class="fas fa-chevron-down"></i> View Terms & Conditions
-                        </button>
-                    </div>
+                <div class="step-content">
+                    <div class="form-group">
+                        <h3 style="color: var(--primary-color); text-align: center; margin-bottom: 20px;">
+                            <i class="fas fa-shield-alt"></i> Welcome to B.Y PRO
+                        </h3>
+                        
+                        <!-- زر لعرض الشروط -->
+                        <div class="terms-toggle">
+                            <button class="toggle-btn" id="toggleTermsBtn">
+                                <i class="fas fa-chevron-down"></i> View Terms & Conditions
+                            </button>
+                        </div>
 
-                    <!-- الشروط - مخفية -->
-                    <div class="terms-section" id="termsSection">
-                        <h4>Terms & Conditions</h4>
-                        <p>1. You are responsible for maintaining the security of your account.</p>
-                        <p>2. Ensure your account information is accurate and up-to-date.</p>
-                        <p>3. We collect only essential data required for service delivery.</p>
-                        <p>4. Your data helps us enhance user experience.</p>
-                        <p>5. Customer Support: byprosprt2007@gmail.com</p>
-                    </div>
+                        <!-- الشروط - مخفية -->
+                        <div class="terms-section" id="termsSection">
+                            <h4>Terms & Conditions</h4>
+                            <p>1. You are responsible for maintaining the security of your account.</p>
+                            <p>2. Ensure your account information is accurate and up-to-date.</p>
+                            <p>3. We collect only essential data required for service delivery.</p>
+                            <p>4. Your data helps us enhance user experience.</p>
+                            <p>5. Customer Support: byprosprt2007@gmail.com</p>
+                        </div>
 
-                    <div class="terms-checkbox">
-                        <input type="checkbox" id="acceptTerms">
-                        <label for="acceptTerms">
-                            I understand and agree to the Terms of Service and Privacy Policy.
-                        </label>
+                        <div class="terms-checkbox">
+                            <input type="checkbox" id="acceptTerms">
+                            <label for="acceptTerms">
+                                I understand and agree to the Terms of Service and Privacy Policy.
+                            </label>
+                        </div>
                     </div>
+                    <button class="btn" id="next1" disabled>
+                        Continue <i class="fas fa-arrow-right"></i>
+                    </button>
                 </div>
-                <button class="btn" id="next1" disabled>
-                    Continue <i class="fas fa-arrow-right"></i>
-                </button>
             </div>
 
             <!-- الخطوة 2: الاسم والبريد الإلكتروني -->
             <div class="step" id="step2-content">
-                <div class="form-group">
-                    <label for="fullName"><i class="fas fa-user"></i> Full Name</label>
-                    <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name">
-                </div>
-                
-                <div class="form-group">
-                    <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
-                    <input type="email" id="email" placeholder="Enter your email address" autocomplete="email">
-                    <div class="info-box">
-                        <p><i class="fas fa-info-circle"></i> We'll send a verification code to your email.</p>
+                <div class="step-content">
+                    <div class="form-group">
+                        <label for="fullName"><i class="fas fa-user"></i> Full Name</label>
+                        <input type="text" id="fullName" placeholder="Enter your full name" autocomplete="name">
                     </div>
-                </div>
+                    
+                    <div class="form-group">
+                        <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
+                        <input type="email" id="email" placeholder="Enter your email address" autocomplete="email">
+                        <div class="info-box">
+                            <p><i class="fas fa-info-circle"></i> We'll send a verification code to your email.</p>
+                        </div>
+                    </div>
 
-                <div class="button-group">
-                    <button class="btn btn-secondary" id="prev2">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="next2">
-                        Send Code <i class="fas fa-arrow-right"></i>
-                    </button>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" id="prev2">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn" id="next2">
+                            Send Code <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- الخطوة 3: التحقق من OTP -->
             <div class="step" id="step3-content">
-                <div class="form-group">
-                    <label><i class="fas fa-envelope"></i> Verification Code</label>
-                    <div class="info-box">
-                        <p id="emailDisplay"></p>
+                <div class="step-content">
+                    <div class="form-group">
+                        <label><i class="fas fa-envelope"></i> Verification Code</label>
+                        <div class="info-box">
+                            <p id="emailDisplay"></p>
+                            <p style="margin-top: 10px;">Enter the 6-digit code sent to your email:</p>
+                        </div>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <div class="verification-code">
-                        <input type="text" id="otpCode" placeholder="000000" maxlength="6" inputmode="numeric">
+                    <div class="form-group">
+                        <div class="verification-code">
+                            <input type="text" id="otpCode" placeholder="000000" maxlength="6" inputmode="numeric">
+                        </div>
                     </div>
-                </div>
 
-                <div class="form-group">
-                    <button class="resend-btn" id="resendOtpBtn" disabled>
-                        Resend code in <span id="countdown">60</span>s
-                    </button>
-                </div>
+                    <div class="form-group">
+                        <button class="resend-btn" id="resendOtpBtn" disabled>
+                            Resend code in <span id="countdown">60</span>s
+                        </button>
+                    </div>
 
-                <div class="button-group">
-                    <button class="btn btn-secondary" id="prev3">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="next3">
-                        Verify <i class="fas fa-arrow-right"></i>
-                    </button>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" id="prev3">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn" id="next3">
+                            Verify <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- الخطوة 4: كلمة المرور -->
             <div class="step" id="step4-content">
-                <div class="form-group">
-                    <label for="password"><i class="fas fa-lock"></i> Password</label>
-                    <input type="password" id="password" placeholder="Create a strong password" autocomplete="new-password">
-                    <div class="password-strength">
-                        <div class="strength-bar" id="passwordStrength"></div>
+                <div class="step-content">
+                    <div class="form-group">
+                        <label for="password"><i class="fas fa-lock"></i> Password</label>
+                        <input type="password" id="password" placeholder="Create a strong password" autocomplete="new-password">
+                        <div class="password-strength">
+                            <div class="strength-bar" id="passwordStrength"></div>
+                        </div>
                     </div>
-                </div>
-                <div class="form-group">
-                    <label for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
-                    <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
-                </div>
-                <div class="button-group">
-                    <button class="btn btn-secondary" id="prev4">
-                        <i class="fas fa-arrow-left"></i> Back
-                    </button>
-                    <button class="btn" id="next4">
-                        Create Account <i class="fas fa-user-plus"></i>
-                    </button>
+                    <div class="form-group">
+                        <label for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
+                        <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
+                    </div>
+                    <div class="button-group">
+                        <button class="btn btn-secondary" id="prev4">
+                            <i class="fas fa-arrow-left"></i> Back
+                        </button>
+                        <button class="btn" id="next4">
+                            Create Account <i class="fas fa-user-plus"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <!-- الخطوة 5: النجاح -->
             <div class="step" id="step5-content">
-                <div class="success-section">
-                    <div class="status-success" style="display: block; padding: 12px; margin-bottom: 15px;">
-                        <i class="fas fa-check-circle"></i> Account Created Successfully!
-                    </div>
-                    
-                    <h3 style="margin: 15px 0 10px 0; font-size: 1.3rem;">Welcome, <span id="successName"></span>!</h3>
-                    <p style="color: var(--text-muted); margin-bottom: 20px; font-size: 0.9rem;">
-                        Your professional account has been created.
-                    </p>
-
-                    <div class="qr-container">
-                        <div id="qrCode"></div>
-                    </div>
-
-                    <div style="margin: 20px 0;">
-                        <button class="btn" id="downloadQR" style="width: auto; padding: 10px 25px; margin-bottom: 10px;">
-                            <i class="fas fa-download"></i> Download QR
-                        </button>
-                        <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 8px;">
-                            QR Format: BYPRO:ID:Password
+                <div class="step-content">
+                    <div class="success-section">
+                        <div class="status-success" style="display: block; padding: 15px; margin-bottom: 20px;">
+                            <i class="fas fa-check-circle"></i> Account Created Successfully!
+                        </div>
+                        
+                        <h3 style="margin: 20px 0 15px 0; font-size: 1.4rem;">Welcome, <span id="successName"></span>!</h3>
+                        <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.95rem;">
+                            Your professional account has been created.
                         </p>
-                    </div>
 
-                    <div style="margin-top: 15px; padding: 15px; background: rgba(52, 152, 219, 0.1); border-radius: var(--radius);">
-                        <h4 style="color: var(--primary-color); margin-bottom: 8px; font-size: 0.95rem;">Account Details:</h4>
-                        <div style="text-align: left; background: rgba(0, 0, 0, 0.3); padding: 12px; border-radius: var(--radius);">
-                            <p style="margin-bottom: 6px; font-size: 0.85rem;">
-                                <strong>Account ID:</strong> 
-                                <span id="displayId" style="color: var(--success-color); margin-left: 8px;"></span>
-                            </p>
-                            <p style="margin-bottom: 6px; font-size: 0.85rem;">
-                                <strong>Full Name:</strong> 
-                                <span id="displayName" style="margin-left: 8px;"></span>
-                            </p>
-                            <p style="margin-bottom: 6px; font-size: 0.85rem;">
-                                <strong>Email:</strong> 
-                                <span id="displayEmail" style="color: var(--primary-color); margin-left: 8px;"></span>
-                            </p>
-                            <p style="margin-top: 10px; color: var(--text-muted); font-size: 0.8rem;">
-                                <i class="fas fa-shield-alt"></i> Keep your credentials secure
+                        <div class="qr-container">
+                            <div id="qrCode"></div>
+                        </div>
+
+                        <div style="margin: 25px 0;">
+                            <button class="btn" id="downloadQR" style="width: auto; padding: 12px 30px; margin-bottom: 15px;">
+                                <i class="fas fa-download"></i> Download QR
+                            </button>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">
+                                QR Format: BYPRO:ID:Password
                             </p>
                         </div>
-                    </div>
 
-                    <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
-                        <a href="login.html" class="btn btn-secondary" style="width: auto; padding: 10px 25px;">
-                            <i class="fas fa-sign-in-alt"></i> Go to Login
-                        </a>
+                        <div style="margin-top: 20px; padding: 20px; background: rgba(52, 152, 219, 0.1); border-radius: var(--radius);">
+                            <h4 style="color: var(--primary-color); margin-bottom: 12px; font-size: 1rem;">Account Details:</h4>
+                            <div style="text-align: left; background: rgba(0, 0, 0, 0.3); padding: 15px; border-radius: var(--radius);">
+                                <p style="margin-bottom: 8px; font-size: 0.9rem;">
+                                    <strong>Account ID:</strong> 
+                                    <span id="displayId" style="color: var(--success-color); margin-left: 10px; font-weight: bold;"></span>
+                                </p>
+                                <p style="margin-bottom: 8px; font-size: 0.9rem;">
+                                    <strong>Full Name:</strong> 
+                                    <span id="displayName" style="margin-left: 10px;"></span>
+                                </p>
+                                <p style="margin-bottom: 8px; font-size: 0.9rem;">
+                                    <strong>Email:</strong> 
+                                    <span id="displayEmail" style="color: var(--primary-color); margin-left: 10px;"></span>
+                                </p>
+                                <p style="margin-top: 15px; color: var(--text-muted); font-size: 0.85rem;">
+                                    <i class="fas fa-shield-alt"></i> Keep your credentials secure
+                                </p>
+                            </div>
+                        </div>
+
+                        <div style="margin-top: 25px; padding-top: 20px; border-top: 1px solid rgba(255, 255, 255, 0.1);">
+                            <a href="login.html" class="btn btn-secondary" style="width: auto; padding: 12px 30px;">
+                                <i class="fas fa-sign-in-alt"></i> Go to Login
+                            </a>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -849,7 +888,7 @@
             }, 1000);
         }
 
-        // ========== إرسال OTP (مع معالجة الأخطاء) ==========
+        // ========== إرسال OTP (باستخدام Nodemailer) ==========
         async function sendOTPToServer(emailValue) {
             try {
                 showStatus('Sending verification code...', 'success');
@@ -862,27 +901,22 @@
                     body: JSON.stringify({ 
                         email: emailValue,
                         type: 'signup'
-                    }),
-                    timeout: 5000
+                    })
                 });
 
                 const result = await response.json();
                 
                 if (result.success) {
-                    showStatus('Verification code sent!', 'success');
+                    showStatus('Verification code sent! Check your email.', 'success');
                     return { success: true };
                 } else {
-                    // إنشاء OPT للاختبار إذا فشل الخادم
-                    generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-                    showStatus(`Test OTP: ${generatedOTP}`, 'warning');
-                    return { success: true };
+                    showStatus(result.error || 'Failed to send verification code', 'error');
+                    return { success: false };
                 }
             } catch (error) {
                 console.error('Error sending OTP:', error);
-                // إنشاء OTP للاختبار في حالة الخطأ
-                generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-                showStatus(`Test OTP: ${generatedOTP} (Offline mode)`, 'warning');
-                return { success: true };
+                showStatus('Unable to send verification code', 'error');
+                return { success: false };
             }
         }
 
@@ -899,33 +933,21 @@
                     body: JSON.stringify({ 
                         email: emailValue,
                         otp: otpValue
-                    }),
-                    timeout: 5000
+                    })
                 });
 
                 const result = await response.json();
                 
                 if (result.success) {
-                    showStatus('Email verified!', 'success');
+                    showStatus('Email verified successfully!', 'success');
                     return { success: true };
                 } else {
-                    // استخدام OTP الذي تم إنشاؤه للاختبار
-                    if (generatedOTP && otpValue === generatedOTP) {
-                        showStatus('Email verified! (Test mode)', 'success');
-                        return { success: true };
-                    }
-                    
-                    showStatus('Invalid verification code', 'error');
+                    showStatus(result.error || 'Invalid verification code', 'error');
                     return { success: false };
                 }
             } catch (error) {
-                // استخدام OTP الذي تم إنشاؤه للاختبار
-                if (generatedOTP && otpValue === generatedOTP) {
-                    showStatus('Email verified! (Test mode)', 'success');
-                    return { success: true };
-                }
-                
-                showStatus('Invalid verification code', 'error');
+                console.error('Error verifying OTP:', error);
+                showStatus('Verification service unavailable', 'error');
                 return { success: false };
             }
         }
@@ -975,7 +997,7 @@
                 }
                 
             } catch (error) {
-                showStatus('Error sending code', 'error');
+                showStatus('Error sending verification code', 'error');
             } finally {
                 next2.innerHTML = 'Send Code <i class="fas fa-arrow-right"></i>';
                 next2.disabled = false;
@@ -1074,52 +1096,50 @@
             next4.disabled = true;
             
             try {
-                // إنشاء معرف الحساب
-                userData.accountId = (1000 + Math.floor(Math.random() * 9000)).toString();
+                // الحصول على معرف الحساب التالي من الخادم
+                const idResponse = await fetch(`${API_BASE}/api/next-id`);
+                const idResult = await idResponse.json();
                 
-                // محاولة حفظ على الخادم
-                try {
-                    const response = await fetch(`${API_BASE}/api/accounts`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            id: userData.accountId,
-                            name: userData.name,
-                            email: userData.email,
-                            password: userData.password
-                        }),
-                        timeout: 5000
-                    });
+                userData.accountId = idResult.success ? idResult.nextId : (1000 + Math.floor(Math.random() * 9000)).toString();
+                
+                // إنشاء الحساب على الخادم
+                const response = await fetch(`${API_BASE}/api/create-account`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        id: userData.accountId,
+                        name: userData.name,
+                        email: userData.email,
+                        password: userData.password
+                    })
+                });
 
-                    if (response.ok) {
-                        const result = await response.json();
-                        if (!result.success) {
-                            console.log('Server account creation failed, using local mode');
-                        }
-                    }
-                } catch (serverError) {
-                    console.log('Server unavailable, using local mode');
+                const result = await response.json();
+                
+                if (result.success) {
+                    // عرض صفحة النجاح
+                    successName.textContent = userData.name;
+                    document.getElementById('displayId').textContent = userData.accountId;
+                    document.getElementById('displayName').textContent = userData.name;
+                    document.getElementById('displayEmail').textContent = userData.email;
+                    
+                    // إنشاء رمز QR
+                    const qrData = `BYPRO:${userData.accountId}:${userData.password}`;
+                    generateQRCode(qrData);
+                    
+                    // الانتقال إلى خطوة النجاح
+                    goToStep(5);
+                    showStatus('Account created successfully!', 'success');
+                    
+                } else {
+                    throw new Error(result.error || 'Failed to create account');
                 }
-                
-                // عرض صفحة النجاح
-                successName.textContent = userData.name;
-                document.getElementById('displayId').textContent = userData.accountId;
-                document.getElementById('displayName').textContent = userData.name;
-                document.getElementById('displayEmail').textContent = userData.email;
-                
-                // إنشاء رمز QR
-                const qrData = `BYPRO:${userData.accountId}:${userData.password}`;
-                generateQRCode(qrData);
-                
-                // الانتقال إلى خطوة النجاح
-                goToStep(5);
-                showStatus('Account created!', 'success');
                 
             } catch (error) {
                 console.error('Error creating account:', error);
-                showStatus('Error creating account', 'error');
+                showStatus('Unable to create account', 'error');
             } finally {
                 next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
                 next4.disabled = false;
@@ -1135,8 +1155,8 @@
                 // إنشاء رمز QR
                 new QRCode(qrCodeContainer, {
                     text: qrData,
-                    width: 180,
-                    height: 180,
+                    width: 200,
+                    height: 200,
                     colorDark: "#000000",
                     colorLight: "#ffffff",
                     correctLevel: QRCode.CorrectLevel.H
@@ -1146,10 +1166,13 @@
                 
                 // عرض بديل
                 qrCodeContainer.innerHTML = `
-                    <div style="width:180px;height:180px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
-                        <div style="font-size:14px;font-weight:bold;color:#1a237e;text-align:center;">
+                    <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
+                        <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
                             BYPRO Account<br>
                             ID: ${userData.accountId}
+                        </div>
+                        <div style="margin-top:10px;font-size:12px;color:#666;">
+                            ${qrData}
                         </div>
                     </div>
                 `;
@@ -1165,10 +1188,10 @@
                     link.download = `BYPRO-${userData.accountId}.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
-                    showStatus('QR Code downloaded', 'success');
+                    showStatus('QR Code downloaded successfully', 'success');
                 } else {
                     // إنشاء ملف نصي بديل
-                    const accountInfo = `BYPRO Account\nID: ${userData.accountId}\nName: ${userData.name}\nEmail: ${userData.email}\nQR Data: BYPRO:${userData.accountId}:${userData.password}`;
+                    const accountInfo = `BYPRO Account Information\n\nAccount ID: ${userData.accountId}\nFull Name: ${userData.name}\nEmail: ${userData.email}\nQR Data: BYPRO:${userData.accountId}:${userData.password}\n\nCreated: ${new Date().toLocaleString()}\n\nKeep this information secure!`;
                     
                     const blob = new Blob([accountInfo], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
@@ -1192,29 +1215,35 @@
         });
 
         toggleTermsBtn.addEventListener('click', () => {
-            termsSection.classList.toggle('show');
+            const isExpanded = termsSection.classList.toggle('show');
             const icon = toggleTermsBtn.querySelector('i');
-            if (termsSection.classList.contains('show')) {
+            if (isExpanded) {
                 toggleTermsBtn.innerHTML = '<i class="fas fa-chevron-up"></i> Hide Terms';
             } else {
                 toggleTermsBtn.innerHTML = '<i class="fas fa-chevron-down"></i> View Terms & Conditions';
             }
         });
 
-        next1.addEventListener('click', () => goToStep(2));
+        next1.addEventListener('click', () => {
+            goToStep(2);
+            setTimeout(() => fullName.focus(), 300);
+        });
+        
         prev2.addEventListener('click', () => goToStep(1));
         next2.addEventListener('click', sendVerificationCode);
+        
         prev3.addEventListener('click', () => goToStep(2));
         next3.addEventListener('click', verifyOTP);
+        
         prev4.addEventListener('click', () => goToStep(3));
         next4.addEventListener('click', createAccount);
         
+        // إعادة إرسال OTP
         resendOtpBtn.addEventListener('click', async () => {
             resendOtpBtn.innerHTML = '<div class="loading-spinner"></div>';
             resendOtpBtn.disabled = true;
             
             try {
-                // إعادة إرسال OTP
                 await sendOTPToServer(userData.email);
                 startCountdown();
             } catch (error) {
