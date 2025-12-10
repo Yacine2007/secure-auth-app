@@ -13,9 +13,9 @@ const crypto = require('crypto');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Accounts System with Email Verification...');
+console.log('🚀 Starting B.Y PRO Accounts System with Brevo Email...');
 
-// ==================== CORS CONFIGURATION (محدث) ====================
+// ==================== CORS CONFIGURATION ====================
 const corsOptions = {
   origin: ['https://yacine2007.github.io', 'http://localhost:5500', 'http://localhost:3000'],
   credentials: true,
@@ -94,46 +94,42 @@ const FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
 
 console.log('🔐 Google Drive configuration loaded');
 
-// ==================== NODEMAILER CONFIGURATION (OAuth2 - محدث) ====================
-// ⚠️ مهم: ضع هذه البيانات في متغيرات البيئة على Render (Environment Variables)
-const OAUTH_CLIENT_ID = '505296837412-mqgpa9nu9tu6igoj7p799rc3tp294tij.apps.googleusercontent.com';
-const OAUTH_CLIENT_SECRET = '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';
-const OAUTH_REFRESH_TOKEN = '1//04NKQh9eXWOxDCgYIARAAGAQSNwF-L9IrW-Wqdwp9BaADjsgXvZfMv8l1IChKspxpa3Vi2J3PFk9gqHJGtogFEv_ig1de8WJiu-0'; // ⭐ استبدل بهذا الرمز
-const SENDER_EMAIL = 'byprosprt2007@gmail.com';
+// ==================== BREVO (Sendinblue) EMAIL CONFIGURATION ====================
+// ⭐ بيانات Brevo الخاصة بك
+const BREVO_CONFIG = {
+  user: 'yassinebenmokran@gmail.com',           // البريد المرسل
+  key: 'xsmtpsib-ea5be95bb9efc5163a7d77cbe451ab0816e7254cf507a7ad7a4e6953d0b369dc-5aCf1tALieknk1TH',  // مفتاح SMTP
+  host: 'smtp-relay.brevo.com',
+  port: 587
+};
 
-const { OAuth2 } = google.auth;
+console.log('📧 Brevo email configured with:', BREVO_CONFIG.user);
 
 const createEmailTransporter = () => {
   try {
-    const oauth2Client = new OAuth2(
-      OAUTH_CLIENT_ID,
-      OAUTH_CLIENT_SECRET,
-      "https://developers.google.com/oauthplayground" // Redirect URI
-    );
-    
-    oauth2Client.setCredentials({
-      refresh_token: OAUTH_REFRESH_TOKEN
-    });
-    
     const transporter = nodemailer.createTransport({
-      service: 'gmail',
+      host: BREVO_CONFIG.host,
+      port: BREVO_CONFIG.port,
+      secure: false, // استخدام STARTTLS (port 587)
       auth: {
-        type: 'OAuth2',
-        user: SENDER_EMAIL,
-        clientId: OAUTH_CLIENT_ID,
-        clientSecret: OAUTH_CLIENT_SECRET,
-        refreshToken: OAUTH_REFRESH_TOKEN,
-        accessToken: oauth2Client.getAccessToken() // سيتم توليده تلقائياً
+        user: BREVO_CONFIG.user,
+        pass: BREVO_CONFIG.key
       },
+      // إعدادات اتصال محسنة لمنع Timeout
+      connectionTimeout: 15000, // 15 ثانية
+      socketTimeout: 20000,     // 20 ثانية
+      greetingTimeout: 10000,   // 10 ثانية
       tls: {
-        rejectUnauthorized: true
-      }
+        rejectUnauthorized: true // لا تغيره - Brevo يستخدم شهادات صالحة
+      },
+      debug: false, // ضع true لرؤية تفاصيل الاتصال إذا احتجت
+      logger: false
     });
     
-    console.log('✅ OAuth2 email transporter created');
+    console.log('✅ Brevo email transporter created successfully');
     return transporter;
   } catch (error) {
-    console.error('❌ Failed to create OAuth2 transporter:', error);
+    console.error('❌ Failed to create Brevo transporter:', error.message);
     throw error;
   }
 };
@@ -388,7 +384,7 @@ async function sendOTPEmail(email, otpCode) {
     const transporter = createEmailTransporter();
     
     const mailOptions = {
-      from: `"B.Y PRO Accounts" <${SENDER_EMAIL}>`,
+      from: `"B.Y PRO Accounts" <${BREVO_CONFIG.user}>`,
       to: email,
       subject: 'B.Y PRO - Verification Code',
       html: `
@@ -414,17 +410,32 @@ async function sendOTPEmail(email, otpCode) {
                 <strong>⚠️ Important:</strong> This code will expire in <strong>10 minutes</strong>. Do not share this code with anyone.
               </p>
             </div>
+            
+            <div style="margin-top: 20px; padding-top: 15px; border-top: 1px solid #eee; font-size: 12px; color: #777; text-align: center;">
+              <p>Powered by Brevo | B.Y PRO Accounts System</p>
+            </div>
           </div>
         </div>
       `
     };
 
     const result = await transporter.sendMail(mailOptions);
-    console.log(`✅ OTP email sent to: ${email}`);
+    console.log(`✅ Brevo email sent to: ${email}`, result.messageId);
     return { success: true, messageId: result.messageId };
   } catch (error) {
-    console.error('❌ OTP email sending failed:', error);
-    return { success: false, error: error.message };
+    console.error('❌ Brevo email sending failed:', error.message);
+    
+    // رسائل خطأ واضحة
+    let errorMessage = "Email service temporarily unavailable";
+    if (error.message.includes('Authentication failed')) {
+      errorMessage = "Email authentication failed - check Brevo credentials";
+    } else if (error.message.includes('ENOTFOUND')) {
+      errorMessage = "Cannot connect to email server";
+    } else if (error.message.includes('ETIMEDOUT')) {
+      errorMessage = "Email connection timeout";
+    }
+    
+    return { success: false, error: errorMessage };
   }
 }
 
@@ -466,15 +477,35 @@ app.get('/api/health', async (req, res) => {
     res.json({ 
       status: 'operational',
       service: 'B.Y PRO Accounts System',
+      email_provider: 'Brevo (Sendinblue)',
       timestamp: new Date().toISOString(),
       total_accounts: accounts.length,
-      version: '2.5.0',
+      version: '3.0.0',
       features: ['signup', 'login', 'otp_verification', 'qr_codes']
     });
   } catch (error) {
     res.status(500).json({
       status: 'error',
       error: "Google Drive service unavailable"
+    });
+  }
+});
+
+// Get all accounts (for debugging)
+app.get('/api/accounts', async (req, res) => {
+  try {
+    const csvData = await readCSVFromDrive();
+    const accounts = parseCSVToAccounts(csvData);
+    
+    res.json({
+      success: true,
+      count: accounts.length,
+      accounts: accounts
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
     });
   }
 });
@@ -491,32 +522,45 @@ app.post('/api/send-otp', async (req, res) => {
       });
     }
 
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid email format"
+      });
+    }
+
     const otp = generateOTP();
     
     otpStorage.set(email, {
       otp: otp,
       expires: Date.now() + 10 * 60 * 1000,
-      attempts: 0
+      attempts: 0,
+      createdAt: new Date().toISOString()
     });
 
+    console.log(`🔄 Sending OTP to: ${email}`);
     const emailResult = await sendOTPEmail(email, otp);
     
     if (emailResult.success) {
       res.json({
         success: true,
-        message: "Verification code sent to your email"
+        message: "Verification code sent to your email",
+        expiresIn: "10 minutes"
       });
     } else {
       otpStorage.delete(email);
       res.status(500).json({
         success: false,
-        error: "Email service is currently unavailable"
+        error: emailResult.error || "Email service is currently unavailable"
       });
     }
   } catch (error) {
+    console.error('❌ Error in send-otp route:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: "Server error while sending verification code"
     });
   }
 });
@@ -538,7 +582,7 @@ app.post('/api/verify-otp', async (req, res) => {
     if (!storedData) {
       return res.status(400).json({
         success: false,
-        error: "No verification code found for this email"
+        error: "No verification code found for this email. Please request a new code."
       });
     }
 
@@ -546,7 +590,7 @@ app.post('/api/verify-otp', async (req, res) => {
       otpStorage.delete(email);
       return res.status(400).json({
         success: false,
-        error: "Verification code has expired"
+        error: "Verification code has expired. Please request a new code."
       });
     }
 
@@ -574,6 +618,7 @@ app.post('/api/verify-otp', async (req, res) => {
       });
     }
   } catch (error) {
+    console.error('❌ Error in verify-otp route:', error);
     res.status(500).json({
       success: false,
       error: error.message
@@ -628,6 +673,15 @@ app.post('/api/create-account', async (req, res) => {
       return res.status(400).json({
         success: false,
         error: "All fields are required"
+      });
+    }
+
+    // Validate email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      return res.status(400).json({
+        success: false,
+        error: "Invalid email format"
       });
     }
 
@@ -723,22 +777,36 @@ app.use('*', (req, res) => {
 
 // Error handler
 app.use((err, req, res, next) => {
-  console.error('💥 Error:', err);
+  console.error('💥 Server Error:', err);
   res.status(500).json({
     success: false,
-    error: "Internal server error"
+    error: "Internal server error",
+    timestamp: new Date().toISOString()
   });
 });
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS SYSTEM v2.5');
+  console.log('🚀 B.Y PRO ACCOUNTS SYSTEM v3.0');
   console.log('✅ CORS Issues: FIXED');
-  console.log('✅ Email OAuth2: CONFIGURED');
+  console.log('✅ Email Provider: BREVO (Sendinblue)');
   console.log(`✅ Server running on port: ${PORT}`);
   console.log(`🔗 API: http://localhost:${PORT}/api`);
   console.log('💾 Storage: Google Drive');
-  console.log('📧 Email: OAuth2 Secure');
+  console.log('📧 Email: Brevo SMTP');
   console.log('🎉 =================================\n');
+  
+  // تحقق من اتصال Brevo عند بدء التشغيل
+  setTimeout(() => {
+    console.log('🔄 Testing Brevo connection...');
+    const testTransporter = createEmailTransporter();
+    testTransporter.verify((error) => {
+      if (error) {
+        console.log('⚠️  Brevo connection test:', error.message);
+      } else {
+        console.log('✅ Brevo connection test: SUCCESS');
+      }
+    });
+  }, 2000);
 });
