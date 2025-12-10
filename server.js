@@ -34,7 +34,7 @@ app.use((req, res, next) => {
 });
 
 // ==================== ELASTIC EMAIL CONFIGURATION ====================
-const ELASTIC_EMAIL_API_KEY = '3783B1F525BCC262111A2F8ED47B657BE4F4B6D9A0ABDC7F35F7A5FF4B12D4C752B8DA1FD3F9B9AD25A0B3F508F1EDE8';
+const ELASTIC_EMAIL_API_KEY = '34CC2EC945AB6ACE1CA8E645CA68401D7BDB1685CF320FD29CE3B26F2D5506E3EA97997A22F8D2CF000475649A280DFA';
 const ELASTIC_EMAIL_FROM = 'yassinebenmokran@gmail.com';
 const ELASTIC_EMAIL_FROM_NAME = 'B.Y PRO Accounts';
 
@@ -575,3 +575,4 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log('📧 Email Provider: Elastic Email (100/day FREE)');
   console.log('🎉 =================================\n');
 });
+
