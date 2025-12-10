@@ -15,15 +15,24 @@ const PORT = process.env.PORT || 10000;
 
 console.log('🚀 Starting B.Y PRO Accounts System with Email Verification...');
 
-// ==================== CORS CONFIGURATION ====================
-app.use(cors({
+// ==================== CORS CONFIGURATION (محدث) ====================
+const corsOptions = {
   origin: ['https://yacine2007.github.io', 'http://localhost:5500', 'http://localhost:3000'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin']
-}));
+  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'api-key', 'x-api-key']
+};
 
-app.options('*', cors());
+app.use(cors(corsOptions));
+
+// معالجة طلبات OPTIONS (Preflight) بشكل صريح
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin);
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, api-key, x-api-key');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).end();
+});
 
 // ==================== MIDDLEWARE ====================
 app.use(express.json({ limit: '50mb' }));
@@ -85,15 +94,48 @@ const FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
 
 console.log('🔐 Google Drive configuration loaded');
 
-// ==================== NODEMAILER CONFIGURATION ====================
+// ==================== NODEMAILER CONFIGURATION (OAuth2 - محدث) ====================
+// ⚠️ مهم: ضع هذه البيانات في متغيرات البيئة على Render (Environment Variables)
+const OAUTH_CLIENT_ID = '505296837412-mqgpa9nu9tu6igoj7p799rc3tp294tij.apps.googleusercontent.com';
+const OAUTH_CLIENT_SECRET = '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';
+const OAUTH_REFRESH_TOKEN = '1//04NKQh9eXWOxDCgYIARAAGAQSNwF-L9IrW-Wqdwp9BaADjsgXvZfMv8l1IChKspxpa3Vi2J3PFk9gqHJGtogFEv_ig1de8WJiu-0'; // ⭐ استبدل بهذا الرمز
+const SENDER_EMAIL = 'byprosprt2007@gmail.com';
+
+const { OAuth2 } = google.auth;
+
 const createEmailTransporter = () => {
-  return nodemailer.createTransport({
-    service: 'gmail',
-    auth: {
-      user: 'byprosprt2007@gmail.com',
-      pass: 'nspr xhfv yhxu vtwa'
-    }
-  });
+  try {
+    const oauth2Client = new OAuth2(
+      OAUTH_CLIENT_ID,
+      OAUTH_CLIENT_SECRET,
+      "https://developers.google.com/oauthplayground" // Redirect URI
+    );
+    
+    oauth2Client.setCredentials({
+      refresh_token: OAUTH_REFRESH_TOKEN
+    });
+    
+    const transporter = nodemailer.createTransport({
+      service: 'gmail',
+      auth: {
+        type: 'OAuth2',
+        user: SENDER_EMAIL,
+        clientId: OAUTH_CLIENT_ID,
+        clientSecret: OAUTH_CLIENT_SECRET,
+        refreshToken: OAUTH_REFRESH_TOKEN,
+        accessToken: oauth2Client.getAccessToken() // سيتم توليده تلقائياً
+      },
+      tls: {
+        rejectUnauthorized: true
+      }
+    });
+    
+    console.log('✅ OAuth2 email transporter created');
+    return transporter;
+  } catch (error) {
+    console.error('❌ Failed to create OAuth2 transporter:', error);
+    throw error;
+  }
 };
 
 // ==================== STORAGE ====================
@@ -346,7 +388,7 @@ async function sendOTPEmail(email, otpCode) {
     const transporter = createEmailTransporter();
     
     const mailOptions = {
-      from: '"B.Y PRO Accounts" <byprosprt2007@gmail.com>',
+      from: `"B.Y PRO Accounts" <${SENDER_EMAIL}>`,
       to: email,
       subject: 'B.Y PRO - Verification Code',
       html: `
@@ -426,7 +468,7 @@ app.get('/api/health', async (req, res) => {
       service: 'B.Y PRO Accounts System',
       timestamp: new Date().toISOString(),
       total_accounts: accounts.length,
-      version: '2.4.0',
+      version: '2.5.0',
       features: ['signup', 'login', 'otp_verification', 'qr_codes']
     });
   } catch (error) {
@@ -691,10 +733,12 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS SYSTEM');
+  console.log('🚀 B.Y PRO ACCOUNTS SYSTEM v2.5');
+  console.log('✅ CORS Issues: FIXED');
+  console.log('✅ Email OAuth2: CONFIGURED');
   console.log(`✅ Server running on port: ${PORT}`);
   console.log(`🔗 API: http://localhost:${PORT}/api`);
   console.log('💾 Storage: Google Drive');
-  console.log('📧 Email: Nodemailer (Gmail)');
+  console.log('📧 Email: OAuth2 Secure');
   console.log('🎉 =================================\n');
 });
