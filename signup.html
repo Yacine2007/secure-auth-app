@@ -794,6 +794,7 @@
         const progressSteps = document.querySelectorAll('.progress-step');
         const statusMessage = document.getElementById('statusMessage');
         const connectionDot = document.getElementById('connectionDot');
+        const qrCodeContainer = document.getElementById('qrCode'); // ✅ تم إضافة هذا السطر
         
         // عناصر النموذج
         const fullName = document.getElementById('fullName');
@@ -1120,7 +1121,7 @@
                 
                 if (result.success) {
                     // عرض صفحة النجاح
-                    successName.textContent = userData.name;
+                    document.getElementById('successName').textContent = userData.name;
                     document.getElementById('displayId').textContent = userData.accountId;
                     document.getElementById('displayName').textContent = userData.name;
                     document.getElementById('displayEmail').textContent = userData.email;
