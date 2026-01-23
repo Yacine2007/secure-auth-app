@@ -221,21 +221,6 @@
             box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
         }
 
-        .verification-code {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 15px;
-        }
-
-        .verification-code input {
-            flex: 1;
-            text-align: center;
-            font-size: 1.3rem;
-            letter-spacing: 10px;
-            font-weight: bold;
-            padding: 15px;
-        }
-
         .btn {
             width: 100%;
             background: var(--primary-color);
@@ -272,29 +257,6 @@
         .btn-secondary:hover {
             background: rgba(255, 255, 255, 0.1);
             color: white;
-        }
-
-        .resend-btn {
-            background: transparent;
-            color: var(--primary-color);
-            border: 1px solid var(--primary-color);
-            padding: 10px 15px;
-            border-radius: var(--radius);
-            cursor: pointer;
-            font-size: 0.9rem;
-            transition: all 0.3s ease;
-            width: 100%;
-            margin-top: 10px;
-        }
-
-        .resend-btn:hover {
-            background: var(--primary-color);
-            color: white;
-        }
-
-        .resend-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
         }
 
         .status-message {
@@ -519,16 +481,6 @@
                 font-size: 0.85rem;
             }
             
-            .verification-code {
-                flex-direction: column;
-            }
-            
-            .verification-code input {
-                font-size: 1.2rem;
-                letter-spacing: 8px;
-                padding: 12px;
-            }
-            
             .qr-container {
                 padding: 15px;
             }
@@ -566,11 +518,6 @@
             .button-group {
                 flex-direction: column;
             }
-            
-            .verification-code input {
-                font-size: 1.1rem;
-                letter-spacing: 6px;
-            }
         }
     </style>
 </head>
@@ -594,7 +541,6 @@
                 <div class="progress-step" id="step2">2</div>
                 <div class="progress-step" id="step3">3</div>
                 <div class="progress-step" id="step4">4</div>
-                <div class="progress-step" id="step5">5</div>
             </div>
 
             <!-- رسالة الحالة -->
@@ -617,18 +563,21 @@
 
                         <!-- الشروط - مخفية -->
                         <div class="terms-section" id="termsSection">
-                            <h4>Terms & Conditions</h4>
-                            <p>1. You are responsible for maintaining the security of your account.</p>
-                            <p>2. Ensure your account information is accurate and up-to-date.</p>
-                            <p>3. We collect only essential data required for service delivery.</p>
-                            <p>4. Your data helps us enhance user experience.</p>
-                            <p>5. Customer Support: byprosprt2007@gmail.com</p>
+                            <h4>B.Y PRO Terms & Conditions</h4>
+                            <p>1. By creating an account, you agree to use B.Y PRO services responsibly and ethically.</p>
+                            <p>2. Your account is personal and non-transferable. Sharing credentials is prohibited.</p>
+                            <p>3. We collect minimal data required for service operation and user authentication.</p>
+                            <p>4. Account security is your responsibility. Use strong passwords and keep your credentials safe.</p>
+                            <p>5. B.Y PRO reserves the right to suspend accounts violating our policies.</p>
+                            <p>6. Services are provided "as is" without warranties of any kind.</p>
+                            <p>7. For support, contact: byprosprt2007@gmail.com</p>
+                            <p>8. QR codes contain encrypted account information - keep them secure.</p>
                         </div>
 
                         <div class="terms-checkbox">
                             <input type="checkbox" id="acceptTerms">
                             <label for="acceptTerms">
-                                I understand and agree to the Terms of Service and Privacy Policy.
+                                I have read, understood, and agree to the Terms & Conditions above.
                             </label>
                         </div>
                     </div>
@@ -650,7 +599,7 @@
                         <label for="email"><i class="fas fa-envelope"></i> Email Address</label>
                         <input type="email" id="email" placeholder="Enter your email address" autocomplete="email">
                         <div class="info-box">
-                            <p><i class="fas fa-info-circle"></i> We'll send a verification code to your email.</p>
+                            <p><i class="fas fa-info-circle"></i> This email will be used for account recovery and notifications.</p>
                         </div>
                     </div>
 
@@ -659,48 +608,14 @@
                             <i class="fas fa-arrow-left"></i> Back
                         </button>
                         <button class="btn" id="next2">
-                            Send Code <i class="fas fa-arrow-right"></i>
+                            Continue <i class="fas fa-arrow-right"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- الخطوة 3: التحقق من OTP -->
+            <!-- الخطوة 3: كلمة المرور -->
             <div class="step" id="step3-content">
-                <div class="step-content">
-                    <div class="form-group">
-                        <label><i class="fas fa-envelope"></i> Verification Code</label>
-                        <div class="info-box">
-                            <p id="emailDisplay"></p>
-                            <p style="margin-top: 10px;">Enter the 6-digit code sent to your email:</p>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <div class="verification-code">
-                            <input type="text" id="otpCode" placeholder="000000" maxlength="6" inputmode="numeric">
-                        </div>
-                    </div>
-
-                    <div class="form-group">
-                        <button class="resend-btn" id="resendOtpBtn" disabled>
-                            Resend code in <span id="countdown">60</span>s
-                        </button>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn btn-secondary" id="prev3">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                        <button class="btn" id="next3">
-                            Verify <i class="fas fa-arrow-right"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- الخطوة 4: كلمة المرور -->
-            <div class="step" id="step4-content">
                 <div class="step-content">
                     <div class="form-group">
                         <label for="password"><i class="fas fa-lock"></i> Password</label>
@@ -712,20 +627,23 @@
                     <div class="form-group">
                         <label for="confirmPassword"><i class="fas fa-lock"></i> Confirm Password</label>
                         <input type="password" id="confirmPassword" placeholder="Confirm your password" autocomplete="new-password">
+                        <div class="info-box">
+                            <p><i class="fas fa-shield-alt"></i> Your password will be securely encrypted. A QR code containing your credentials will be generated.</p>
+                        </div>
                     </div>
                     <div class="button-group">
-                        <button class="btn btn-secondary" id="prev4">
+                        <button class="btn btn-secondary" id="prev3">
                             <i class="fas fa-arrow-left"></i> Back
                         </button>
-                        <button class="btn" id="next4">
+                        <button class="btn" id="next3">
                             Create Account <i class="fas fa-user-plus"></i>
                         </button>
                     </div>
                 </div>
             </div>
 
-            <!-- الخطوة 5: النجاح -->
-            <div class="step" id="step5-content">
+            <!-- الخطوة 4: النجاح -->
+            <div class="step" id="step4-content">
                 <div class="step-content">
                     <div class="success-section">
                         <div class="status-success" style="display: block; padding: 15px; margin-bottom: 20px;">
@@ -734,7 +652,7 @@
                         
                         <h3 style="margin: 20px 0 15px 0; font-size: 1.4rem;">Welcome, <span id="successName"></span>!</h3>
                         <p style="color: var(--text-muted); margin-bottom: 25px; font-size: 0.95rem;">
-                            Your professional account has been created.
+                            Your professional B.Y PRO account has been created successfully.
                         </p>
 
                         <div class="qr-container">
@@ -743,10 +661,10 @@
 
                         <div style="margin: 25px 0;">
                             <button class="btn" id="downloadQR" style="width: auto; padding: 12px 30px; margin-bottom: 15px;">
-                                <i class="fas fa-download"></i> Download QR
+                                <i class="fas fa-download"></i> Download QR Code
                             </button>
                             <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 10px;">
-                                QR Format: BYPRO:ID:Password
+                                QR Code Format: BYPRO://USER_ID/ENCRYPTED_DATA
                             </p>
                         </div>
 
@@ -765,8 +683,12 @@
                                     <strong>Email:</strong> 
                                     <span id="displayEmail" style="color: var(--primary-color); margin-left: 10px;"></span>
                                 </p>
+                                <p style="margin-bottom: 8px; font-size: 0.9rem;">
+                                    <strong>Creation Date:</strong> 
+                                    <span id="displayDate" style="color: var(--warning-color); margin-left: 10px;"></span>
+                                </p>
                                 <p style="margin-top: 15px; color: var(--text-muted); font-size: 0.85rem;">
-                                    <i class="fas fa-shield-alt"></i> Keep your credentials secure
+                                    <i class="fas fa-shield-alt"></i> Important: Save your QR code securely. It contains your login credentials.
                                 </p>
                             </div>
                         </div>
@@ -775,6 +697,9 @@
                             <a href="login.html" class="btn btn-secondary" style="width: auto; padding: 12px 30px;">
                                 <i class="fas fa-sign-in-alt"></i> Go to Login
                             </a>
+                            <p style="color: var(--text-muted); font-size: 0.85rem; margin-top: 15px;">
+                                Use your Account ID and Password to log in
+                            </p>
                         </div>
                     </div>
                 </div>
@@ -794,15 +719,13 @@
         const progressSteps = document.querySelectorAll('.progress-step');
         const statusMessage = document.getElementById('statusMessage');
         const connectionDot = document.getElementById('connectionDot');
-        const qrCodeContainer = document.getElementById('qrCode'); // ✅ تم إضافة هذا السطر
+        const qrCodeContainer = document.getElementById('qrCode');
         
         // عناصر النموذج
         const fullName = document.getElementById('fullName');
         const email = document.getElementById('email');
-        const otpCode = document.getElementById('otpCode');
         const password = document.getElementById('password');
         const confirmPassword = document.getElementById('confirmPassword');
-        const emailDisplay = document.getElementById('emailDisplay');
         const acceptTermsCheckbox = document.getElementById('acceptTerms');
         const toggleTermsBtn = document.getElementById('toggleTermsBtn');
         const termsSection = document.getElementById('termsSection');
@@ -813,22 +736,16 @@
         const next2 = document.getElementById('next2');
         const prev3 = document.getElementById('prev3');
         const next3 = document.getElementById('next3');
-        const prev4 = document.getElementById('prev4');
-        const next4 = document.getElementById('next4');
-        const resendOtpBtn = document.getElementById('resendOtpBtn');
         const downloadQR = document.getElementById('downloadQR');
 
         // متغيرات
         let currentStep = 1;
-        let countdownInterval;
-        let countdownTime = 60;
-        let otpVerified = false;
-        let generatedOTP = '';
         let userData = {
             name: '',
             email: '',
             password: '',
-            accountId: ''
+            accountId: '',
+            creationDate: ''
         };
 
         // ========== عرض رسالة الحالة ==========
@@ -869,173 +786,6 @@
             currentStep = step;
         }
 
-        // ========== بدء العد التنازلي لإعادة الإرسال ==========
-        function startCountdown() {
-            countdownTime = 60;
-            resendOtpBtn.disabled = true;
-            
-            clearInterval(countdownInterval);
-            countdownInterval = setInterval(() => {
-                countdownTime--;
-                document.getElementById('countdown').textContent = countdownTime;
-                
-                if (countdownTime <= 0) {
-                    clearInterval(countdownInterval);
-                    resendOtpBtn.disabled = false;
-                    resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
-                } else {
-                    resendOtpBtn.innerHTML = `Resend in <span id="countdown">${countdownTime}</span>s`;
-                }
-            }, 1000);
-        }
-
-        // ========== إرسال OTP (باستخدام Nodemailer) ==========
-        async function sendOTPToServer(emailValue) {
-            try {
-                showStatus('Sending verification code...', 'success');
-                
-                const response = await fetch(`${API_BASE}/api/send-otp`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        email: emailValue,
-                        type: 'signup'
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('Verification code sent! Check your email.', 'success');
-                    return { success: true };
-                } else {
-                    showStatus(result.error || 'Failed to send verification code', 'error');
-                    return { success: false };
-                }
-            } catch (error) {
-                console.error('Error sending OTP:', error);
-                showStatus('Unable to send verification code', 'error');
-                return { success: false };
-            }
-        }
-
-        // ========== التحقق من OTP ==========
-        async function verifyOTPOnServer(emailValue, otpValue) {
-            try {
-                showStatus('Verifying code...', 'success');
-                
-                const response = await fetch(`${API_BASE}/api/verify-otp`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        email: emailValue,
-                        otp: otpValue
-                    })
-                });
-
-                const result = await response.json();
-                
-                if (result.success) {
-                    showStatus('Email verified successfully!', 'success');
-                    return { success: true };
-                } else {
-                    showStatus(result.error || 'Invalid verification code', 'error');
-                    return { success: false };
-                }
-            } catch (error) {
-                console.error('Error verifying OTP:', error);
-                showStatus('Verification service unavailable', 'error');
-                return { success: false };
-            }
-        }
-
-        // ========== إرسال رمز التحقق ==========
-        async function sendVerificationCode() {
-            const name = fullName.value.trim();
-            const emailValue = email.value.trim();
-            
-            // التحقق من المدخلات
-            if (!name) {
-                showStatus('Please enter your full name', 'error');
-                fullName.focus();
-                return;
-            }
-            
-            if (!emailValue) {
-                showStatus('Please enter your email address', 'error');
-                email.focus();
-                return;
-            }
-            
-            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-            if (!emailRegex.test(emailValue)) {
-                showStatus('Please enter a valid email address', 'error');
-                email.focus();
-                return;
-            }
-            
-            // تخزين بيانات المستخدم
-            userData.name = name;
-            userData.email = emailValue;
-            
-            // عرض حالة التحميل
-            next2.innerHTML = '<div class="loading-spinner"></div>';
-            next2.disabled = true;
-            
-            try {
-                // إرسال OTP
-                const result = await sendOTPToServer(emailValue);
-                
-                if (result.success) {
-                    // الانتقال إلى الخطوة التالية
-                    emailDisplay.textContent = emailValue;
-                    goToStep(3);
-                    startCountdown();
-                }
-                
-            } catch (error) {
-                showStatus('Error sending verification code', 'error');
-            } finally {
-                next2.innerHTML = 'Send Code <i class="fas fa-arrow-right"></i>';
-                next2.disabled = false;
-            }
-        }
-
-        // ========== التحقق من رمز OTP ==========
-        async function verifyOTP() {
-            const enteredCode = otpCode.value.trim();
-            
-            if (!enteredCode || enteredCode.length !== 6) {
-                showStatus('Please enter 6-digit code', 'error');
-                otpCode.focus();
-                return;
-            }
-            
-            // عرض حالة التحميل
-            next3.innerHTML = '<div class="loading-spinner"></div>';
-            next3.disabled = true;
-            
-            try {
-                // التحقق من OTP
-                const result = await verifyOTPOnServer(userData.email, enteredCode);
-                
-                if (result.success) {
-                    otpVerified = true;
-                    goToStep(4);
-                }
-                
-            } catch (error) {
-                showStatus('Error verifying code', 'error');
-            } finally {
-                next3.innerHTML = 'Verify <i class="fas fa-arrow-right"></i>';
-                next3.disabled = false;
-            }
-        }
-
         // ========== التحقق من قوة كلمة المرور ==========
         function checkPasswordStrength(password) {
             let strength = 0;
@@ -1064,8 +814,39 @@
             }
         }
 
+        // ========== التحقق من صحة البيانات ==========
+        function validateStep2() {
+            const name = fullName.value.trim();
+            const emailValue = email.value.trim();
+            
+            if (!name) {
+                showStatus('Please enter your full name', 'error');
+                fullName.focus();
+                return false;
+            }
+            
+            if (!emailValue) {
+                showStatus('Please enter your email address', 'error');
+                email.focus();
+                return false;
+            }
+            
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(emailValue)) {
+                showStatus('Please enter a valid email address', 'error');
+                email.focus();
+                return false;
+            }
+            
+            // تخزين بيانات المستخدم
+            userData.name = name;
+            userData.email = emailValue;
+            
+            return true;
+        }
+
         // ========== التحقق من تطابق كلمات المرور ==========
-        function validatePasswords() {
+        function validateStep3() {
             const pass = password.value;
             const confirmPass = confirmPassword.value;
             
@@ -1079,22 +860,22 @@
                 return false;
             }
             
+            // تخزين كلمة المرور
+            userData.password = pass;
+            
             return true;
         }
 
         // ========== إنشاء حساب ==========
         async function createAccount() {
-            // التحقق من كلمات المرور
-            if (!validatePasswords()) {
+            // التحقق من البيانات
+            if (!validateStep2() || !validateStep3()) {
                 return;
             }
             
-            // تخزين كلمة المرور
-            userData.password = password.value;
-            
             // عرض حالة التحميل
-            next4.innerHTML = '<div class="loading-spinner"></div>';
-            next4.disabled = true;
+            next3.innerHTML = '<div class="loading-spinner"></div>';
+            next3.disabled = true;
             
             try {
                 // الحصول على معرف الحساب التالي من الخادم
@@ -1102,6 +883,13 @@
                 const idResult = await idResponse.json();
                 
                 userData.accountId = idResult.success ? idResult.nextId : (1000 + Math.floor(Math.random() * 9000)).toString();
+                userData.creationDate = new Date().toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                });
                 
                 // إنشاء الحساب على الخادم
                 const response = await fetch(`${API_BASE}/api/create-account`, {
@@ -1125,13 +913,14 @@
                     document.getElementById('displayId').textContent = userData.accountId;
                     document.getElementById('displayName').textContent = userData.name;
                     document.getElementById('displayEmail').textContent = userData.email;
+                    document.getElementById('displayDate').textContent = userData.creationDate;
                     
-                    // إنشاء رمز QR
-                    const qrData = `BYPRO:${userData.accountId}:${userData.password}`;
+                    // إنشاء رمز QR مع بيانات مشفرة
+                    const qrData = `BYPRO://${userData.accountId}/${btoa(userData.name + ':' + userData.email)}`;
                     generateQRCode(qrData);
                     
                     // الانتقال إلى خطوة النجاح
-                    goToStep(5);
+                    goToStep(4);
                     showStatus('Account created successfully!', 'success');
                     
                 } else {
@@ -1140,10 +929,10 @@
                 
             } catch (error) {
                 console.error('Error creating account:', error);
-                showStatus('Unable to create account', 'error');
+                showStatus('Unable to create account. Please try again.', 'error');
             } finally {
-                next4.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
-                next4.disabled = false;
+                next3.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                next3.disabled = false;
             }
         }
 
@@ -1169,7 +958,7 @@
                 qrCodeContainer.innerHTML = `
                     <div style="width:200px;height:200px;background:#f0f0f0;display:flex;flex-direction:column;justify-content:center;align-items:center;border:2px solid #1a237e;border-radius:10px;">
                         <div style="font-size:16px;font-weight:bold;color:#1a237e;text-align:center;">
-                            BYPRO Account<br>
+                            B.Y PRO Account<br>
                             ID: ${userData.accountId}
                         </div>
                         <div style="margin-top:10px;font-size:12px;color:#666;">
@@ -1186,13 +975,13 @@
                 const canvas = qrCodeContainer.querySelector('canvas');
                 if (canvas) {
                     const link = document.createElement('a');
-                    link.download = `BYPRO-${userData.accountId}.png`;
+                    link.download = `BYPRO-${userData.accountId}-QR.png`;
                     link.href = canvas.toDataURL('image/png');
                     link.click();
                     showStatus('QR Code downloaded successfully', 'success');
                 } else {
                     // إنشاء ملف نصي بديل
-                    const accountInfo = `BYPRO Account Information\n\nAccount ID: ${userData.accountId}\nFull Name: ${userData.name}\nEmail: ${userData.email}\nQR Data: BYPRO:${userData.accountId}:${userData.password}\n\nCreated: ${new Date().toLocaleString()}\n\nKeep this information secure!`;
+                    const accountInfo = `B.Y PRO Account Information\n\nAccount ID: ${userData.accountId}\nFull Name: ${userData.name}\nEmail: ${userData.email}\nCreation Date: ${userData.creationDate}\nQR Data: ${`BYPRO://${userData.accountId}/${btoa(userData.name + ':' + userData.email)}`}\n\nKeep this information secure!`;
                     
                     const blob = new Blob([accountInfo], { type: 'text/plain' });
                     const url = URL.createObjectURL(blob);
@@ -1202,11 +991,11 @@
                     link.click();
                     URL.revokeObjectURL(url);
                     
-                    showStatus('Account info downloaded', 'success');
+                    showStatus('Account information downloaded as text file', 'success');
                 }
             } catch (error) {
                 console.error('Error downloading:', error);
-                showStatus('Download failed', 'error');
+                showStatus('Download failed. Please try again.', 'error');
             }
         }
 
@@ -1231,36 +1020,17 @@
         });
         
         prev2.addEventListener('click', () => goToStep(1));
-        next2.addEventListener('click', sendVerificationCode);
+        next2.addEventListener('click', () => {
+            if (validateStep2()) {
+                goToStep(3);
+                setTimeout(() => password.focus(), 300);
+            }
+        });
         
         prev3.addEventListener('click', () => goToStep(2));
-        next3.addEventListener('click', verifyOTP);
-        
-        prev4.addEventListener('click', () => goToStep(3));
-        next4.addEventListener('click', createAccount);
-        
-        // إعادة إرسال OTP
-        resendOtpBtn.addEventListener('click', async () => {
-            resendOtpBtn.innerHTML = '<div class="loading-spinner"></div>';
-            resendOtpBtn.disabled = true;
-            
-            try {
-                await sendOTPToServer(userData.email);
-                startCountdown();
-            } catch (error) {
-                resendOtpBtn.disabled = false;
-                resendOtpBtn.innerHTML = '<i class="fas fa-redo"></i> Resend Code';
-            }
-        });
+        next3.addEventListener('click', createAccount);
         
         downloadQR.addEventListener('click', downloadQRCode);
-        
-        // التحقق التلقائي عند إدخال 6 أرقام
-        otpCode.addEventListener('input', function() {
-            if (this.value.length === 6) {
-                verifyOTP();
-            }
-        });
         
         // قوة كلمة المرور
         password.addEventListener('input', function() {
@@ -1270,6 +1040,7 @@
         // ========== التهيئة ==========
         document.addEventListener('DOMContentLoaded', function() {
             console.log('🚀 B.Y PRO Signup Initialized');
+            updateConnectionStatus(true);
             
             // التركيز على أول حقل
             setTimeout(() => {
