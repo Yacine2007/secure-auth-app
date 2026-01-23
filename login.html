@@ -474,6 +474,49 @@
             font-size: 0.8rem;
         }
 
+        /* تذكرني */
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 10px 0;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .remember-me label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* معلومات الجهاز */
+        .device-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .device-info h4 {
+            color: var(--text-color);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .device-info div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
         /* تحسينات للشاشات الصغيرة */
         @media (max-width: 480px) {
             body {
@@ -587,6 +630,12 @@
                     <i class="fas fa-check-circle"></i>
                     <span>Successfully logged in</span>
                 </div>
+                
+                <!-- معلومات الجهاز -->
+                <div class="device-info" id="deviceInfo">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+                
                 <button class="logout-btn" onclick="logout()">
                     <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
@@ -614,6 +663,12 @@
                         <p>Click to upload QR Code Image</p>
                         <span>PNG, JPG up to 5MB</span>
                         <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
+                    </div>
+
+                    <!-- تذكرني للـ QR -->
+                    <div class="remember-me">
+                        <input type="checkbox" id="rememberQR">
+                        <label for="rememberQR">Remember me on this device</label>
                     </div>
 
                     <!-- تفاصيل خطأ QR -->
@@ -645,6 +700,12 @@
                         </div>
                     </div>
 
+                    <!-- تذكرني -->
+                    <div class="remember-me">
+                        <input type="checkbox" id="rememberMe">
+                        <label for="rememberMe">Remember me on this device</label>
+                    </div>
+
                     <!-- رسالة الحالة -->
                     <div id="statusMessage" class="status-message"></div>
 
@@ -673,6 +734,7 @@
         const APP_ID = 'bypro_login_system';
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
         const GITHUB_IMAGE_BASE = 'https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/';
+        const STORAGE_KEY = 'bypro_auth_data';
 
         // عناصر DOM
         const loginSection = document.getElementById('loginSection');
@@ -687,54 +749,167 @@
         const qrErrorDetails = document.getElementById('qrErrorDetails');
         const userIdInput = document.getElementById('userIdInput');
         const passwordInput = document.getElementById('passwordInput');
+        const rememberMe = document.getElementById('rememberMe');
+        const rememberQR = document.getElementById('rememberQR');
         const userNameSpan = document.getElementById('userName');
         const userAvatar = document.getElementById('userAvatar');
+        const deviceInfo = document.getElementById('deviceInfo');
         const connectionDot = document.getElementById('connectionDot');
 
         // متغيرات
         let currentMethod = 'qr';
         let currentUser = null;
+        let deviceData = null;
 
-        // ========== تخزين بسيط ==========
-        const safeStorage = {
-            setItem: (key, value) => {
+        // ========== نظام التخزين المحسن ==========
+        const AuthStorage = {
+            // الحصول على البيانات من التخزين المحلي
+            getData: () => {
                 try {
-                    localStorage.setItem(key, JSON.stringify(value));
-                    return true;
+                    const data = localStorage.getItem(STORAGE_KEY);
+                    return data ? JSON.parse(data) : null;
                 } catch (e) {
-                    return false;
-                }
-            },
-
-            getItem: (key) => {
-                try {
-                    const item = localStorage.getItem(key);
-                    return item ? JSON.parse(item) : null;
-                } catch (e) {
+                    console.error('Error reading from storage:', e);
                     return null;
                 }
             },
 
-            removeItem: (key) => {
+            // حفظ البيانات في التخزين المحلي
+            saveData: (userData, deviceInfo) => {
                 try {
-                    localStorage.removeItem(key);
+                    const data = {
+                        user: userData,
+                        device: deviceInfo,
+                        timestamp: Date.now(),
+                        expires: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 يوم
+                    };
+                    
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    return true;
                 } catch (e) {
-                    // تجاهل الخطأ
+                    console.error('Error saving to storage:', e);
+                    return false;
                 }
+            },
+
+            // حذف البيانات
+            clearData: () => {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return true;
+                } catch (e) {
+                    console.error('Error clearing storage:', e);
+                    return false;
+                }
+            },
+
+            // التحقق من صلاحية البيانات
+            isValid: (data) => {
+                if (!data || !data.user || !data.device) return false;
+                
+                // التحقق من تاريخ الانتهاء
+                if (data.expires && data.expires < Date.now()) {
+                    console.log('Session expired');
+                    return false;
+                }
+                
+                // التحقق من تطابق بيانات الجهاز
+                const currentDevice = getDeviceInfo();
+                if (!currentDevice) return false;
+                
+                // يمكنك إضافة المزيد من التحقق هنا (مثل IP، المتصفح، إلخ)
+                return true;
             }
         };
 
-        // ========== تحميل صورة المستخدم بشكل بسيط ==========
+        // ========== جمع معلومات الجهاز ==========
+        function getDeviceInfo() {
+            if (deviceData) return deviceData;
+            
+            const userAgent = navigator.userAgent;
+            const platform = navigator.platform;
+            const language = navigator.language;
+            const screenWidth = window.screen.width;
+            const screenHeight = window.screen.height;
+            const colorDepth = window.screen.colorDepth;
+            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            const cookiesEnabled = navigator.cookieEnabled;
+            
+            // إنشاء بصمة الجهاز (بسيطة)
+            const deviceFingerprint = btoa(
+                platform + 
+                language + 
+                screenWidth + 
+                screenHeight + 
+                colorDepth + 
+                timezone
+            ).substring(0, 32);
+            
+            deviceData = {
+                userAgent: userAgent,
+                platform: platform,
+                language: language,
+                screen: `${screenWidth}x${screenHeight}`,
+                colorDepth: colorDepth,
+                timezone: timezone,
+                cookiesEnabled: cookiesEnabled,
+                fingerprint: deviceFingerprint,
+                browser: getBrowserName(),
+                os: getOperatingSystem(),
+                loginDate: new Date().toISOString(),
+                ip: 'Detecting...' // سيتم تحديثه إذا أمكن
+            };
+            
+            return deviceData;
+        }
+
+        // ========== الحصول على اسم المتصفح ==========
+        function getBrowserName() {
+            const userAgent = navigator.userAgent;
+            
+            if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) return 'Chrome';
+            if (userAgent.includes('Firefox')) return 'Firefox';
+            if (userAgent.includes('Safari') && !userAgent.includes('Chrome')) return 'Safari';
+            if (userAgent.includes('Edg')) return 'Edge';
+            if (userAgent.includes('Opera') || userAgent.includes('OPR')) return 'Opera';
+            if (userAgent.includes('Trident')) return 'Internet Explorer';
+            
+            return 'Unknown Browser';
+        }
+
+        // ========== الحصول على نظام التشغيل ==========
+        function getOperatingSystem() {
+            const userAgent = navigator.userAgent;
+            
+            if (userAgent.includes('Windows')) return 'Windows';
+            if (userAgent.includes('Mac')) return 'macOS';
+            if (userAgent.includes('Linux')) return 'Linux';
+            if (userAgent.includes('Android')) return 'Android';
+            if (userAgent.includes('iOS') || userAgent.includes('iPhone') || userAgent.includes('iPad')) return 'iOS';
+            
+            return 'Unknown OS';
+        }
+
+        // ========== عرض معلومات الجهاز ==========
+        function displayDeviceInfo(deviceInfo) {
+            deviceInfo.innerHTML = `
+                <h4>Device Information</h4>
+                <div><span>Browser:</span> <span>${deviceInfo.browser}</span></div>
+                <div><span>OS:</span> <span>${deviceInfo.os}</span></div>
+                <div><span>Screen:</span> <span>${deviceInfo.screen}</span></div>
+                <div><span>Timezone:</span> <span>${deviceInfo.timezone}</span></div>
+                <div><span>Login Date:</span> <span>${new Date(deviceInfo.loginDate).toLocaleString()}</span></div>
+            `;
+        }
+
+        // ========== تحميل صورة المستخدم ==========
         function loadUserAvatar(userId) {
             const imageUrl = `${GITHUB_IMAGE_BASE}${userId}.png?t=${Date.now()}`;
             
-            // تنظيف الحاوية أولاً
             userAvatar.innerHTML = '';
             
-            // إنشاء عنصر الصورة
             const img = new Image();
             img.onload = () => {
-                console.log('✅ تم تحميل الصورة:', userId);
                 img.style.width = '100%';
                 img.style.height = '100%';
                 img.style.objectFit = 'cover';
@@ -743,7 +918,6 @@
             };
             
             img.onerror = () => {
-                console.log('⚠️ لم يتم العثور على الصورة، استخدام الصورة الافتراضية');
                 userAvatar.innerHTML = `
                     <div class="default-avatar">
                         <i class="fas fa-user"></i>
@@ -775,58 +949,98 @@
             }, 4000);
         }
 
-        // ========== التحقق من تسجيل الدخول الحالي ==========
-        function checkExistingLogin() {
+        // ========== محاولة التسجيل التلقائي ==========
+        async function attemptAutoLogin() {
             try {
-                const userData = safeStorage.getItem('bypro_user');
-                const userStatus = safeStorage.getItem('bypro_user_status');
+                const storedData = AuthStorage.getData();
                 
-                if (userData && userStatus && userStatus.isLoggedIn && userData.id) {
-                    currentUser = userData;
-                    showLoggedInState(userData);
-                    return true;
+                if (!storedData || !AuthStorage.isValid(storedData)) {
+                    console.log('No valid stored session found');
+                    return false;
                 }
+                
+                const { user, device } = storedData;
+                
+                if (!user || !user.id) {
+                    console.log('Invalid user data in storage');
+                    return false;
+                }
+                
+                // عرض رسالة التحميل
+                showStatus('Restoring your session...', 'success');
+                
+                // هنا يمكنك إضافة تحقق من الخادم إذا لزم الأمر
+                // في هذا المثال، سنفترض أن البيانات صالحة
+                
+                currentUser = user;
+                showLoggedInState(user, device);
+                
+                console.log('Auto-login successful');
+                return true;
+                
             } catch (error) {
-                console.error('Error checking login:', error);
+                console.error('Auto-login error:', error);
+                AuthStorage.clearData();
+                return false;
             }
-            
-            return false;
         }
 
         // ========== عرض حالة تسجيل الدخول ==========
-        function showLoggedInState(user) {
+        function showLoggedInState(user, deviceInfo = null) {
             loginSection.style.display = 'none';
             loggedInInfo.style.display = 'block';
             userNameSpan.textContent = user.name || `User ${user.id}`;
             
-            // تحميل صورة المستخدم
             loadUserAvatar(user.id);
             
-            // حفظ حالة المستخدم
-            safeStorage.setItem('bypro_user_status', {
-                user: user,
-                isLoggedIn: true,
-                timestamp: Date.now()
-            });
+            if (deviceInfo) {
+                displayDeviceInfo(deviceInfo);
+            } else {
+                const currentDevice = getDeviceInfo();
+                displayDeviceInfo(currentDevice);
+            }
             
-            showStatus(`Welcome ${user.name || user.id}!`, 'success');
+            showStatus(`Welcome back ${user.name || user.id}!`, 'success');
         }
 
         // ========== تسجيل الخروج ==========
         function logout() {
-            safeStorage.removeItem('bypro_user');
-            safeStorage.removeItem('bypro_user_status');
-            currentUser = null;
+            // حذف جميع بيانات التخزين
+            AuthStorage.clearData();
             
+            // حذف التخزينات الأخرى
+            localStorage.removeItem('bypro_user');
+            localStorage.removeItem('bypro_user_status');
+            
+            currentUser = null;
+            deviceData = null;
+            
+            // إعادة تعيين الواجهة
             loggedInInfo.style.display = 'none';
             loginSection.style.display = 'block';
             
             userIdInput.value = '';
             passwordInput.value = '';
             qrFileInput.value = '';
+            rememberMe.checked = false;
+            rememberQR.checked = false;
             qrErrorDetails.style.display = 'none';
             
             showStatus('Logged out successfully', 'success');
+        }
+
+        // ========== حفظ بيانات تسجيل الدخول ==========
+        function saveLoginData(userData) {
+            const deviceInfo = getDeviceInfo();
+            const saveSuccessful = AuthStorage.saveData(userData, deviceInfo);
+            
+            if (saveSuccessful) {
+                console.log('Login data saved successfully');
+            } else {
+                console.warn('Failed to save login data');
+            }
+            
+            return saveSuccessful;
         }
 
         // ========== التبديل بين طرق تسجيل الدخول ==========
@@ -870,7 +1084,6 @@
                 return;
             }
 
-            // عرض حالة التحميل
             qrUploadArea.innerHTML = `
                 <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
                 <p>Processing image...</p>
@@ -938,7 +1151,7 @@
                     
                     if (id && password) {
                         showStatus('QR code detected!', 'success');
-                        await verifyLogin(id, password);
+                        await verifyLogin(id, password, 'qr');
                     } else {
                         throw new Error('INVALID_QR_FORMAT');
                     }
@@ -992,13 +1205,13 @@
         }
 
         // ========== التحقق من بيانات تسجيل الدخول ==========
-        async function verifyLogin(id, password) {
+        async function verifyLogin(id, password, method = 'manual') {
             if (!id || !password) {
                 showStatus('ID and password are required.', 'error');
                 return;
             }
 
-            if (currentMethod === 'qr') {
+            if (method === 'qr') {
                 qrUploadArea.innerHTML = `
                     <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
                     <p>Verifying...</p>
@@ -1026,14 +1239,20 @@
                         id: result.account.id,
                         name: result.account.name,
                         email: result.account.email,
-                        loginTime: new Date().toISOString()
+                        loginTime: new Date().toISOString(),
+                        loginMethod: method
                     };
                     
-                    safeStorage.setItem('bypro_user', userData);
                     currentUser = userData;
                     
                     showStatus('Login successful!', 'success');
                     updateConnectionStatus(true);
+                    
+                    // حفظ بيانات تسجيل الدخول إذا اختار "تذكرني"
+                    if ((method === 'manual' && rememberMe.checked) || 
+                        (method === 'qr' && rememberQR.checked)) {
+                        saveLoginData(userData);
+                    }
                     
                     showLoggedInState(userData);
                     
@@ -1048,7 +1267,7 @@
                     showStatus('Login error.', 'error');
                 }
             } finally {
-                if (currentMethod !== 'qr') {
+                if (method !== 'qr') {
                     loginBtn.disabled = false;
                     loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
                 }
@@ -1072,7 +1291,7 @@
                 return;
             }
             
-            verifyLogin(id, password);
+            verifyLogin(id, password, 'manual');
         });
 
         // ========== السماح بمفتاح الإدخال ==========
@@ -1101,10 +1320,12 @@
         }
 
         // ========== التهيئة ==========
-        document.addEventListener('DOMContentLoaded', () => {
-            const isLoggedIn = checkExistingLogin();
+        document.addEventListener('DOMContentLoaded', async () => {
+            // محاولة التسجيل التلقائي أولاً
+            const autoLoginSuccess = await attemptAutoLogin();
             
-            if (!isLoggedIn) {
+            if (!autoLoginSuccess) {
+                // اختبار اتصال الخادم
                 testServerConnection();
                 
                 if (currentMethod === 'manual') {
@@ -1113,9 +1334,51 @@
             }
         });
 
+        // ========== مكتبة قابلة للاستيراد في مشاريع أخرى ==========
+        window.BYProAuth = {
+            // التحقق من حالة تسجيل الدخول
+            isAuthenticated: () => {
+                const data = AuthStorage.getData();
+                return data && AuthStorage.isValid(data);
+            },
+            
+            // الحصول على بيانات المستخدم
+            getUser: () => {
+                const data = AuthStorage.getData();
+                return data ? data.user : null;
+            },
+            
+            // الحصول على معلومات الجهاز
+            getDeviceInfo: () => {
+                const data = AuthStorage.getData();
+                return data ? data.device : null;
+            },
+            
+            // تسجيل الخروج
+            logout: () => {
+                logout();
+            },
+            
+            // محاولة التسجيل التلقائي
+            autoLogin: async () => {
+                return await attemptAutoLogin();
+            },
+            
+            // حفظ بيانات تسجيل الدخول يدوياً
+            saveAuthData: (userData) => {
+                return saveLoginData(userData);
+            },
+            
+            // حذف بيانات المصادقة
+            clearAuthData: () => {
+                return AuthStorage.clearData();
+            }
+        };
+
         // وظائف عامة
         window.logout = logout;
         window.getCurrentUser = () => currentUser;
+        window.getDeviceData = () => deviceData;
     </script>
 </body>
 </html>
