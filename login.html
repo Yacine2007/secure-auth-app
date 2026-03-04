@@ -3,1585 +3,1285 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B.Y PRO Accounts - Enterprise Authentication</title>
-    <link rel="icon" type="image/png" href="https://bypro.kesug.com/B.Y%20PRO.png">
+    <title>B.Y PRO Accounts - Login</title>
+    <link rel="icon" type="image/png" href="https://by-pro.kesug.com/B.Y%20PRO.png">
+    <link rel="shortcut icon" href="https://by-pro.kesug.com/B.Y%20PRO.png">
+    <link rel="apple-touch-icon" href="https://by-pro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        /* ===== ENTERPRISE GRADE STYLES ===== */
+        :root {
+            --primary-color: #3498db;
+            --primary-dark: #2980b9;
+            --bg-color: #000000;
+            --card-bg: #111111;
+            --text-color: #ffffff;
+            --text-muted: #bdc3c7;
+            --border-color: #2c3e50;
+            --danger-color: #e74c3c;
+            --warning-color: #f39c12;
+            --success-color: #2ecc71;
+            --radius: 12px;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+        }
+
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-        }
-
-        :root {
-            --primary: #3b82f6;
-            --primary-dark: #2563eb;
-            --primary-light: #60a5fa;
-            --secondary: #8b5cf6;
-            --success: #10b981;
-            --warning: #f59e0b;
-            --danger: #ef4444;
-            --dark: #0f172a;
-            --dark-light: #1e293b;
-            --light: #f8fafc;
-            --gray: #94a3b8;
-            --gradient: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
         }
 
         body {
-            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+            background: linear-gradient(135deg, #0f0c29 0%, #302b63 50%, #24243e 100%);
+            color: var(--text-color);
             min-height: 100vh;
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 1rem;
+            padding: 20px;
+            line-height: 1.5;
+            overflow-x: hidden;
         }
 
-        .auth-container {
+        /* الحاوية الرئيسية */
+        .page-container {
             width: 100%;
-            max-width: 480px;
-            background: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(20px);
+            max-width: 450px;
+            min-width: 320px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            margin: 0 auto;
+        }
+
+        .login-container {
+            background: rgba(17, 17, 17, 0.95);
+            padding: 30px 25px;
+            border-radius: var(--radius);
+            width: 100%;
             border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 32px;
-            padding: 2rem;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            box-shadow: var(--shadow);
+            backdrop-filter: blur(15px);
             position: relative;
             overflow: hidden;
         }
 
-        .auth-container::before {
-            content: '';
-            position: absolute;
-            top: -50%;
-            left: -50%;
-            width: 200%;
-            height: 200%;
-            background: radial-gradient(circle, rgba(59, 130, 246, 0.1) 0%, transparent 70%);
-            animation: rotate 20s linear infinite;
-        }
-
-        @keyframes rotate {
-            from { transform: rotate(0deg); }
-            to { transform: rotate(360deg); }
-        }
-
         .logo {
             text-align: center;
-            margin-bottom: 2rem;
-            position: relative;
-            z-index: 1;
+            margin-bottom: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
         }
 
-        .logo img {
-            width: 64px;
-            height: 64px;
-            border-radius: 18px;
-            margin-bottom: 1rem;
-            box-shadow: 0 10px 30px -10px var(--primary);
+        .logo-header {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+
+        .logo-img {
+            width: 32px;
+            height: 32px;
+            object-fit: contain;
         }
 
         .logo h1 {
-            color: white;
-            font-size: 1.8rem;
+            color: var(--primary-color);
+            font-size: 1.7rem;
+            margin: 0;
             font-weight: 700;
-            letter-spacing: -0.5px;
-            margin-bottom: 0.5rem;
+            letter-spacing: 0.5px;
         }
 
         .logo p {
-            color: var(--gray);
+            color: var(--text-muted);
             font-size: 0.9rem;
+            font-weight: 300;
         }
 
-        /* ===== Connection Status ===== */
-        .connection-status {
+        /* نقطة اتصال صغيرة */
+        .connection-dot {
             position: fixed;
-            top: 1rem;
-            right: 1rem;
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            background: rgba(0, 0, 0, 0.5);
-            backdrop-filter: blur(10px);
-            padding: 0.5rem 1rem;
-            border-radius: 100px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            z-index: 1000;
-        }
-
-        .status-dot {
-            width: 10px;
-            height: 10px;
+            top: 15px;
+            right: 15px;
+            width: 12px;
+            height: 12px;
             border-radius: 50%;
-            background: var(--gray);
-            transition: all 0.3s ease;
+            z-index: 1000;
+            display: none;
         }
 
-        .status-dot.online {
-            background: var(--success);
-            box-shadow: 0 0 20px var(--success);
-            animation: pulse 2s infinite;
+        .connection-online {
+            background-color: var(--success-color);
+            display: block;
+            box-shadow: 0 0 10px var(--success-color);
         }
 
-        .status-dot.offline {
-            background: var(--danger);
-            box-shadow: 0 0 20px var(--danger);
+        .connection-offline {
+            background-color: var(--danger-color);
+            display: block;
+            box-shadow: 0 0 10px var(--danger-color);
         }
 
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-
-        .status-text {
-            color: white;
-            font-size: 0.8rem;
-            font-weight: 500;
-        }
-
-        /* ===== Method Switcher ===== */
-        .method-switcher {
+        .login-methods {
             display: flex;
-            gap: 0.5rem;
+            gap: 8px;
+            margin-bottom: 25px;
             background: rgba(0, 0, 0, 0.3);
-            padding: 0.5rem;
-            border-radius: 100px;
-            margin-bottom: 2rem;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-            position: relative;
-            z-index: 1;
+            padding: 4px;
+            border-radius: 50px;
         }
 
         .method-btn {
             flex: 1;
-            padding: 0.75rem;
+            padding: 12px 16px;
             background: transparent;
+            color: var(--text-muted);
             border: none;
-            color: var(--gray);
-            font-weight: 600;
-            font-size: 0.9rem;
-            border-radius: 100px;
+            border-radius: 50px;
             cursor: pointer;
             transition: all 0.3s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.5rem;
-        }
-
-        .method-btn i {
-            font-size: 1rem;
+            gap: 8px;
+            font-size: 0.9rem;
+            font-weight: 500;
         }
 
         .method-btn.active {
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            background: var(--primary-color);
             color: white;
-            box-shadow: 0 10px 20px -10px var(--primary);
         }
 
-        /* ===== Forms ===== */
-        .auth-form {
+        .method-btn:hover:not(.active) {
+            color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.1);
+        }
+
+        .login-form {
             display: none;
-            position: relative;
-            z-index: 1;
-        }
-
-        .auth-form.active {
-            display: block;
-            animation: fadeIn 0.5s ease;
+            animation: fadeIn 0.4s ease;
         }
 
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
+            from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
+        .login-form.active {
+            display: block;
+        }
+
         .form-group {
-            margin-bottom: 1.5rem;
+            margin-bottom: 20px;
         }
 
         .form-group label {
             display: block;
-            color: white;
-            font-size: 0.9rem;
+            margin-bottom: 8px;
+            color: var(--text-muted);
+            font-size: 0.85rem;
             font-weight: 500;
-            margin-bottom: 0.5rem;
         }
 
-        .input-wrapper {
+        .input-with-icon {
             position: relative;
         }
 
-        .input-wrapper i {
+        .input-icon {
             position: absolute;
-            left: 1rem;
+            left: 16px;
             top: 50%;
             transform: translateY(-50%);
-            color: var(--gray);
+            color: var(--text-muted);
             font-size: 1rem;
-            transition: all 0.3s ease;
         }
 
-        .input-wrapper input {
+        .form-group input {
             width: 100%;
-            padding: 1rem 1rem 1rem 3rem;
-            background: rgba(0, 0, 0, 0.3);
-            border: 2px solid rgba(255, 255, 255, 0.05);
-            border-radius: 16px;
-            color: white;
-            font-size: 1rem;
+            padding: 14px 20px 14px 48px;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            background: rgba(0, 0, 0, 0.4);
+            color: var(--text-color);
+            font-size: 0.95rem;
             transition: all 0.3s ease;
         }
 
-        .input-wrapper input:focus {
+        .form-group input:focus {
             outline: none;
-            border-color: var(--primary);
-            background: rgba(0, 0, 0, 0.5);
-            box-shadow: 0 0 30px rgba(59, 130, 246, 0.3);
+            border-color: var(--primary-color);
+            background: rgba(0, 0, 0, 0.6);
         }
 
-        .input-wrapper input:focus + i {
-            color: var(--primary);
+        .login-btn {
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: var(--radius);
+            cursor: pointer;
+            font-size: 1rem;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 10px;
         }
 
-        /* ===== QR Upload ===== */
-        .qr-upload {
-            background: rgba(0, 0, 0, 0.2);
-            border: 2px dashed rgba(255, 255, 255, 0.1);
-            border-radius: 24px;
-            padding: 3rem 2rem;
+        .login-btn:hover {
+            background: var(--primary-dark);
+        }
+
+        .login-btn:disabled {
+            background: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        .qr-instruction {
+            color: var(--text-muted);
+            margin-bottom: 25px;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            text-align: center;
+        }
+
+        .qr-upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius);
+            padding: 35px 20px;
             text-align: center;
             cursor: pointer;
             transition: all 0.3s ease;
-            margin-bottom: 1.5rem;
+            background: rgba(0, 0, 0, 0.2);
+            margin-bottom: 20px;
         }
 
-        .qr-upload:hover {
-            border-color: var(--primary);
-            background: rgba(59, 130, 246, 0.05);
-            transform: translateY(-2px);
+        .qr-upload-area:hover {
+            border-color: var(--primary-color);
+            background: rgba(52, 152, 219, 0.05);
         }
 
-        .qr-upload i {
-            font-size: 3rem;
-            color: var(--primary);
-            margin-bottom: 1rem;
+        .qr-upload-area i {
+            font-size: 2.5rem;
+            color: var(--primary-color);
+            margin-bottom: 12px;
         }
 
-        .qr-upload p {
-            color: white;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
+        .qr-upload-area p {
+            color: var(--text-color);
+            font-size: 1rem;
+            font-weight: 500;
+            margin-bottom: 5px;
         }
 
-        .qr-upload span {
-            color: var(--gray);
-            font-size: 0.8rem;
+        .qr-upload-area span {
+            color: var(--text-muted);
+            font-size: 0.85rem;
         }
 
         .qr-file-input {
             display: none;
         }
 
-        /* ===== Remember Me ===== */
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 0.75rem;
-            margin: 1rem 0;
-        }
-
-        .remember-me input[type="checkbox"] {
-            width: 1.2rem;
-            height: 1.2rem;
-            cursor: pointer;
-            accent-color: var(--primary);
-        }
-
-        .remember-me label {
-            color: var(--gray);
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-
-        /* ===== Buttons ===== */
-        .auth-btn {
-            width: 100%;
-            padding: 1rem;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
-            border: none;
-            border-radius: 16px;
-            color: white;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 0.75rem;
-            margin-top: 1rem;
-        }
-
-        .auth-btn:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 20px 30px -10px var(--primary);
-        }
-
-        .auth-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-
-        /* ===== Status Message ===== */
         .status-message {
-            padding: 1rem;
-            border-radius: 12px;
-            margin: 1rem 0;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: var(--radius);
+            text-align: center;
             display: none;
             animation: slideIn 0.3s ease;
-        }
-
-        .status-message.success {
-            background: rgba(16, 185, 129, 0.1);
-            border: 1px solid var(--success);
-            color: var(--success);
-            display: block;
-        }
-
-        .status-message.error {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--danger);
-            color: var(--danger);
-            display: block;
-        }
-
-        .status-message.warning {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid var(--warning);
-            color: var(--warning);
-            display: block;
+            font-weight: 500;
+            font-size: 0.9rem;
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateX(-20px); }
+            from { opacity: 0; transform: translateX(-15px); }
             to { opacity: 1; transform: translateX(0); }
         }
 
-        /* ===== Logged In State ===== */
-        .logged-in-state {
-            display: none;
-            text-align: center;
-            position: relative;
-            z-index: 1;
+        .status-success {
+            background: rgba(46, 204, 113, 0.15);
+            color: var(--success-color);
         }
 
+        .status-error {
+            background: rgba(231, 76, 60, 0.15);
+            color: var(--danger-color);
+        }
+
+        .status-warning {
+            background: rgba(243, 156, 18, 0.15);
+            color: var(--warning-color);
+        }
+
+        .logged-in-info {
+            display: none;
+            text-align: center;
+            padding: 30px 20px;
+            animation: fadeIn 0.5s ease;
+            width: 100%;
+        }
+
+        /* صورة المستخدم - دائرة بسيطة */
         .user-avatar {
             width: 120px;
             height: 120px;
             border-radius: 50%;
-            margin: 0 auto 1.5rem;
-            border: 4px solid var(--primary);
+            margin: 0 auto 20px;
             overflow: hidden;
-            box-shadow: 0 20px 30px -10px var(--primary);
+            border: 3px solid var(--primary-color);
+            background-color: rgba(52, 152, 219, 0.1);
         }
 
         .user-avatar img {
             width: 100%;
             height: 100%;
             object-fit: cover;
+            display: block;
         }
 
+        /* أيقونة افتراضية */
         .default-avatar {
             width: 100%;
             height: 100%;
-            background: linear-gradient(135deg, var(--primary), var(--secondary));
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 3rem;
+            background: var(--primary-color);
             color: white;
+            font-size: 3rem;
+        }
+
+        .logged-in-info h3 {
+            color: var(--text-color);
+            margin-bottom: 15px;
+            font-size: 1.5rem;
+            font-weight: 600;
         }
 
         .welcome-message {
-            color: white;
-            font-size: 1.5rem;
-            font-weight: 700;
-            margin-bottom: 1rem;
-        }
-
-        .user-email {
-            color: var(--gray);
-            margin-bottom: 2rem;
-        }
-
-        .device-info {
-            background: rgba(0, 0, 0, 0.3);
-            border-radius: 20px;
-            padding: 1.5rem;
-            margin: 2rem 0;
-            text-align: left;
-        }
-
-        .device-info h3 {
-            color: white;
+            color: var(--success-color);
+            margin-bottom: 25px;
             font-size: 1rem;
-            margin-bottom: 1rem;
+            font-weight: 500;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-        }
-
-        .device-info h3 i {
-            color: var(--primary);
-        }
-
-        .info-row {
-            display: flex;
-            justify-content: space-between;
-            color: var(--gray);
-            font-size: 0.9rem;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .info-row:last-child {
-            border-bottom: none;
-        }
-
-        .info-row span:first-child {
-            color: white;
+            justify-content: center;
+            gap: 10px;
         }
 
         .logout-btn {
-            background: rgba(239, 68, 68, 0.1);
-            border: 2px solid var(--danger);
-            color: var(--danger);
-            padding: 1rem 2rem;
-            border-radius: 16px;
-            font-weight: 600;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 14px 35px;
+            border-radius: 50px;
             cursor: pointer;
+            font-size: 0.95rem;
+            font-weight: 600;
             transition: all 0.3s ease;
             display: inline-flex;
             align-items: center;
-            gap: 0.75rem;
+            gap: 8px;
+            margin-top: 20px;
         }
 
         .logout-btn:hover {
-            background: var(--danger);
-            color: white;
+            background: #c0392b;
         }
 
-        /* ===== Signup Section ===== */
-        .signup-section {
-            margin-top: 2rem;
-            text-align: center;
-            position: relative;
-            z-index: 1;
-        }
-
-        .signup-section p {
-            color: var(--gray);
-            margin-bottom: 1rem;
-        }
-
-        .signup-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 2rem;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 100px;
-            color: white;
-            text-decoration: none;
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .signup-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
-            transform: translateY(-2px);
-        }
-
-        /* ===== Loading Spinner ===== */
-        .spinner {
+        .loading-spinner {
+            display: inline-block;
             width: 20px;
             height: 20px;
             border: 3px solid rgba(255, 255, 255, 0.3);
             border-radius: 50%;
             border-top-color: white;
-            animation: spin 1s linear infinite;
+            animation: spin 1s ease-in-out infinite;
         }
 
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
 
-        /* ===== QR Error Details ===== */
+        .signup-section {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .signup-text {
+            color: var(--text-muted);
+            margin-bottom: 18px;
+            font-size: 0.85rem;
+        }
+
+        .signup-btn {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 13px 28px;
+            border-radius: 50px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            text-decoration: none;
+            font-size: 0.95rem;
+        }
+
+        .signup-btn:hover {
+            background: var(--primary-dark);
+        }
+
         .qr-error-details {
-            background: rgba(239, 68, 68, 0.1);
-            border: 1px solid var(--danger);
-            border-radius: 16px;
-            padding: 1.5rem;
-            margin-top: 1rem;
+            background: rgba(231, 76, 60, 0.1);
+            border: 1px solid rgba(231, 76, 60, 0.3);
+            border-radius: 10px;
+            padding: 15px;
+            margin-top: 15px;
+            text-align: left;
             display: none;
         }
 
         .qr-error-details h4 {
-            color: var(--danger);
-            margin-bottom: 1rem;
+            color: var(--danger-color);
+            margin-bottom: 10px;
             font-size: 0.9rem;
         }
 
         .qr-error-details ul {
             list-style: none;
+            padding-left: 0;
         }
 
         .qr-error-details li {
-            color: var(--gray);
+            color: var(--text-muted);
+            margin-bottom: 8px;
             font-size: 0.8rem;
-            margin-bottom: 0.5rem;
-            padding-left: 1.5rem;
-            position: relative;
         }
 
-        .qr-error-details li::before {
-            content: '•';
-            color: var(--danger);
-            position: absolute;
-            left: 0;
+        /* تذكرني */
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin: 20px 0;
+            padding: 10px 0;
         }
 
-        /* ===== Responsive ===== */
+        .remember-me input[type="checkbox"] {
+            width: 18px;
+            height: 18px;
+            cursor: pointer;
+        }
+
+        .remember-me label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            cursor: pointer;
+        }
+
+        /* معلومات الجهاز */
+        .device-info {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: var(--radius);
+            padding: 15px;
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .device-info h4 {
+            color: var(--text-color);
+            margin-bottom: 10px;
+            font-size: 0.9rem;
+        }
+
+        .device-info div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+        }
+
+        /* تحسينات للشاشات الصغيرة */
         @media (max-width: 480px) {
-            .auth-container {
-                padding: 1.5rem;
+            body {
+                padding: 15px;
             }
-
-            .method-btn {
-                font-size: 0.8rem;
-                padding: 0.6rem;
+            
+            .page-container {
+                max-width: 100%;
+                min-width: 280px;
             }
-
-            .method-btn i {
-                font-size: 0.9rem;
+            
+            .login-container {
+                padding: 20px 15px;
             }
-
+            
             .logo h1 {
-                font-size: 1.5rem;
+                font-size: 1.4rem;
             }
-
-            .qr-upload {
-                padding: 2rem 1rem;
+            
+            .logo-img {
+                width: 28px;
+                height: 28px;
             }
-
-            .qr-upload i {
+            
+            .login-methods {
+                flex-direction: column;
+                background: transparent;
+                padding: 0;
+                gap: 8px;
+            }
+            
+            .method-btn {
+                border-radius: var(--radius);
+                background: rgba(0, 0, 0, 0.3);
+            }
+            
+            .user-avatar {
+                width: 100px;
+                height: 100px;
+            }
+            
+            .default-avatar {
                 font-size: 2.5rem;
+            }
+            
+            .logged-in-info h3 {
+                font-size: 1.3rem;
+            }
+            
+            .connection-dot {
+                top: 10px;
+                right: 10px;
+            }
+            
+            .qr-upload-area {
+                padding: 25px 15px;
+            }
+        }
+
+        @media (max-width: 360px) {
+            .login-container {
+                padding: 15px 12px;
+            }
+            
+            .logo h1 {
+                font-size: 1.2rem;
+            }
+            
+            .logo-img {
+                width: 24px;
+                height: 24px;
+            }
+            
+            .method-btn {
+                padding: 10px;
+                font-size: 0.85rem;
+            }
+            
+            .user-avatar {
+                width: 90px;
+                height: 90px;
+            }
+            
+            .default-avatar {
+                font-size: 2rem;
             }
         }
     </style>
 </head>
 <body>
-    <!-- Connection Status -->
-    <div class="connection-status" id="connectionStatus">
-        <div class="status-dot" id="statusDot"></div>
-        <span class="status-text" id="statusText">Checking connection...</span>
-    </div>
+    <!-- نقطة الاتصال الصغيرة -->
+    <div class="connection-dot" id="connectionDot"></div>
 
-    <div class="auth-container">
-        <!-- Logo -->
-        <div class="logo">
-            <img src="https://bypro.kesug.com/B.Y%20PRO.png" alt="B.Y PRO">
-            <h1>B.Y PRO Accounts</h1>
-            <p>Enterprise Authentication System</p>
-        </div>
+    <div class="page-container">
+        <div class="login-container">
+            <div class="logo">
+                <div class="logo-header">
+                    <img src="https://by-pro.kesug.com/B.Y%20PRO.png" alt="B.Y PRO Logo" class="logo-img" onerror="this.src='https://via.placeholder.com/32/3498db/ffffff?text=B.Y'">
+                    <h1>B.Y PRO Accounts</h1>
+                </div>
+                <p>Secure Login System</p>
+            </div>
 
-        <!-- Logged In State -->
-        <div class="logged-in-state" id="loggedInState">
-            <div class="user-avatar" id="userAvatar"></div>
-            <h2 class="welcome-message" id="welcomeMessage">Welcome back!</h2>
-            <div class="user-email" id="userEmail"></div>
-            
-            <div class="device-info" id="deviceInfo"></div>
-            
-            <button class="logout-btn" onclick="BYProAuth.logout()">
-                <i class="fas fa-sign-out-alt"></i>
-                Secure Logout
-            </button>
-        </div>
-
-        <!-- Login Section -->
-        <div id="loginSection">
-            <!-- Method Switcher -->
-            <div class="method-switcher">
-                <button class="method-btn active" data-method="qr">
-                    <i class="fas fa-qrcode"></i>
-                    <span>QR Code</span>
-                </button>
-                <button class="method-btn" data-method="manual">
-                    <i class="fas fa-keyboard"></i>
-                    <span>Manual Login</span>
+            <!-- معلومات تسجيل الدخول -->
+            <div class="logged-in-info" id="loggedInInfo">
+                <div class="user-avatar" id="userAvatar">
+                    <!-- سيتم تحميل الصورة هنا -->
+                </div>
+                <h3>Welcome, <span id="userName">User</span>!</h3>
+                <div class="welcome-message">
+                    <i class="fas fa-check-circle"></i>
+                    <span>Successfully logged in</span>
+                </div>
+                
+                <!-- معلومات الجهاز -->
+                <div class="device-info" id="deviceInfo">
+                    <!-- سيتم ملؤها بواسطة JavaScript -->
+                </div>
+                
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
                 </button>
             </div>
 
-            <!-- QR Form -->
-            <div class="auth-form active" id="qrForm">
-                <div class="qr-upload" id="qrUploadArea">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <p>Upload QR Code</p>
-                    <span>PNG, JPG, JPEG (Max 5MB)</span>
-                    <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
+            <!-- قسم تسجيل الدخول -->
+            <div id="loginSection">
+                <div class="login-methods">
+                    <button class="method-btn active" data-method="qr">
+                        <i class="fas fa-qrcode"></i> QR Code
+                    </button>
+                    <button class="method-btn" data-method="manual">
+                        <i class="fas fa-keyboard"></i> Manual Login
+                    </button>
                 </div>
 
-                <div class="remember-me">
-                    <input type="checkbox" id="rememberQR">
-                    <label for="rememberQR">Remember this device</label>
-                </div>
-
-                <div class="qr-error-details" id="qrErrorDetails">
-                    <h4>QR Code Error:</h4>
-                    <ul>
-                        <li>Invalid or corrupted QR code</li>
-                        <li>Not a B.Y PRO account QR</li>
-                        <li>Image too blurry or unclear</li>
-                        <li>QR code has expired</li>
-                    </ul>
-                </div>
-            </div>
-
-            <!-- Manual Form -->
-            <div class="auth-form" id="manualForm">
-                <div class="form-group">
-                    <label>Account ID</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-user"></i>
-                        <input type="text" id="userId" placeholder="Enter your account ID" autocomplete="username">
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label>Password</label>
-                    <div class="input-wrapper">
-                        <i class="fas fa-lock"></i>
-                        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password">
-                    </div>
-                </div>
-
-                <div class="remember-me">
-                    <input type="checkbox" id="rememberMe">
-                    <label for="rememberMe">Remember this device</label>
-                </div>
-
-                <div class="status-message" id="statusMessage"></div>
-
-                <button class="auth-btn" id="loginBtn">
-                    <i class="fas fa-sign-in-alt"></i>
-                    Sign In
-                </button>
-            </div>
-
-            <!-- Signup Section -->
-            <div class="signup-section">
-                <p>Don't have an account?</p>
-                <a href="https://yacine2007.github.io/secure-auth-app/signup.html" class="signup-btn">
-                    <i class="fas fa-user-plus"></i>
-                    Create Account
-                </a>
-            </div>
-        </div>
-    </div>
-
-    <!-- Libraries -->
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-
-    <!-- Main Application -->
-    <script>
-        // ============================================
-        // B.Y PRO ACCOUNTS - ENTERPRISE AUTH SYSTEM
-        // VERSION: 5.0.0 (PRODUCTION READY)
-        // ============================================
-
-        (function() {
-            'use strict';
-
-            // ========== CONFIGURATION ==========
-            const CONFIG = {
-                API_BASE: 'https://b-y-pro-acounts-login.onrender.com',
-                GITHUB_IMAGES: 'https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/',
-                STORAGE_KEY: 'bypro_secure_auth',
-                SESSION_KEY: 'bypro_session',
-                TOKEN_EXPIRY: 30 * 24 * 60 * 60 * 1000, // 30 days
-                MAX_LOGIN_ATTEMPTS: 5,
-                LOCKOUT_TIME: 15 * 60 * 1000, // 15 minutes
-                ENCRYPTION_KEY: 'bypro_secure_key_2024',
-                DEBUG_MODE: false
-            };
-
-            // ========== SECURE STORAGE ==========
-            const SecureStorage = {
-                // Encrypt data before storing
-                encrypt: function(data) {
-                    try {
-                        const jsonStr = JSON.stringify(data);
-                        return CryptoJS.AES.encrypt(jsonStr, CONFIG.ENCRYPTION_KEY).toString();
-                    } catch (error) {
-                        console.error('Encryption error:', error);
-                        return null;
-                    }
-                },
-
-                // Decrypt data after retrieval
-                decrypt: function(encryptedData) {
-                    try {
-                        const bytes = CryptoJS.AES.decrypt(encryptedData, CONFIG.ENCRYPTION_KEY);
-                        const decryptedStr = bytes.toString(CryptoJS.enc.Utf8);
-                        return JSON.parse(decryptedStr);
-                    } catch (error) {
-                        console.error('Decryption error:', error);
-                        return null;
-                    }
-                },
-
-                // Set item with encryption
-                setItem: function(key, value) {
-                    try {
-                        const encrypted = this.encrypt(value);
-                        if (encrypted) {
-                            localStorage.setItem(key, encrypted);
-                            return true;
-                        }
-                    } catch (error) {
-                        console.error('Storage error:', error);
-                    }
-                    return false;
-                },
-
-                // Get item with decryption
-                getItem: function(key) {
-                    try {
-                        const encrypted = localStorage.getItem(key);
-                        if (!encrypted) return null;
-                        return this.decrypt(encrypted);
-                    } catch (error) {
-                        console.error('Retrieval error:', error);
-                        return null;
-                    }
-                },
-
-                // Remove item
-                removeItem: function(key) {
-                    localStorage.removeItem(key);
-                },
-
-                // Clear all
-                clear: function() {
-                    localStorage.removeItem(CONFIG.STORAGE_KEY);
-                    localStorage.removeItem(CONFIG.SESSION_KEY);
-                }
-            };
-
-            // ========== DEVICE FINGERPRINTING ==========
-            const DeviceFingerprint = {
-                generate: function() {
-                    const navigator = window.navigator;
-                    const screen = window.screen;
+                <!-- تسجيل الدخول بالرمز QR -->
+                <div class="login-form active" id="qrForm">
+                    <p class="qr-instruction">
+                        Upload your account QR code image to login
+                    </p>
                     
-                    const components = [
-                        navigator.userAgent,
-                        navigator.language,
-                        navigator.platform,
-                        screen.width,
-                        screen.height,
-                        screen.colorDepth,
-                        new Date().getTimezoneOffset(),
-                        navigator.hardwareConcurrency || 'unknown',
-                        navigator.deviceMemory || 'unknown',
-                        !!navigator.maxTouchPoints,
-                        !!window.chrome,
-                        navigator.cookieEnabled
-                    ];
-
-                    const fingerprint = components.join('|||');
-                    return CryptoJS.SHA256(fingerprint).toString();
-                },
-
-                getInfo: function() {
-                    return {
-                        fingerprint: this.generate(),
-                        userAgent: navigator.userAgent,
-                        language: navigator.language,
-                        platform: navigator.platform,
-                        screen: `${window.screen.width}x${window.screen.height}`,
-                        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                        browser: this.getBrowser(),
-                        os: this.getOS(),
-                        timestamp: new Date().toISOString()
-                    };
-                },
-
-                getBrowser: function() {
-                    const ua = navigator.userAgent;
-                    if (ua.includes('Firefox')) return 'Firefox';
-                    if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome';
-                    if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
-                    if (ua.includes('Edg')) return 'Edge';
-                    if (ua.includes('OPR') || ua.includes('Opera')) return 'Opera';
-                    return 'Unknown';
-                },
-
-                getOS: function() {
-                    const ua = navigator.userAgent;
-                    if (ua.includes('Windows')) return 'Windows';
-                    if (ua.includes('Mac')) return 'macOS';
-                    if (ua.includes('Linux')) return 'Linux';
-                    if (ua.includes('Android')) return 'Android';
-                    if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
-                    return 'Unknown';
-                }
-            };
-
-            // ========== AUTH STATE MANAGER ==========
-            const AuthState = {
-                _authenticated: false,
-                _user: null,
-                _device: null,
-                _listeners: [],
-                _loginAttempts: 0,
-                _lockUntil: null,
-
-                init: function() {
-                    this._loadFromStorage();
-                    this._startSessionCheck();
-                    return this;
-                },
-
-                _loadFromStorage: function() {
-                    try {
-                        // Check for remembered login
-                        const stored = SecureStorage.getItem(CONFIG.STORAGE_KEY);
-                        if (stored && this._validateStoredData(stored)) {
-                            this._authenticated = true;
-                            this._user = stored.user;
-                            this._device = stored.device;
-                            
-                            if (CONFIG.DEBUG_MODE) {
-                                console.log('✅ Session restored from storage');
-                            }
-                        }
-
-                        // Check for current session
-                        const session = SecureStorage.getItem(CONFIG.SESSION_KEY);
-                        if (session && session.authenticated) {
-                            this._authenticated = true;
-                            this._user = session.user;
-                            this._device = session.device;
-                        }
-                    } catch (error) {
-                        console.error('Storage load error:', error);
-                    }
-                },
-
-                _validateStoredData: function(stored) {
-                    if (!stored || !stored.user || !stored.device) return false;
-                    
-                    // Check expiry
-                    if (stored.expires && stored.expires < Date.now()) {
-                        if (CONFIG.DEBUG_MODE) console.log('Session expired');
-                        return false;
-                    }
-
-                    // Verify device fingerprint
-                    const currentFingerprint = DeviceFingerprint.generate();
-                    if (stored.device.fingerprint !== currentFingerprint) {
-                        if (CONFIG.DEBUG_MODE) console.log('Device fingerprint mismatch');
-                        return false;
-                    }
-
-                    return true;
-                },
-
-                _startSessionCheck: function() {
-                    setInterval(() => {
-                        if (this._authenticated) {
-                            this._checkSessionValidity();
-                        }
-                    }, 60000); // Check every minute
-                },
-
-                _checkSessionValidity: function() {
-                    const session = SecureStorage.getItem(CONFIG.SESSION_KEY);
-                    if (!session || !session.authenticated) {
-                        this._authenticated = false;
-                        this._user = null;
-                        this._notifyListeners();
-                    }
-                },
-
-                isAuthenticated: function() {
-                    return this._authenticated;
-                },
-
-                getUser: function() {
-                    return this._user;
-                },
-
-                getDevice: function() {
-                    return this._device || DeviceFingerprint.getInfo();
-                },
-
-                setAuthenticated: function(user, remember = false) {
-                    this._authenticated = true;
-                    this._user = user;
-                    this._device = DeviceFingerprint.getInfo();
-                    this._loginAttempts = 0;
-                    this._lockUntil = null;
-
-                    // Save to session
-                    SecureStorage.setItem(CONFIG.SESSION_KEY, {
-                        authenticated: true,
-                        user: user,
-                        device: this._device,
-                        timestamp: Date.now()
-                    });
-
-                    // Save to permanent storage if remember
-                    if (remember) {
-                        SecureStorage.setItem(CONFIG.STORAGE_KEY, {
-                            user: user,
-                            device: this._device,
-                            expires: Date.now() + CONFIG.TOKEN_EXPIRY
-                        });
-                    }
-
-                    this._notifyListeners();
-                },
-
-                setUnauthenticated: function() {
-                    this._authenticated = false;
-                    this._user = null;
-                    this._device = null;
-                    
-                    SecureStorage.removeItem(CONFIG.SESSION_KEY);
-                    SecureStorage.removeItem(CONFIG.STORAGE_KEY);
-                    
-                    this._notifyListeners();
-                    
-                    // Notify parent iframe
-                    this._notifyParent('logout');
-                },
-
-                onAuthChange: function(callback) {
-                    this._listeners.push(callback);
-                    callback(this._authenticated, this._user);
-                    return () => {
-                        this._listeners = this._listeners.filter(cb => cb !== callback);
-                    };
-                },
-
-                _notifyListeners: function() {
-                    this._listeners.forEach(callback => {
-                        try {
-                            callback(this._authenticated, this._user);
-                        } catch (error) {
-                            console.error('Listener error:', error);
-                        }
-                    });
-                    
-                    // Notify parent iframe
-                    this._notifyParent(this._authenticated ? 'login' : 'logout');
-                },
-
-                _notifyParent: function(action) {
-                    if (window.parent !== window) {
-                        try {
-                            window.parent.postMessage({
-                                type: 'BYPRO_AUTH_UPDATE',
-                                action: action,
-                                authenticated: this._authenticated,
-                                user: this._authenticated ? {
-                                    id: this._user.id,
-                                    name: this._user.name,
-                                    email: this._user.email
-                                } : null,
-                                timestamp: Date.now()
-                            }, '*');
-                        } catch (error) {
-                            if (CONFIG.DEBUG_MODE) {
-                                console.log('Parent notification error:', error);
-                            }
-                        }
-                    }
-                },
-
-                checkLoginAttempts: function() {
-                    if (this._lockUntil && this._lockUntil > Date.now()) {
-                        const remaining = Math.ceil((this._lockUntil - Date.now()) / 1000 / 60);
-                        throw new Error(`Too many attempts. Try again in ${remaining} minutes.`);
-                    }
-                    
-                    this._loginAttempts++;
-                    
-                    if (this._loginAttempts >= CONFIG.MAX_LOGIN_ATTEMPTS) {
-                        this._lockUntil = Date.now() + CONFIG.LOCKOUT_TIME;
-                        this._loginAttempts = 0;
-                        throw new Error('Account locked for 15 minutes due to too many attempts.');
-                    }
-                },
-
-                resetLoginAttempts: function() {
-                    this._loginAttempts = 0;
-                    this._lockUntil = null;
-                }
-            };
-
-            // ========== API CLIENT ==========
-            const APIClient = {
-                _connectionStatus: 'checking',
-                _connectionListeners: [],
-
-                init: function() {
-                    this._checkConnection();
-                    setInterval(() => this._checkConnection(), 30000);
-                    return this;
-                },
-
-                _checkConnection: async function() {
-                    try {
-                        const response = await fetch(`${CONFIG.API_BASE}/api/health`, {
-                            method: 'GET',
-                            headers: { 'Accept': 'application/json' },
-                            mode: 'cors',
-                            cache: 'no-cache'
-                        });
-
-                        if (response.ok) {
-                            this._connectionStatus = 'online';
-                        } else {
-                            this._connectionStatus = 'offline';
-                        }
-                    } catch (error) {
-                        this._connectionStatus = 'offline';
-                    }
-
-                    this._updateConnectionUI();
-                    this._notifyConnectionListeners();
-                },
-
-                _updateConnectionUI: function() {
-                    const dot = document.getElementById('statusDot');
-                    const text = document.getElementById('statusText');
-                    
-                    if (dot && text) {
-                        dot.className = 'status-dot ' + this._connectionStatus;
-                        text.textContent = this._connectionStatus === 'online' ? 'Connected' : 'Offline Mode';
-                    }
-                },
-
-                _notifyConnectionListeners: function() {
-                    this._connectionListeners.forEach(cb => cb(this._connectionStatus));
-                },
-
-                onConnectionChange: function(callback) {
-                    this._connectionListeners.push(callback);
-                    callback(this._connectionStatus);
-                },
-
-                getConnectionStatus: function() {
-                    return this._connectionStatus;
-                },
-
-                verifyLogin: async function(credentials) {
-                    try {
-                        // Use POST for security
-                        const response = await fetch(`${CONFIG.API_BASE}/api/verify-account`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest'
-                            },
-                            body: JSON.stringify({
-                                id: credentials.id,
-                                password: this._hashPassword(credentials.password),
-                                device: DeviceFingerprint.getInfo(),
-                                timestamp: Date.now()
-                            }),
-                            credentials: 'omit',
-                            mode: 'cors'
-                        });
-
-                        if (!response.ok) {
-                            throw new Error(`HTTP ${response.status}`);
-                        }
-
-                        const data = await response.json();
-                        return data;
-
-                    } catch (error) {
-                        console.error('API Error:', error);
-                        throw error;
-                    }
-                },
-
-                _hashPassword: function(password) {
-                    // Client-side hashing for transport security
-                    return CryptoJS.SHA256(password + Date.now().toString().slice(0, -3)).toString();
-                },
-
-                verifyQR: async function(qrData) {
-                    try {
-                        // Parse QR data
-                        if (!qrData.startsWith('BYPRO:')) {
-                            throw new Error('INVALID_QR');
-                        }
-
-                        const parts = qrData.split(':');
-                        if (parts.length !== 3) {
-                            throw new Error('INVALID_FORMAT');
-                        }
-
-                        const [_, id, token] = parts;
-                        
-                        // Verify with server
-                        const response = await fetch(`${CONFIG.API_BASE}/api/verify-qr`, {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                id: id,
-                                token: token,
-                                device: DeviceFingerprint.getInfo()
-                            })
-                        });
-
-                        const data = await response.json();
-                        return data;
-
-                    } catch (error) {
-                        console.error('QR Error:', error);
-                        throw error;
-                    }
-                }
-            };
-
-            // ========== QR PROCESSOR ==========
-            const QRProcessor = {
-                processImage: async function(file) {
-                    return new Promise((resolve, reject) => {
-                        // Validate file
-                        if (!file.type.startsWith('image/')) {
-                            reject(new Error('INVALID_TYPE'));
-                            return;
-                        }
-
-                        if (file.size > 5 * 1024 * 1024) {
-                            reject(new Error('FILE_TOO_LARGE'));
-                            return;
-                        }
-
-                        const reader = new FileReader();
-                        
-                        reader.onload = async (e) => {
-                            try {
-                                const imageData = e.target.result;
-                                const qrCode = await this._scanImage(imageData);
-                                
-                                if (qrCode) {
-                                    resolve(qrCode);
-                                } else {
-                                    reject(new Error('NO_QR_FOUND'));
-                                }
-                            } catch (error) {
-                                reject(error);
-                            }
-                        };
-
-                        reader.onerror = () => reject(new Error('READ_ERROR'));
-                        reader.readAsDataURL(file);
-                    });
-                },
-
-                _scanImage: function(imageData) {
-                    return new Promise((resolve, reject) => {
-                        const img = new Image();
-                        
-                        img.onload = () => {
-                            try {
-                                const canvas = document.createElement('canvas');
-                                const ctx = canvas.getContext('2d');
-                                
-                                // Optimize for scanning
-                                const maxSize = 800;
-                                let width = img.width;
-                                let height = img.height;
-                                
-                                if (width > maxSize || height > maxSize) {
-                                    if (width > height) {
-                                        height = (height / width) * maxSize;
-                                        width = maxSize;
-                                    } else {
-                                        width = (width / height) * maxSize;
-                                        height = maxSize;
-                                    }
-                                }
-                                
-                                canvas.width = width;
-                                canvas.height = height;
-                                ctx.drawImage(img, 0, 0, width, height);
-                                
-                                const imageData = ctx.getImageData(0, 0, width, height);
-                                const code = jsQR(imageData.data, imageData.width, imageData.height);
-                                
-                                resolve(code ? code.data : null);
-                            } catch (error) {
-                                reject(error);
-                            }
-                        };
-
-                        img.onerror = () => reject(new Error('IMAGE_LOAD_ERROR'));
-                        img.src = imageData;
-                    });
-                }
-            };
-
-            // ========== UI MANAGER ==========
-            const UIManager = {
-                elements: {},
-
-                init: function() {
-                    this._cacheElements();
-                    this._setupEventListeners();
-                    this._updateUI();
-                    
-                    AuthState.onAuthChange(() => this._updateUI());
-                    APIClient.onConnectionChange(() => this._updateUI());
-                    
-                    return this;
-                },
-
-                _cacheElements: function() {
-                    this.elements = {
-                        loginSection: document.getElementById('loginSection'),
-                        loggedInState: document.getElementById('loggedInState'),
-                        methodBtns: document.querySelectorAll('.method-btn'),
-                        qrForm: document.getElementById('qrForm'),
-                        manualForm: document.getElementById('manualForm'),
-                        qrUploadArea: document.getElementById('qrUploadArea'),
-                        qrFileInput: document.getElementById('qrFileInput'),
-                        qrErrorDetails: document.getElementById('qrErrorDetails'),
-                        userId: document.getElementById('userId'),
-                        password: document.getElementById('password'),
-                        rememberMe: document.getElementById('rememberMe'),
-                        rememberQR: document.getElementById('rememberQR'),
-                        loginBtn: document.getElementById('loginBtn'),
-                        statusMessage: document.getElementById('statusMessage'),
-                        userAvatar: document.getElementById('userAvatar'),
-                        welcomeMessage: document.getElementById('welcomeMessage'),
-                        userEmail: document.getElementById('userEmail'),
-                        deviceInfo: document.getElementById('deviceInfo')
-                    };
-                },
-
-                _setupEventListeners: function() {
-                    // Method switching
-                    this.elements.methodBtns.forEach(btn => {
-                        btn.addEventListener('click', () => this._switchMethod(btn.dataset.method));
-                    });
-
-                    // QR upload
-                    this.elements.qrUploadArea.addEventListener('click', () => {
-                        this.elements.qrFileInput.click();
-                    });
-
-                    this.elements.qrFileInput.addEventListener('change', (e) => {
-                        this._handleQRUpload(e.target.files[0]);
-                    });
-
-                    // Manual login
-                    this.elements.loginBtn.addEventListener('click', () => {
-                        this._handleManualLogin();
-                    });
-
-                    // Enter key
-                    [this.elements.userId, this.elements.password].forEach(input => {
-                        input.addEventListener('keypress', (e) => {
-                            if (e.key === 'Enter') {
-                                this._handleManualLogin();
-                            }
-                        });
-                    });
-                },
-
-                _switchMethod: function(method) {
-                    this.elements.methodBtns.forEach(btn => {
-                        btn.classList.toggle('active', btn.dataset.method === method);
-                    });
-
-                    this.elements.qrForm.classList.toggle('active', method === 'qr');
-                    this.elements.manualForm.classList.toggle('active', method === 'manual');
-                    
-                    if (method === 'manual') {
-                        this.elements.userId.focus();
-                    }
-                },
-
-                _handleQRUpload: async function(file) {
-                    if (!file) return;
-
-                    try {
-                        this._showLoading(this.elements.qrUploadArea);
-                        
-                        const qrData = await QRProcessor.processImage(file);
-                        
-                        if (!qrData) {
-                            throw new Error('NO_QR_FOUND');
-                        }
-
-                        const result = await APIClient.verifyQR(qrData);
-                        
-                        if (result.success) {
-                            AuthState.setAuthenticated(result.user, this.elements.rememberQR.checked);
-                            this._showStatus('Login successful!', 'success');
-                        } else {
-                            throw new Error(result.error || 'INVALID_QR');
-                        }
-
-                    } catch (error) {
-                        this._handleQRError(error);
-                    } finally {
-                        this._resetQRUpload();
-                    }
-                },
-
-                _handleManualLogin: async function() {
-                    const id = this.elements.userId.value.trim();
-                    const password = this.elements.password.value.trim();
-
-                    if (!id) {
-                        this._showStatus('Please enter account ID', 'error');
-                        this.elements.userId.focus();
-                        return;
-                    }
-
-                    if (!password) {
-                        this._showStatus('Please enter password', 'error');
-                        this.elements.password.focus();
-                        return;
-                    }
-
-                    try {
-                        AuthState.checkLoginAttempts();
-                        
-                        this._setLoading(true);
-                        
-                        const result = await APIClient.verifyLogin({ id, password });
-                        
-                        if (result.success) {
-                            AuthState.setAuthenticated(result.user, this.elements.rememberMe.checked);
-                            this._showStatus('Login successful!', 'success');
-                        } else {
-                            this._showStatus(result.error || 'Invalid credentials', 'error');
-                        }
-
-                    } catch (error) {
-                        this._showStatus(error.message || 'Login failed', 'error');
-                    } finally {
-                        this._setLoading(false);
-                    }
-                },
-
-                _updateUI: function() {
-                    const isLoggedIn = AuthState.isAuthenticated();
-                    const user = AuthState.getUser();
-                    const connection = APIClient.getConnectionStatus();
-
-                    // Show/hide sections
-                    this.elements.loginSection.style.display = isLoggedIn ? 'none' : 'block';
-                    this.elements.loggedInState.style.display = isLoggedIn ? 'block' : 'none';
-
-                    if (isLoggedIn && user) {
-                        this._updateLoggedInUI(user);
-                    }
-                },
-
-                _updateLoggedInUI: function(user) {
-                    this.elements.welcomeMessage.textContent = `Welcome, ${user.name || 'User'}!`;
-                    this.elements.userEmail.textContent = user.email || 'No email provided';
-
-                    // Load avatar
-                    this._loadAvatar(user.id);
-
-                    // Show device info
-                    const device = DeviceFingerprint.getInfo();
-                    this.elements.deviceInfo.innerHTML = `
-                        <h3><i class="fas fa-shield-alt"></i> Device Information</h3>
-                        <div class="info-row">
-                            <span>Browser</span>
-                            <span>${device.browser}</span>
-                        </div>
-                        <div class="info-row">
-                            <span>Operating System</span>
-                            <span>${device.os}</span>
-                        </div>
-                        <div class="info-row">
-                            <span>Screen</span>
-                            <span>${device.screen}</span>
-                        </div>
-                        <div class="info-row">
-                            <span>Timezone</span>
-                            <span>${device.timezone}</span>
-                        </div>
-                        <div class="info-row">
-                            <span>Login Time</span>
-                            <span>${new Date().toLocaleString()}</span>
-                        </div>
-                    `;
-                },
-
-                _loadAvatar: function(userId) {
-                    const avatarUrl = `${CONFIG.GITHUB_IMAGES}${userId}.png?t=${Date.now()}`;
-                    const img = new Image();
-                    
-                    img.onload = () => {
-                        this.elements.userAvatar.innerHTML = '';
-                        img.style.width = '100%';
-                        img.style.height = '100%';
-                        img.style.objectFit = 'cover';
-                        this.elements.userAvatar.appendChild(img);
-                    };
-
-                    img.onerror = () => {
-                        this.elements.userAvatar.innerHTML = `
-                            <div class="default-avatar">
-                                <i class="fas fa-user"></i>
-                            </div>
-                        `;
-                    };
-
-                    img.src = avatarUrl;
-                },
-
-                _showLoading: function(element) {
-                    if (element) {
-                        const originalContent = element.innerHTML;
-                        element.dataset.originalContent = originalContent;
-                        element.innerHTML = '<div class="spinner" style="margin: 0 auto;"></div><p style="margin-top: 1rem;">Processing...</p>';
-                    }
-                },
-
-                _setLoading: function(loading) {
-                    if (loading) {
-                        this.elements.loginBtn.disabled = true;
-                        this.elements.loginBtn.innerHTML = '<div class="spinner"></div> Verifying...';
-                    } else {
-                        this.elements.loginBtn.disabled = false;
-                        this.elements.loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Sign In';
-                    }
-                },
-
-                _resetQRUpload: function() {
-                    this.elements.qrUploadArea.innerHTML = `
+                    <div class="qr-upload-area" id="qrUploadArea">
                         <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Upload QR Code</p>
-                        <span>PNG, JPG, JPEG (Max 5MB)</span>
+                        <p>Click to upload QR Code Image</p>
+                        <span>PNG, JPG up to 5MB</span>
                         <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
-                    `;
-                    
-                    // Reattach event listener
-                    const newInput = document.getElementById('qrFileInput');
-                    newInput.addEventListener('change', (e) => {
-                        this._handleQRUpload(e.target.files[0]);
-                    });
-                },
+                    </div>
 
-                _handleQRError: function(error) {
-                    switch(error.message) {
-                        case 'INVALID_TYPE':
-                            this._showStatus('Please select an image file', 'error');
-                            break;
-                        case 'FILE_TOO_LARGE':
-                            this._showStatus('Image size exceeds 5MB limit', 'error');
-                            break;
-                        case 'NO_QR_FOUND':
-                            this._showStatus('No QR code found in image', 'error');
-                            this.elements.qrErrorDetails.style.display = 'block';
-                            break;
-                        case 'INVALID_QR':
-                            this._showStatus('Invalid QR code format', 'error');
-                            this.elements.qrErrorDetails.style.display = 'block';
-                            break;
-                        default:
-                            this._showStatus('Failed to process QR code', 'error');
-                    }
-                },
+                    <!-- تذكرني للـ QR -->
+                    <div class="remember-me">
+                        <input type="checkbox" id="rememberQR">
+                        <label for="rememberQR">Remember me on this device</label>
+                    </div>
 
-                _showStatus: function(message, type) {
-                    const element = this.elements.statusMessage;
-                    element.textContent = message;
-                    element.className = `status-message ${type}`;
-                    
-                    setTimeout(() => {
-                        element.style.display = 'none';
-                    }, 5000);
+                    <!-- تفاصيل خطأ QR -->
+                    <div class="qr-error-details" id="qrErrorDetails">
+                        <h4>Possible reasons for error:</h4>
+                        <ul>
+                            <li>Image doesn't contain a QR code</li>
+                            <li>QR code is not valid for B.Y PRO system</li>
+                            <li>Image is corrupted or blurry</li>
+                            <li>QR code has been modified</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- تسجيل الدخول اليدوي -->
+                <div class="login-form" id="manualForm">
+                    <div class="form-group">
+                        <label for="userIdInput">Account ID</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-user input-icon"></i>
+                            <input type="text" id="userIdInput" placeholder="Enter your account ID" autocomplete="username">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="passwordInput">Password</label>
+                        <div class="input-with-icon">
+                            <i class="fas fa-key input-icon"></i>
+                            <input type="password" id="passwordInput" placeholder="Enter your password" autocomplete="current-password">
+                        </div>
+                    </div>
+
+                    <!-- تذكرني -->
+                    <div class="remember-me">
+                        <input type="checkbox" id="rememberMe">
+                        <label for="rememberMe">Remember me on this device</label>
+                    </div>
+
+                    <!-- رسالة الحالة -->
+                    <div id="statusMessage" class="status-message"></div>
+
+                    <!-- زر تسجيل الدخول -->
+                    <button class="login-btn" id="loginBtn">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </div>
+
+                <!-- قسم التسجيل -->
+                <div class="signup-section">
+                    <p class="signup-text">Don't have an account?</p>
+                    <a href="https://yacine2007.github.io/secure-auth-app/signup.html" class="signup-btn">
+                        <i class="fas fa-user-plus"></i> Create Account Now
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- مكتبة مسح الرمز QR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    
+    <script>
+        // ========== تكوين النظام ==========
+        const APP_ID = 'bypro_login_system';
+        const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
+        const GITHUB_IMAGE_BASE = 'https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/';
+        const STORAGE_KEY = 'bypro_auth_data';
+
+        // عناصر DOM
+        const loginSection = document.getElementById('loginSection');
+        const loggedInInfo = document.getElementById('loggedInInfo');
+        const methodBtns = document.querySelectorAll('.method-btn');
+        const qrForm = document.getElementById('qrForm');
+        const manualForm = document.getElementById('manualForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const statusMessage = document.getElementById('statusMessage');
+        const qrFileInput = document.getElementById('qrFileInput');
+        const qrUploadArea = document.getElementById('qrUploadArea');
+        const qrErrorDetails = document.getElementById('qrErrorDetails');
+        const userIdInput = document.getElementById('userIdInput');
+        const passwordInput = document.getElementById('passwordInput');
+        const rememberMe = document.getElementById('rememberMe');
+        const rememberQR = document.getElementById('rememberQR');
+        const userNameSpan = document.getElementById('userName');
+        const userAvatar = document.getElementById('userAvatar');
+        const deviceInfo = document.getElementById('deviceInfo');
+        const connectionDot = document.getElementById('connectionDot');
+
+        // متغيرات
+        let currentMethod = 'qr';
+        let currentUser = null;
+
+        // ========== حل مشكلة CORS ==========
+        // نستخدم Proxy مدمج أو نرسل بدون headers مخصصة
+
+        // ========== نظام التخزين ==========
+        const AuthStorage = {
+            getData: () => {
+                try {
+                    const data = localStorage.getItem(STORAGE_KEY);
+                    return data ? JSON.parse(data) : null;
+                } catch (e) {
+                    console.error('Error reading from storage:', e);
+                    return null;
                 }
-            };
+            },
 
-            // ========== PUBLIC API ==========
-            window.BYProAuth = {
-                // Core methods
-                init: function() {
-                    AuthState.init();
-                    APIClient.init();
-                    UIManager.init();
-                    return this;
-                },
+            saveData: (userData, remember = false) => {
+                try {
+                    if (!remember) return false;
+                    
+                    const data = {
+                        user: userData,
+                        timestamp: Date.now(),
+                        expires: Date.now() + (30 * 24 * 60 * 60 * 1000) // 30 يوم
+                    };
+                    
+                    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+                    return true;
+                } catch (e) {
+                    console.error('Error saving to storage:', e);
+                    return false;
+                }
+            },
 
-                // Authentication
-                isAuthenticated: () => AuthState.isAuthenticated(),
-                getUser: () => AuthState.getUser(),
-                getDevice: () => DeviceFingerprint.getInfo(),
+            clearData: () => {
+                try {
+                    localStorage.removeItem(STORAGE_KEY);
+                    return true;
+                } catch (e) {
+                    console.error('Error clearing storage:', e);
+                    return false;
+                }
+            },
 
-                // Session management
-                logout: () => AuthState.setUnauthenticated(),
-
-                // Event handling
-                onAuthChange: (callback) => AuthState.onAuthChange(callback),
-                onConnectionChange: (callback) => APIClient.onConnectionChange(callback),
-
-                // Status
-                getConnectionStatus: () => APIClient.getConnectionStatus(),
-
-                // For parent iframe communication
-                getAuthData: () => ({
-                    authenticated: AuthState.isAuthenticated(),
-                    user: AuthState.getUser(),
-                    device: DeviceFingerprint.getInfo(),
-                    timestamp: Date.now()
-                })
-            };
-
-            // Auto-initialize
-            if (document.readyState === 'loading') {
-                document.addEventListener('DOMContentLoaded', () => window.BYProAuth.init());
-            } else {
-                window.BYProAuth.init();
+            isValid: (data) => {
+                if (!data || !data.user) return false;
+                if (data.expires && data.expires < Date.now()) return false;
+                return true;
             }
+        };
 
-            // Handle visibility change
-            document.addEventListener('visibilitychange', () => {
-                if (!document.hidden) {
-                    APIClient._checkConnection();
+        // ========== جمع معلومات الجهاز ==========
+        function getDeviceInfo() {
+            return {
+                userAgent: navigator.userAgent,
+                platform: navigator.platform,
+                language: navigator.language,
+                screen: `${window.screen.width}x${window.screen.height}`,
+                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+                browser: getBrowserName(),
+                os: getOperatingSystem(),
+                loginDate: new Date().toISOString()
+            };
+        }
+
+        function getBrowserName() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Firefox')) return 'Firefox';
+            if (ua.includes('Chrome') && !ua.includes('Edg')) return 'Chrome';
+            if (ua.includes('Safari') && !ua.includes('Chrome')) return 'Safari';
+            if (ua.includes('Edg')) return 'Edge';
+            return 'Unknown';
+        }
+
+        function getOperatingSystem() {
+            const ua = navigator.userAgent;
+            if (ua.includes('Windows')) return 'Windows';
+            if (ua.includes('Mac')) return 'macOS';
+            if (ua.includes('Linux')) return 'Linux';
+            if (ua.includes('Android')) return 'Android';
+            if (ua.includes('iPhone') || ua.includes('iPad')) return 'iOS';
+            return 'Unknown';
+        }
+
+        // ========== عرض معلومات الجهاز ==========
+        function displayDeviceInfo(device) {
+            deviceInfo.innerHTML = `
+                <h4>Device Information</h4>
+                <div><span>Browser:</span> <span>${device.browser}</span></div>
+                <div><span>OS:</span> <span>${device.os}</span></div>
+                <div><span>Screen:</span> <span>${device.screen}</span></div>
+                <div><span>Timezone:</span> <span>${device.timezone}</span></div>
+                <div><span>Login Date:</span> <span>${new Date(device.loginDate).toLocaleString()}</span></div>
+            `;
+        }
+
+        // ========== تحميل صورة المستخدم ==========
+        function loadUserAvatar(userId) {
+            const imageUrl = `${GITHUB_IMAGE_BASE}${userId}.png?t=${Date.now()}`;
+            
+            userAvatar.innerHTML = '';
+            
+            const img = new Image();
+            img.onload = () => {
+                img.style.width = '100%';
+                img.style.height = '100%';
+                img.style.objectFit = 'cover';
+                userAvatar.appendChild(img);
+            };
+            
+            img.onerror = () => {
+                userAvatar.innerHTML = `
+                    <div class="default-avatar">
+                        <i class="fas fa-user"></i>
+                    </div>
+                `;
+            };
+            
+            img.src = imageUrl;
+        }
+
+        // ========== تحديث نقطة الاتصال ==========
+        function updateConnectionStatus(online) {
+            connectionDot.className = 'connection-dot';
+            connectionDot.classList.add(online ? 'connection-online' : 'connection-offline');
+        }
+
+        // ========== عرض رسالة الحالة ==========
+        function showStatus(message, type) {
+            statusMessage.textContent = message;
+            statusMessage.className = `status-message status-${type}`;
+            statusMessage.style.display = 'block';
+            
+            setTimeout(() => {
+                statusMessage.style.display = 'none';
+            }, 4000);
+        }
+
+        // ========== محاولة التسجيل التلقائي ==========
+        function attemptAutoLogin() {
+            try {
+                const storedData = AuthStorage.getData();
+                
+                if (!storedData || !AuthStorage.isValid(storedData)) {
+                    return false;
+                }
+                
+                currentUser = storedData.user;
+                showLoggedInState(currentUser);
+                return true;
+                
+            } catch (error) {
+                console.error('Auto-login error:', error);
+                AuthStorage.clearData();
+                return false;
+            }
+        }
+
+        // ========== عرض حالة تسجيل الدخول ==========
+        function showLoggedInState(user) {
+            loginSection.style.display = 'none';
+            loggedInInfo.style.display = 'block';
+            userNameSpan.textContent = user.name || `User ${user.id}`;
+            
+            loadUserAvatar(user.id);
+            displayDeviceInfo(getDeviceInfo());
+            
+            showStatus(`Welcome back ${user.name || user.id}!`, 'success');
+        }
+
+        // ========== تسجيل الخروج ==========
+        function logout() {
+            AuthStorage.clearData();
+            currentUser = null;
+            
+            loggedInInfo.style.display = 'none';
+            loginSection.style.display = 'block';
+            
+            userIdInput.value = '';
+            passwordInput.value = '';
+            qrFileInput.value = '';
+            rememberMe.checked = false;
+            rememberQR.checked = false;
+            qrErrorDetails.style.display = 'none';
+            
+            showStatus('Logged out successfully', 'success');
+            
+            // إعلام iframe
+            notifyParent({ authenticated: false });
+        }
+
+        // ========== إعلام الأب (iframe) ==========
+        function notifyParent(data) {
+            if (window.parent !== window) {
+                try {
+                    window.parent.postMessage({
+                        type: 'BYPRO_AUTH_UPDATE',
+                        ...data,
+                        timestamp: Date.now()
+                    }, '*');
+                } catch (e) {
+                    console.log('Parent notification failed');
+                }
+            }
+        }
+
+        // ========== التبديل بين طرق تسجيل الدخول ==========
+        methodBtns.forEach(btn => {
+            btn.addEventListener('click', () => {
+                methodBtns.forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                currentMethod = btn.dataset.method;
+                
+                qrForm.classList.remove('active');
+                manualForm.classList.remove('active');
+                qrErrorDetails.style.display = 'none';
+                
+                if (currentMethod === 'qr') {
+                    qrForm.classList.add('active');
+                } else {
+                    manualForm.classList.add('active');
+                    setTimeout(() => userIdInput.focus(), 300);
                 }
             });
+        });
 
-        })();
+        // ========== معالجة تحميل رمز QR ==========
+        qrUploadArea.addEventListener('click', () => {
+            qrFileInput.click();
+        });
+
+        qrFileInput.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            qrErrorDetails.style.display = 'none';
+            
+            if (file.size > 5 * 1024 * 1024) {
+                showStatus('Image size too large.', 'error');
+                return;
+            }
+
+            if (!file.type.match('image.*')) {
+                showStatus('Please select an image file.', 'error');
+                return;
+            }
+
+            qrUploadArea.innerHTML = `
+                <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
+                <p>Processing image...</p>
+            `;
+
+            try {
+                const imageData = await readImageFile(file);
+                const qrCode = await scanQRCode(imageData);
+                
+                if (qrCode) {
+                    await processQRCode(qrCode);
+                } else {
+                    throw new Error('NO_QR_FOUND');
+                }
+                
+            } catch (error) {
+                handleQRProcessingError(error);
+            } finally {
+                resetQRUploadArea();
+            }
+        });
+
+        function readImageFile(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = () => reject(new Error('FILE_READ_ERROR'));
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function scanQRCode(imageData) {
+            return new Promise((resolve, reject) => {
+                const img = new Image();
+                img.onload = () => {
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const ctx = canvas.getContext('2d');
+                        canvas.width = img.width;
+                        canvas.height = img.height;
+                        ctx.drawImage(img, 0, 0);
+                        
+                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                        const code = jsQR(imageData.data, imageData.width, canvas.height);
+                        
+                        resolve(code ? code.data : null);
+                    } catch (e) {
+                        reject(e);
+                    }
+                };
+                img.onerror = () => reject(new Error('IMAGE_LOAD_ERROR'));
+                img.src = imageData;
+            });
+        }
+
+        async function processQRCode(data) {
+            if (data.startsWith('BYPRO:')) {
+                const parts = data.split(':');
+                if (parts.length === 3) {
+                    const id = parts[1];
+                    const password = parts[2];
+                    
+                    if (id && password) {
+                        showStatus('QR code detected!', 'success');
+                        await verifyLogin(id, password, 'qr');
+                    } else {
+                        throw new Error('INVALID_QR_FORMAT');
+                    }
+                } else {
+                    throw new Error('INVALID_QR_FORMAT');
+                }
+            } else {
+                throw new Error('NOT_BYPRO_QR');
+            }
+        }
+
+        function handleQRProcessingError(error) {
+            switch(error.message) {
+                case 'NO_QR_FOUND':
+                    showStatus('No QR code found.', 'error');
+                    qrErrorDetails.style.display = 'block';
+                    break;
+                case 'NOT_BYPRO_QR':
+                case 'INVALID_QR_FORMAT':
+                    showStatus('Invalid QR code.', 'error');
+                    qrErrorDetails.style.display = 'block';
+                    break;
+                default:
+                    showStatus('Error processing QR code.', 'error');
+            }
+        }
+
+        function resetQRUploadArea() {
+            qrUploadArea.innerHTML = `
+                <i class="fas fa-cloud-upload-alt"></i>
+                <p>Click to upload QR Code Image</p>
+                <span>PNG, JPG up to 5MB</span>
+                <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
+            `;
+            
+            document.getElementById('qrFileInput').addEventListener('change', (e) => {
+                qrFileInput.files = e.target.files;
+                const event = new Event('change');
+                qrFileInput.dispatchEvent(event);
+            });
+        }
+
+        // ========== التحقق من بيانات تسجيل الدخول - مع حل CORS ==========
+        async function verifyLogin(id, password, method = 'manual') {
+            if (!id || !password) {
+                showStatus('ID and password are required.', 'error');
+                return;
+            }
+
+            if (method === 'qr') {
+                qrUploadArea.innerHTML = `
+                    <div class="loading-spinner" style="margin: 20px auto; width: 40px; height: 40px;"></div>
+                    <p>Verifying...</p>
+                `;
+            } else {
+                loginBtn.disabled = true;
+                loginBtn.innerHTML = '<div class="loading-spinner"></div> Verifying...';
+            }
+
+            try {
+                // استخدام POST بدون headers مخصصة لتجنب CORS
+                const response = await fetch(`${API_BASE}/api/verify-account`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ 
+                        id: id, 
+                        password: password 
+                    }),
+                    mode: 'cors',
+                    credentials: 'omit'
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP Error: ${response.status}`);
+                }
+
+                const result = await response.json();
+
+                if (result.success) {
+                    const userData = {
+                        id: result.account.id,
+                        name: result.account.name,
+                        email: result.account.email,
+                        loginTime: new Date().toISOString(),
+                        loginMethod: method
+                    };
+                    
+                    currentUser = userData;
+                    
+                    showStatus('Login successful!', 'success');
+                    updateConnectionStatus(true);
+                    
+                    // حفظ بيانات تسجيل الدخول إذا اختار "تذكرني"
+                    const shouldRemember = (method === 'manual' && rememberMe.checked) || 
+                                          (method === 'qr' && rememberQR.checked);
+                    
+                    if (shouldRemember) {
+                        AuthStorage.saveData(userData, true);
+                    }
+                    
+                    showLoggedInState(userData);
+                    
+                    // إعلام iframe
+                    notifyParent({ authenticated: true, user: userData });
+                    
+                } else {
+                    showStatus(result.error || 'Login failed.', 'error');
+                }
+            } catch (error) {
+                console.error('API Error:', error);
+                if (error.message.includes('Failed to fetch')) {
+                    showStatus('Cannot connect to server. Please check your connection.', 'error');
+                    updateConnectionStatus(false);
+                } else {
+                    showStatus('Login error. Please try again.', 'error');
+                }
+            } finally {
+                if (method !== 'qr') {
+                    loginBtn.disabled = false;
+                    loginBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Login';
+                }
+            }
+        }
+
+        // ========== تسجيل الدخول اليدوي ==========
+        loginBtn.addEventListener('click', () => {
+            const id = userIdInput.value.trim();
+            const password = passwordInput.value.trim();
+            
+            if (!id) {
+                showStatus('Please enter your account ID.', 'error');
+                userIdInput.focus();
+                return;
+            }
+            
+            if (!password) {
+                showStatus('Please enter your password.', 'error');
+                passwordInput.focus();
+                return;
+            }
+            
+            verifyLogin(id, password, 'manual');
+        });
+
+        // ========== تسجيل الخروج ==========
+        logoutBtn.addEventListener('click', logout);
+
+        // ========== السماح بمفتاح الإدخال ==========
+        [userIdInput, passwordInput].forEach(input => {
+            input.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    loginBtn.click();
+                }
+            });
+        });
+
+        // ========== اختبار اتصال الخادم ==========
+        async function testServerConnection() {
+            try {
+                const response = await fetch(`${API_BASE}/api/health`, {
+                    method: 'GET',
+                    mode: 'cors',
+                    cache: 'no-cache'
+                });
+                updateConnectionStatus(response.ok);
+                return response.ok;
+            } catch (error) {
+                updateConnectionStatus(false);
+                return false;
+            }
+        }
+
+        // ========== الاستماع لرسائل iframe ==========
+        window.addEventListener('message', (event) => {
+            try {
+                const data = event.data;
+                if (data && data.type === 'BYPRO_AUTH_REQUEST') {
+                    // إرسال حالة المصادقة الحالية
+                    event.source.postMessage({
+                        type: 'BYPRO_AUTH_RESPONSE',
+                        authenticated: !!currentUser,
+                        user: currentUser,
+                        timestamp: Date.now()
+                    }, event.origin);
+                }
+            } catch (error) {
+                console.error('Message error:', error);
+            }
+        });
+
+        // ========== التهيئة ==========
+        document.addEventListener('DOMContentLoaded', async () => {
+            // محاولة التسجيل التلقائي أولاً
+            const autoLoginSuccess = attemptAutoLogin();
+            
+            if (!autoLoginSuccess) {
+                // اختبار اتصال الخادم
+                testServerConnection();
+                
+                if (currentMethod === 'manual') {
+                    setTimeout(() => userIdInput.focus(), 300);
+                }
+            }
+            
+            // فحص الاتصال كل 30 ثانية
+            setInterval(testServerConnection, 30000);
+        });
     </script>
 </body>
 </html>
