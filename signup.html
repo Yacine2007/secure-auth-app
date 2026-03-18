@@ -9,7 +9,7 @@
     <!-- QR Code library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* نفس التصميم الذي أرسلته مع إضافة رسالة Elastic */
+        /* نفس التصميم الذي أرسلته */
         * {
             margin: 0;
             padding: 0;
@@ -90,7 +90,7 @@
             background: #000000;
         }
         
-        /* الحقول */
+        /* الحقول - مع منع الملء التلقائي */
         .input-group {
             margin-bottom: 20px;
         }
@@ -100,6 +100,10 @@
             font-weight: 500;
             color: #333333;
             margin-bottom: 6px;
+        }
+        label i {
+            color: #2a6df4;
+            margin-right: 5px;
         }
         input {
             width: 100%;
@@ -151,7 +155,7 @@
             margin-right: 5px;
         }
         
-        /* ===== المرحلة الأخيرة فقط - تصميم أصغر ومتكيف ===== */
+        /* ===== المرحلة الأخيرة - تصميم أصغر ومتكيف ===== */
         .result-box {
             background: #f8fafd;
             border-radius: 20px;
@@ -348,15 +352,15 @@
                 For testing: Codes are sent to byprosprt2007@gmail.com only
             </div>
 
-            <!-- الخطوات -->
+            <!-- الخطوات - مع منع الملء التلقائي -->
             <div id="step1">
                 <div class="input-group">
-                    <label><i class="fas fa-user" style="color: #2a6df4;"></i> Username</label>
-                    <input type="text" id="username" placeholder="e.g. john_doe">
+                    <label><i class="fas fa-user"></i> Username</label>
+                    <input type="text" id="username" name="username" placeholder="e.g. john_doe" autocomplete="off">
                 </div>
                 <div class="input-group">
-                    <label><i class="fas fa-envelope" style="color: #2a6df4;"></i> Email</label>
-                    <input type="email" id="email" placeholder="you@example.com">
+                    <label><i class="fas fa-envelope"></i> Email</label>
+                    <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="off">
                 </div>
                 <button class="btn-primary" id="sendCodeBtn">Send code</button>
                 <div id="step1Error" class="error"></div>
@@ -364,8 +368,8 @@
 
             <div id="step2" style="display: none;">
                 <div class="input-group">
-                    <label><i class="fas fa-lock" style="color: #2a6df4;"></i> Verification code</label>
-                    <input type="text" id="verificationCode" placeholder="6-digit code" maxlength="6">
+                    <label><i class="fas fa-lock"></i> Verification code</label>
+                    <input type="text" id="verificationCode" name="verificationCode" placeholder="6-digit code" maxlength="6" autocomplete="off">
                 </div>
                 <button class="btn-primary" id="verifyCodeBtn">Verify</button>
                 <div id="step2Error" class="error"></div>
@@ -374,9 +378,9 @@
 
             <div id="step3" style="display: none;">
                 <div class="input-group">
-                    <label><i class="fas fa-key" style="color: #2a6df4;"></i> Password</label>
+                    <label><i class="fas fa-key"></i> Password</label>
                     <div class="password-wrapper">
-                        <input type="password" id="password" placeholder="Create a strong password">
+                        <input type="password" id="password" name="password" placeholder="Create a strong password" autocomplete="new-password">
                         <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
                     </div>
                 </div>
@@ -384,7 +388,7 @@
                 <div id="step3Error" class="error"></div>
             </div>
 
-            <!-- المرحلة الأخيرة - مصغرة ومتكيفة -->
+            <!-- المرحلة الأخيرة -->
             <div id="resultArea" style="display: none;">
                 <div class="result-box">
                     <i class="fas fa-check-circle"></i>
@@ -525,7 +529,7 @@
                 return;
             }
 
-            sendCodeBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-color:white;border-top-color:#2a6df4;"></div>';
+            sendCodeBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border:2px solid white;border-top:2px solid #2a6df4;border-radius:50%;animation:spin 1s linear infinite;"></div>';
             sendCodeBtn.disabled = true;
 
             try {
@@ -539,7 +543,6 @@
 
                 if (response.ok && result.success) {
                     userData = { username: name, email: emailValue };
-                    generatedCode = 'sent'; // Just for tracking
                     
                     // Check if using test email
                     if (emailValue === 'byprosprt2007@gmail.com') {
@@ -553,11 +556,13 @@
                     
                     showStep(2);
                     startTimer();
+                    step1Error.textContent = '';
                 } else {
                     step1Error.textContent = result.error || 'Failed to send code';
                 }
             } catch (error) {
-                step1Error.textContent = 'Connection error';
+                console.error('Send OTP error:', error);
+                step1Error.textContent = 'Connection error - check console';
             } finally {
                 sendCodeBtn.innerHTML = 'Send code';
                 sendCodeBtn.disabled = false;
@@ -566,7 +571,7 @@
 
         // ==================== Resend Code ====================
         resendLink.addEventListener('click', async () => {
-            if (!canResend) return;
+            if (!canResend || !userData.email) return;
             
             try {
                 const response = await fetch(`${CONFIG.API_BASE}/api/send-otp`, {
@@ -593,7 +598,7 @@
                 return;
             }
 
-            verifyCodeBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-color:white;border-top-color:#2a6df4;"></div>';
+            verifyCodeBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border:2px solid white;border-top:2px solid #2a6df4;border-radius:50%;animation:spin 1s linear infinite;"></div>';
             verifyCodeBtn.disabled = true;
 
             try {
@@ -608,10 +613,12 @@
                 if (response.ok && result.success) {
                     clearInterval(timerInterval);
                     showStep(3);
+                    step2Error.textContent = '';
                 } else {
                     step2Error.textContent = result.error || 'Invalid code';
                 }
             } catch (error) {
+                console.error('Verify OTP error:', error);
                 step2Error.textContent = 'Verification failed';
             } finally {
                 verifyCodeBtn.innerHTML = 'Verify';
@@ -628,7 +635,7 @@
                 return;
             }
 
-            signupBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-color:white;border-top-color:#2a6df4;"></div>';
+            signupBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border:2px solid white;border-top:2px solid #2a6df4;border-radius:50%;animation:spin 1s linear infinite;"></div>';
             signupBtn.disabled = true;
 
             try {
@@ -636,6 +643,11 @@
                 const idResponse = await fetch(`${CONFIG.API_BASE}/api/next-id`, {
                     headers: { 'x-api-key': 'bypro_internal_key_2025_secure' }
                 });
+                
+                if (!idResponse.ok) {
+                    throw new Error('Failed to get ID');
+                }
+                
                 const idResult = await idResponse.json();
                 const userId = idResult.success ? idResult.nextId : Math.floor(10000000 + Math.random() * 90000000).toString();
 
@@ -669,11 +681,13 @@
                     });
                     
                     showResult();
+                    step3Error.textContent = '';
                 } else {
                     step3Error.textContent = result.error || 'Failed to create account';
                 }
             } catch (error) {
-                step3Error.textContent = 'Server error';
+                console.error('Create account error:', error);
+                step3Error.textContent = 'Server error - check console';
             } finally {
                 signupBtn.innerHTML = 'Create account';
                 signupBtn.disabled = false;
@@ -698,6 +712,14 @@
 
         // ==================== Initialize ====================
         showStep(1);
+        
+        // منع الملء التلقائي للمتصفح
+        setTimeout(() => {
+            username.value = '';
+            email.value = '';
+            verificationCode.value = '';
+            password.value = '';
+        }, 100);
     </script>
 </body>
 </html>
