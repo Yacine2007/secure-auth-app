@@ -9,6 +9,7 @@
     <!-- QR Code library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
+        /* نفس التصميم الذي أرسلته مع إضافة رسالة Elastic */
         * {
             margin: 0;
             padding: 0;
@@ -70,64 +71,27 @@
             margin-left: 42px;
         }
         
-        /* Progress Bar */
-        .progress-bar {
+        /* مؤشر الخطوات */
+        .step-indicator {
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 30px;
-            position: relative;
+            gap: 6px;
+            margin-bottom: 24px;
         }
-        .progress-bar::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 0;
-            right: 0;
-            height: 3px;
+        .step-dot {
+            height: 6px;
+            flex: 1;
             background: #e0e0e0;
-            transform: translateY(-50%);
-            z-index: 1;
+            border-radius: 20px;
         }
-        .progress-step {
-            width: 35px;
-            height: 35px;
-            border-radius: 50%;
-            background: #e0e0e0;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-weight: bold;
-            color: #666;
-            position: relative;
-            z-index: 2;
-            transition: all 0.3s ease;
-        }
-        .progress-step.active {
+        .step-dot.active {
             background: #2a6df4;
-            color: white;
         }
-        .progress-step.completed {
+        .step-dot.completed {
             background: #000000;
-            color: white;
         }
         
-        /* Steps */
-        .step {
-            display: none;
-        }
-        .step.active {
-            display: block;
-        }
-        .step-content {
-            animation: fadeIn 0.5s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        /* Form Elements */
-        .form-group {
+        /* الحقول */
+        .input-group {
             margin-bottom: 20px;
         }
         label {
@@ -137,27 +101,170 @@
             color: #333333;
             margin-bottom: 6px;
         }
-        label i {
-            color: #2a6df4;
-            margin-right: 5px;
-        }
         input {
             width: 100%;
             padding: 14px 18px;
             border: 1.5px solid #cccccc;
             border-radius: 30px;
             font-size: 15px;
-            transition: 0.2s;
             background: white;
         }
         input:focus {
             outline: none;
             border-color: #2a6df4;
-            box-shadow: 0 0 0 3px rgba(42, 109, 244, 0.1);
         }
+        
+        /* الأزرار العادية */
+        .btn-primary {
+            width: 100%;
+            padding: 14px;
+            background: #000000;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            margin: 8px 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        .btn-primary:hover {
+            background: #2a6df4;
+        }
+        
+        /* رسالة Elastic Email */
+        .elastic-warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 12px;
+            border-radius: 20px;
+            margin: 15px 0;
+            font-size: 13px;
+            text-align: center;
+        }
+        .elastic-warning i {
+            color: #f0ad4e;
+            margin-right: 5px;
+        }
+        
+        /* ===== المرحلة الأخيرة فقط - تصميم أصغر ومتكيف ===== */
+        .result-box {
+            background: #f8fafd;
+            border-radius: 20px;
+            padding: 16px 12px;
+            margin: 10px 0 5px;
+            border: 1.5px dashed #2a6df4;
+            animation: fadeIn 0.3s ease;
+            max-width: 100%;
+        }
+        
+        .result-box i {
+            font-size: 28px;
+            color: #2a6df4;
+            margin-bottom: 5px;
+        }
+        
+        .result-box h3 {
+            font-size: 16px;
+            font-weight: 500;
+            color: #000;
+            margin-bottom: 10px;
+        }
+        
+        .user-id-label {
+            font-size: 11px;
+            font-weight: 400;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.3px;
+        }
+        
+        .user-id {
+            font-size: 20px;
+            font-weight: 500;
+            color: #000000;
+            background: white;
+            padding: 6px 16px;
+            border-radius: 40px;
+            border: 1.5px solid #2a6df4;
+            display: inline-block;
+            margin: 5px 0;
+            letter-spacing: 0.5px;
+            word-break: break-all;
+            max-width: 100%;
+        }
+        
+        .qr-note {
+            font-size: 11px;
+            font-weight: 400;
+            color: #666;
+            margin: 5px 0 3px;
+        }
+        
+        .qr-container {
+            display: flex;
+            justify-content: center;
+            margin: 8px 0 5px;
+            padding: 8px;
+            background: white;
+            border-radius: 12px;
+            max-width: 100%;
+        }
+        
+        .qr-container canvas {
+            max-width: 130px;
+            height: auto;
+        }
+        
+        .result-box p {
+            font-size: 10px;
+            font-weight: 300;
+            color: #888;
+            margin: 5px 0 8px;
+        }
+        
+        .result-actions {
+            display: flex;
+            gap: 6px;
+            margin: 8px 0 3px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        
+        .result-actions .btn-primary {
+            min-width: 100px;
+            padding: 8px 12px;
+            margin: 0;
+            font-size: 12px;
+            font-weight: 500;
+            border-radius: 30px;
+            background: white;
+            color: #000000;
+            border: 1.5px solid #000000;
+        }
+        
+        .result-actions .btn-primary i {
+            font-size: 12px;
+            margin-right: 4px;
+        }
+        
+        .result-actions .btn-success {
+            color: #2a6df4;
+            border-color: #2a6df4;
+        }
+        
+        .result-actions .btn-success:hover {
+            background: #2a6df4;
+            color: white;
+        }
+        
+        /* باقي العناصر */
         .password-wrapper {
             position: relative;
-            width: 100%;
         }
         .eye-icon {
             position: absolute;
@@ -165,243 +272,36 @@
             top: 50%;
             transform: translateY(-50%);
             cursor: pointer;
-            color: #777777;
+            color: #777;
             font-size: 16px;
         }
-        .password-strength {
-            height: 5px;
-            background: #e0e0e0;
-            border-radius: 5px;
-            margin-top: 8px;
-            overflow: hidden;
+        .error {
+            color: #e53e3e;
+            font-size: 12px;
+            margin-top: 4px;
         }
-        .strength-bar {
-            height: 100%;
-            width: 0;
-            transition: all 0.3s ease;
-        }
-        .strength-weak { background: #ff4444; width: 25%; }
-        .strength-medium { background: #ffbb33; width: 50%; }
-        .strength-strong { background: #00C851; width: 75%; }
-        .strength-very-strong { background: #007E33; width: 100%; }
-        
-        .info-box {
-            background: #e6f0ff;
-            border: 1px solid #2a6df4;
-            border-radius: 15px;
-            padding: 12px;
-            margin-top: 10px;
-            font-size: 13px;
-            color: #333;
-        }
-        .info-box i {
-            color: #2a6df4;
-            margin-right: 5px;
-        }
-        
-        /* Buttons */
-        .button-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 25px;
-        }
-        .btn {
-            flex: 1;
-            padding: 14px;
-            border: none;
-            border-radius: 40px;
-            font-size: 15px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-        }
-        .btn-primary {
-            background: #000000;
-            color: white;
-        }
-        .btn-primary:hover:not(:disabled) {
-            background: #2a6df4;
-        }
-        .btn-primary:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-        .btn-secondary {
-            background: white;
-            color: #000000;
-            border: 2px solid #000000;
-        }
-        .btn-secondary:hover {
-            background: #f5f5f5;
-            border-color: #2a6df4;
-            color: #2a6df4;
-        }
-        
-        /* Messages */
-        .status-message {
-            padding: 12px;
-            border-radius: 30px;
-            margin-bottom: 20px;
-            display: none;
-            text-align: center;
-            font-size: 14px;
-        }
-        .status-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-        .status-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ffffff;
-            border-top: 3px solid #2a6df4;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
-        /* Timer */
         .timer {
-            font-size: 13px;
+            font-size: 12px;
             color: #666;
-            margin-top: 10px;
+            margin-top: 8px;
             text-align: center;
         }
         .resend-link {
             color: #2a6df4;
             cursor: pointer;
             font-weight: 500;
-            margin-left: 5px;
         }
         .resend-link.disabled {
             color: #999;
-            cursor: not-allowed;
             pointer-events: none;
         }
-        
-        /* Terms */
-        .terms-toggle {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        .toggle-btn {
-            background: none;
-            border: none;
+        .link {
             color: #2a6df4;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 8px 16px;
-            border-radius: 30px;
-            transition: 0.2s;
-        }
-        .toggle-btn:hover {
-            background: #e6f0ff;
-        }
-        .terms-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 20px;
-            display: none;
-        }
-        .terms-section.show {
-            display: block;
-        }
-        .terms-section h4 {
-            color: #333;
-            margin-bottom: 15px;
-        }
-        .terms-section p {
-            color: #666;
-            margin-bottom: 10px;
+            text-decoration: none;
+            font-weight: 500;
             font-size: 13px;
-            line-height: 1.5;
-        }
-        .terms-checkbox {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            margin: 20px 0;
-        }
-        .terms-checkbox input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-        .terms-checkbox label {
-            margin-bottom: 0;
-            cursor: pointer;
-            font-size: 14px;
-        }
-        
-        /* Success Step */
-        .success-section {
-            text-align: center;
-        }
-        .qr-container {
-            display: flex;
-            justify-content: center;
-            margin: 15px 0;
-            padding: 10px;
-            background: white;
-            border-radius: 15px;
-            border: 2px dashed #2a6df4;
-        }
-        .qr-container canvas {
-            max-width: 150px;
-            height: auto;
-        }
-        .account-details {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 15px;
-            margin: 15px 0;
-            text-align: left;
-            font-size: 13px;
-        }
-        .account-details p {
-            margin-bottom: 8px;
-            color: #333;
-        }
-        .account-details strong {
-            color: #2a6df4;
+            margin-top: 16px;
             display: inline-block;
-            width: 90px;
-        }
-        .result-actions {
-            display: flex;
-            gap: 8px;
-            margin: 15px 0;
-        }
-        .result-actions .btn {
-            flex: 1;
-            padding: 10px;
-            font-size: 13px;
-        }
-        .warning-text {
-            color: #856404;
-            background: #fff3cd;
-            padding: 10px;
-            border-radius: 30px;
-            font-size: 12px;
-            margin-top: 15px;
         }
         .welcome-message {
             position: fixed;
@@ -412,19 +312,14 @@
             color: white;
             padding: 12px 24px;
             border-radius: 40px;
-            font-weight: 500;
             font-size: 14px;
             z-index: 2000;
             min-width: 250px;
             text-align: center;
         }
-        .link {
-            color: #2a6df4;
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-            display: inline-block;
-            margin-top: 16px;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
@@ -440,163 +335,79 @@
             </div>
             <div class="subtitle">Create your account</div>
 
-            <!-- Progress Bar -->
-            <div class="progress-bar">
-                <div class="progress-step active" id="step1">1</div>
-                <div class="progress-step" id="step2">2</div>
-                <div class="progress-step" id="step3">3</div>
-                <div class="progress-step" id="step4">4</div>
+            <!-- مؤشر الخطوات -->
+            <div class="step-indicator">
+                <div class="step-dot active" id="step1Dot"></div>
+                <div class="step-dot" id="step2Dot"></div>
+                <div class="step-dot" id="step3Dot"></div>
             </div>
 
-            <!-- Status Message -->
-            <div id="statusMessage" class="status-message"></div>
+            <!-- رسالة Elastic Email -->
+            <div class="elastic-warning" id="elasticWarning">
+                <i class="fas fa-info-circle"></i>
+                For testing: Codes are sent to byprosprt2007@gmail.com only
+            </div>
 
-            <!-- Step 1: Terms -->
-            <div class="step active" id="step1-content">
-                <div class="step-content">
-                    <div class="form-group">
-                        <h3 style="color: #2a6df4; text-align: center; margin-bottom: 20px;">
-                            <i class="fas fa-shield-alt"></i> Welcome to B.Y PRO
-                        </h3>
-                        
-                        <div class="terms-toggle">
-                            <button class="toggle-btn" id="toggleTermsBtn">
-                                <i class="fas fa-chevron-down"></i> View Terms & Conditions
-                            </button>
-                        </div>
-
-                        <div class="terms-section" id="termsSection">
-                            <h4>B.Y PRO Terms & Conditions</h4>
-                            <p>1. By creating an account, you agree to use B.Y PRO services responsibly.</p>
-                            <p>2. Your account is personal and non-transferable.</p>
-                            <p>3. Account security is your responsibility.</p>
-                            <p>4. For support, contact: byprosprt2007@gmail.com</p>
-                        </div>
-
-                        <div class="terms-checkbox">
-                            <input type="checkbox" id="acceptTerms">
-                            <label for="acceptTerms">I agree to the Terms & Conditions</label>
-                        </div>
-                    </div>
-                    <button class="btn btn-primary" id="next1" disabled>
-                        Continue <i class="fas fa-arrow-right"></i>
-                    </button>
+            <!-- الخطوات -->
+            <div id="step1">
+                <div class="input-group">
+                    <label><i class="fas fa-user" style="color: #2a6df4;"></i> Username</label>
+                    <input type="text" id="username" placeholder="e.g. john_doe">
                 </div>
+                <div class="input-group">
+                    <label><i class="fas fa-envelope" style="color: #2a6df4;"></i> Email</label>
+                    <input type="email" id="email" placeholder="you@example.com">
+                </div>
+                <button class="btn-primary" id="sendCodeBtn">Send code</button>
+                <div id="step1Error" class="error"></div>
             </div>
 
-            <!-- Step 2: Name and Email -->
-            <div class="step" id="step2-content">
-                <div class="step-content">
-                    <div class="form-group">
-                        <label><i class="fas fa-user"></i> Full Name</label>
-                        <input type="text" id="fullName" placeholder="Enter your full name">
+            <div id="step2" style="display: none;">
+                <div class="input-group">
+                    <label><i class="fas fa-lock" style="color: #2a6df4;"></i> Verification code</label>
+                    <input type="text" id="verificationCode" placeholder="6-digit code" maxlength="6">
+                </div>
+                <button class="btn-primary" id="verifyCodeBtn">Verify</button>
+                <div id="step2Error" class="error"></div>
+                <div class="timer" id="timer">Code sent! <span id="resendLink" class="resend-link">Resend</span></div>
+            </div>
+
+            <div id="step3" style="display: none;">
+                <div class="input-group">
+                    <label><i class="fas fa-key" style="color: #2a6df4;"></i> Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="password" placeholder="Create a strong password">
+                        <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
                     </div>
+                </div>
+                <button class="btn-primary" id="signupBtn">Create account</button>
+                <div id="step3Error" class="error"></div>
+            </div>
+
+            <!-- المرحلة الأخيرة - مصغرة ومتكيفة -->
+            <div id="resultArea" style="display: none;">
+                <div class="result-box">
+                    <i class="fas fa-check-circle"></i>
+                    <h3>Account Created</h3>
                     
-                    <div class="form-group">
-                        <label><i class="fas fa-envelope"></i> Email Address</label>
-                        <input type="email" id="email" placeholder="Enter your email">
-                        <div class="info-box">
-                            <p><i class="fas fa-info-circle"></i> A verification code will be sent to this email</p>
-                        </div>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn btn-secondary" id="prev2">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                        <button class="btn btn-primary" id="next2">
-                            Send Code <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 3: OTP Verification -->
-            <div class="step" id="step3-content">
-                <div class="step-content">
-                    <div class="form-group">
-                        <label><i class="fas fa-lock"></i> Verification Code</label>
-                        <input type="text" id="otpCode" placeholder="6-digit code" maxlength="6">
-                        <div class="timer" id="timer">
-                            <span id="timerText"></span>
-                            <span id="resendLink" class="resend-link">Resend code</span>
-                        </div>
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn btn-secondary" id="prev3">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                        <button class="btn btn-primary" id="verifyOtpBtn">
-                            Verify <i class="fas fa-check-circle"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Step 4: Password -->
-            <div class="step" id="step4-content">
-                <div class="step-content">
-                    <div class="form-group">
-                        <label><i class="fas fa-lock"></i> Password</label>
-                        <div class="password-wrapper">
-                            <input type="password" id="password" placeholder="Create a strong password">
-                            <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
-                        </div>
-                        <div class="password-strength">
-                            <div class="strength-bar" id="passwordStrength"></div>
-                        </div>
-                    </div>
+                    <div class="user-id-label">YOUR ID</div>
+                    <div class="user-id" id="displayId"></div>
                     
-                    <div class="form-group">
-                        <label><i class="fas fa-lock"></i> Confirm Password</label>
-                        <input type="password" id="confirmPassword" placeholder="Confirm your password">
-                    </div>
-
-                    <div class="button-group">
-                        <button class="btn btn-secondary" id="prev4">
-                            <i class="fas fa-arrow-left"></i> Back
-                        </button>
-                        <button class="btn btn-primary" id="createAccountBtn">
-                            Create Account <i class="fas fa-user-plus"></i>
-                        </button>
+                    <div class="qr-note"><i class="fas fa-qrcode"></i> Scan to login</div>
+                    <div id="qrcode" class="qr-container"></div>
+                    
+                    <p>Save QR for quick login</p>
+                    
+                    <div class="result-actions">
+                        <button class="btn-primary" id="saveQRBtn"><i class="fas fa-download"></i> Save</button>
+                        <button class="btn-primary btn-success" id="confirmLoginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
                     </div>
                 </div>
             </div>
 
-            <!-- Step 5: Success -->
-            <div class="step" id="step5-content">
-                <div class="step-content">
-                    <div class="success-section">
-                        <div class="status-success" style="display: block; padding: 12px; margin-bottom: 15px;">
-                            <i class="fas fa-check-circle"></i> Account Created!
-                        </div>
-                        
-                        <h3 style="margin: 15px 0; font-size: 18px;">Welcome, <span id="successName"></span>!</h3>
-
-                        <div class="qr-container" id="qrCode"></div>
-
-                        <div class="account-details">
-                            <p><strong>Account ID:</strong> <span id="displayId" style="color: #2a6df4;"></span></p>
-                            <p><strong>Full Name:</strong> <span id="displayName"></span></p>
-                            <p><strong>Email:</strong> <span id="displayEmail"></span></p>
-                        </div>
-
-                        <div class="result-actions">
-                            <button class="btn btn-secondary" id="downloadQR">
-                                <i class="fas fa-download"></i> Save QR
-                            </button>
-                            <a href="login.html" class="btn btn-primary">
-                                <i class="fas fa-sign-in-alt"></i> Login
-                            </a>
-                        </div>
-
-                        <div class="warning-text">
-                            <i class="fas fa-shield-alt"></i> Save your QR code securely
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <p id="loginLink" style="text-align: center; margin-top: 16px;">
+                <a href="login.html" class="link">Already have an account?</a>
+            </p>
         </div>
     </div>
 
@@ -607,116 +418,76 @@
         };
 
         // ==================== DOM Elements ====================
-        const steps = document.querySelectorAll('.step');
-        const progressSteps = document.querySelectorAll('.progress-step');
-        const statusMessage = document.getElementById('statusMessage');
+        const step1 = document.getElementById('step1');
+        const step2 = document.getElementById('step2');
+        const step3 = document.getElementById('step3');
+        const resultArea = document.getElementById('resultArea');
+        const loginLink = document.getElementById('loginLink');
+        const step1Dot = document.getElementById('step1Dot');
+        const step2Dot = document.getElementById('step2Dot');
+        const step3Dot = document.getElementById('step3Dot');
         
-        const acceptTerms = document.getElementById('acceptTerms');
-        const fullName = document.getElementById('fullName');
+        const username = document.getElementById('username');
         const email = document.getElementById('email');
-        const otpCode = document.getElementById('otpCode');
+        const verificationCode = document.getElementById('verificationCode');
         const password = document.getElementById('password');
-        const confirmPassword = document.getElementById('confirmPassword');
         const togglePassword = document.getElementById('togglePassword');
         
-        const next1 = document.getElementById('next1');
-        const prev2 = document.getElementById('prev2');
-        const next2 = document.getElementById('next2');
-        const prev3 = document.getElementById('prev3');
-        const verifyOtpBtn = document.getElementById('verifyOtpBtn');
-        const prev4 = document.getElementById('prev4');
-        const createAccountBtn = document.getElementById('createAccountBtn');
-        const downloadQR = document.getElementById('downloadQR');
-        const toggleTermsBtn = document.getElementById('toggleTermsBtn');
-        const termsSection = document.getElementById('termsSection');
+        const sendCodeBtn = document.getElementById('sendCodeBtn');
+        const verifyCodeBtn = document.getElementById('verifyCodeBtn');
+        const signupBtn = document.getElementById('signupBtn');
+        const saveQRBtn = document.getElementById('saveQRBtn');
+        const confirmLoginBtn = document.getElementById('confirmLoginBtn');
         const resendLink = document.getElementById('resendLink');
-        const timerText = document.getElementById('timerText');
-
-        const successName = document.getElementById('successName');
+        
+        const step1Error = document.getElementById('step1Error');
+        const step2Error = document.getElementById('step2Error');
+        const step3Error = document.getElementById('step3Error');
+        const timer = document.getElementById('timer');
+        
         const displayId = document.getElementById('displayId');
-        const displayName = document.getElementById('displayName');
-        const displayEmail = document.getElementById('displayEmail');
-        const qrCode = document.getElementById('qrCode');
+        const qrcode = document.getElementById('qrcode');
+        const elasticWarning = document.getElementById('elasticWarning');
 
         // ==================== State ====================
         let currentStep = 1;
-        let userData = {
-            name: '',
-            email: '',
-            accountId: '',
-            password: ''
-        };
+        let userData = {};
+        let generatedCode = '';
         let timerInterval;
         let timeLeft = 60;
         let canResend = true;
 
-        // ==================== UI Helpers ====================
-        function showStatus(message, type) {
-            statusMessage.textContent = message;
-            statusMessage.className = `status-message status-${type}`;
-            statusMessage.style.display = 'block';
-            setTimeout(() => {
-                statusMessage.style.display = 'none';
-            }, 3000);
-        }
-
-        function goToStep(step) {
-            steps.forEach(s => s.classList.remove('active'));
-            progressSteps.forEach((p, index) => {
-                p.classList.remove('active', 'completed');
-                if (index + 1 < step) {
-                    p.classList.add('completed');
-                } else if (index + 1 === step) {
-                    p.classList.add('active');
-                }
-            });
-            document.getElementById(`step${step}-content`).classList.add('active');
-            currentStep = step;
-        }
-
-        // ==================== Terms ====================
-        toggleTermsBtn.addEventListener('click', () => {
-            termsSection.classList.toggle('show');
-            toggleTermsBtn.innerHTML = termsSection.classList.contains('show') ? 
-                '<i class="fas fa-chevron-up"></i> Hide Terms' : 
-                '<i class="fas fa-chevron-down"></i> View Terms & Conditions';
-        });
-
-        acceptTerms.addEventListener('change', () => {
-            next1.disabled = !acceptTerms.checked;
-        });
-
-        // ==================== Password Toggle ====================
+        // ==================== Toggle Password ====================
         togglePassword.addEventListener('click', function() {
-            const type = password.getAttribute('type') === 'password' ? 'text' : 'password';
-            password.setAttribute('type', type);
+            const type = password.type === 'password' ? 'text' : 'password';
+            password.type = type;
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
 
-        // ==================== Password Strength ====================
-        password.addEventListener('input', function() {
-            const strength = checkPasswordStrength(this.value);
-            updateStrengthBar(strength);
-        });
-
-        function checkPasswordStrength(password) {
-            let strength = 0;
-            if (password.length >= 8) strength++;
-            if (/[a-z]/.test(password)) strength++;
-            if (/[A-Z]/.test(password)) strength++;
-            if (/[0-9]/.test(password)) strength++;
-            if (/[^A-Za-z0-9]/.test(password)) strength++;
-            return strength;
+        // ==================== Step Navigation ====================
+        function showStep(step) {
+            step1.style.display = step === 1 ? 'block' : 'none';
+            step2.style.display = step === 2 ? 'block' : 'none';
+            step3.style.display = step === 3 ? 'block' : 'none';
+            resultArea.style.display = 'none';
+            loginLink.style.display = 'block';
+            
+            step1Dot.className = 'step-dot' + (step >= 1 ? ' completed' : '') + (step === 1 ? ' active' : '');
+            step2Dot.className = 'step-dot' + (step >= 2 ? ' completed' : '') + (step === 2 ? ' active' : '');
+            step3Dot.className = 'step-dot' + (step >= 3 ? ' completed' : '') + (step === 3 ? ' active' : '');
         }
 
-        function updateStrengthBar(strength) {
-            const bar = document.getElementById('passwordStrength');
-            bar.className = 'strength-bar';
-            if (strength <= 2) bar.classList.add('strength-weak');
-            else if (strength === 3) bar.classList.add('strength-medium');
-            else if (strength === 4) bar.classList.add('strength-strong');
-            else if (strength === 5) bar.classList.add('strength-very-strong');
+        function showResult() {
+            step1.style.display = 'none';
+            step2.style.display = 'none';
+            step3.style.display = 'none';
+            resultArea.style.display = 'block';
+            loginLink.style.display = 'none';
+            
+            step1Dot.className = 'step-dot completed';
+            step2Dot.className = 'step-dot completed';
+            step3Dot.className = 'step-dot completed';
         }
 
         // ==================== Timer ====================
@@ -725,38 +496,37 @@
             canResend = false;
             resendLink.classList.add('disabled');
             
+            timer.innerHTML = `Resend in ${timeLeft}s <span id="resendLink" class="resend-link disabled">Resend</span>`;
+            
             timerInterval = setInterval(() => {
                 timeLeft--;
-                timerText.textContent = `Resend in ${timeLeft}s `;
-                
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     canResend = true;
-                    resendLink.classList.remove('disabled');
-                    timerText.textContent = 'Code expired. ';
+                    timer.innerHTML = `<span id="resendLink" class="resend-link">Resend</span>`;
+                } else {
+                    timer.innerHTML = `Resend in ${timeLeft}s <span id="resendLink" class="resend-link disabled">Resend</span>`;
                 }
             }, 1000);
         }
 
-        // ==================== Send OTP ====================
-        async function sendOTP() {
-            const name = fullName.value.trim();
+        // ==================== Send Code ====================
+        sendCodeBtn.addEventListener('click', async () => {
+            const name = username.value.trim();
             const emailValue = email.value.trim();
-
-            if (!name) {
-                showStatus('Please enter your full name', 'error');
-                return false;
+            
+            if (!name || !emailValue) {
+                step1Error.textContent = 'All fields required';
+                return;
             }
-            if (!emailValue || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-                showStatus('Please enter a valid email', 'error');
-                return false;
+            
+            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
+                step1Error.textContent = 'Invalid email format';
+                return;
             }
 
-            userData.name = name;
-            userData.email = emailValue;
-
-            next2.innerHTML = '<div class="loading-spinner"></div>';
-            next2.disabled = true;
+            sendCodeBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-color:white;border-top-color:#2a6df4;"></div>';
+            sendCodeBtn.disabled = true;
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE}/api/send-otp`, {
@@ -768,33 +538,63 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    showStatus('Verification code sent!', 'success');
-                    goToStep(3);
+                    userData = { username: name, email: emailValue };
+                    generatedCode = 'sent'; // Just for tracking
+                    
+                    // Check if using test email
+                    if (emailValue === 'byprosprt2007@gmail.com') {
+                        elasticWarning.style.display = 'block';
+                    } else {
+                        elasticWarning.innerHTML = '<i class="fas fa-info-circle"></i> Code sent! Check your email';
+                        elasticWarning.style.background = '#d4edda';
+                        elasticWarning.style.color = '#155724';
+                        elasticWarning.style.borderColor = '#c3e6cb';
+                    }
+                    
+                    showStep(2);
                     startTimer();
-                    return true;
                 } else {
-                    showStatus(result.error || 'Failed to send code', 'error');
-                    return false;
+                    step1Error.textContent = result.error || 'Failed to send code';
                 }
             } catch (error) {
-                showStatus('Cannot connect to server', 'error');
-                return false;
+                step1Error.textContent = 'Connection error';
             } finally {
-                next2.innerHTML = 'Send Code <i class="fas fa-paper-plane"></i>';
-                next2.disabled = false;
+                sendCodeBtn.innerHTML = 'Send code';
+                sendCodeBtn.disabled = false;
             }
-        }
+        });
 
-        // ==================== Verify OTP ====================
-        async function verifyOTP() {
-            const code = otpCode.value.trim();
+        // ==================== Resend Code ====================
+        resendLink.addEventListener('click', async () => {
+            if (!canResend) return;
+            
+            try {
+                const response = await fetch(`${CONFIG.API_BASE}/api/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: userData.email })
+                });
+
+                if (response.ok) {
+                    startTimer();
+                    step2Error.textContent = '';
+                }
+            } catch (error) {
+                step2Error.textContent = 'Failed to resend';
+            }
+        });
+
+        // ==================== Verify Code ====================
+        verifyCodeBtn.addEventListener('click', async () => {
+            const code = verificationCode.value.trim();
+            
             if (!code || code.length !== 6) {
-                showStatus('Please enter 6-digit code', 'error');
-                return false;
+                step2Error.textContent = 'Enter 6-digit code';
+                return;
             }
 
-            verifyOtpBtn.innerHTML = '<div class="loading-spinner"></div>';
-            verifyOtpBtn.disabled = true;
+            verifyCodeBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-color:white;border-top-color:#2a6df4;"></div>';
+            verifyCodeBtn.disabled = true;
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE}/api/verify-otp`, {
@@ -806,41 +606,30 @@
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    showStatus('Email verified!', 'success');
                     clearInterval(timerInterval);
-                    goToStep(4);
-                    return true;
+                    showStep(3);
                 } else {
-                    showStatus(result.error || 'Invalid code', 'error');
-                    return false;
+                    step2Error.textContent = result.error || 'Invalid code';
                 }
             } catch (error) {
-                showStatus('Verification failed', 'error');
-                return false;
+                step2Error.textContent = 'Verification failed';
             } finally {
-                verifyOtpBtn.innerHTML = 'Verify <i class="fas fa-check-circle"></i>';
-                verifyOtpBtn.disabled = false;
+                verifyCodeBtn.innerHTML = 'Verify';
+                verifyCodeBtn.disabled = false;
             }
-        }
+        });
 
         // ==================== Create Account ====================
-        async function createAccount() {
+        signupBtn.addEventListener('click', async () => {
             const pass = password.value.trim();
-            const confirmPass = confirmPassword.value.trim();
-
-            if (pass.length < 8) {
-                showStatus('Password must be at least 8 characters', 'error');
-                return;
-            }
-            if (pass !== confirmPass) {
-                showStatus('Passwords do not match', 'error');
+            
+            if (pass.length < 6) {
+                step3Error.textContent = 'Password too short';
                 return;
             }
 
-            userData.password = pass;
-
-            createAccountBtn.innerHTML = '<div class="loading-spinner"></div>';
-            createAccountBtn.disabled = true;
+            signupBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-color:white;border-top-color:#2a6df4;"></div>';
+            signupBtn.disabled = true;
 
             try {
                 // Get next ID
@@ -848,91 +637,67 @@
                     headers: { 'x-api-key': 'bypro_internal_key_2025_secure' }
                 });
                 const idResult = await idResponse.json();
-                userData.accountId = idResult.success ? idResult.nextId : Math.floor(10000000 + Math.random() * 90000000).toString();
+                const userId = idResult.success ? idResult.nextId : Math.floor(10000000 + Math.random() * 90000000).toString();
 
                 // Create account
                 const response = await fetch(`${CONFIG.API_BASE}/api/create-account`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: userData.accountId,
-                        name: userData.name,
+                        id: userId,
+                        name: userData.username,
                         email: userData.email,
-                        password: userData.password,
-                        otpCode: otpCode.value.trim()
+                        password: pass,
+                        otpCode: verificationCode.value.trim()
                     })
                 });
 
                 const result = await response.json();
 
                 if (response.ok && result.success) {
-                    successName.textContent = userData.name;
-                    displayId.textContent = userData.accountId;
-                    displayName.textContent = userData.name;
-                    displayEmail.textContent = userData.email;
-
-                    const qrData = `BYPRO:${userData.accountId}:${userData.password}`;
-                    qrCode.innerHTML = '';
-                    new QRCode(qrCode, {
+                    displayId.textContent = userId;
+                    
+                    // Generate QR
+                    const qrData = `BYPRO:${userId}:${pass}`;
+                    qrcode.innerHTML = '';
+                    new QRCode(qrcode, {
                         text: qrData,
-                        width: 150,
-                        height: 150,
+                        width: 130,
+                        height: 130,
                         colorDark: "#000000",
                         colorLight: "#ffffff"
                     });
-
-                    goToStep(5);
+                    
+                    showResult();
                 } else {
-                    showStatus(result.error || 'Failed to create account', 'error');
+                    step3Error.textContent = result.error || 'Failed to create account';
                 }
             } catch (error) {
-                showStatus('Server error. Please try again.', 'error');
+                step3Error.textContent = 'Server error';
             } finally {
-                createAccountBtn.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
-                createAccountBtn.disabled = false;
+                signupBtn.innerHTML = 'Create account';
+                signupBtn.disabled = false;
             }
-        }
+        });
 
-        // ==================== Download QR ====================
-        function downloadQRCode() {
-            const canvas = qrCode.querySelector('canvas');
+        // ==================== Save QR ====================
+        saveQRBtn.addEventListener('click', () => {
+            const canvas = qrcode.querySelector('canvas');
             if (canvas) {
                 const link = document.createElement('a');
-                link.download = `BYPRO-${userData.accountId}.png`;
-                link.href = canvas.toDataURL('image/png');
+                link.download = `BYPRO-${displayId.textContent}.png`;
+                link.href = canvas.toDataURL();
                 link.click();
-                showStatus('QR code saved!', 'success');
             }
-        }
-
-        // ==================== Event Listeners ====================
-        next1.addEventListener('click', () => goToStep(2));
-        prev2.addEventListener('click', () => goToStep(1));
-        next2.addEventListener('click', sendOTP);
-        prev3.addEventListener('click', () => goToStep(2));
-        verifyOtpBtn.addEventListener('click', verifyOTP);
-        prev4.addEventListener('click', () => goToStep(3));
-        createAccountBtn.addEventListener('click', createAccount);
-        downloadQR.addEventListener('click', downloadQRCode);
-
-        resendLink.addEventListener('click', () => {
-            if (canResend) sendOTP();
         });
 
-        // Enter key support
-        [fullName, email].forEach(input => {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') next2.click();
-            });
+        // ==================== Go to Login ====================
+        confirmLoginBtn.addEventListener('click', () => {
+            window.location.href = 'login.html';
         });
-        otpCode.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') verifyOtpBtn.click();
-        });
-        [password, confirmPassword].forEach(input => {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') createAccountBtn.click();
-            });
-        });
+
+        // ==================== Initialize ====================
+        showStep(1);
     </script>
 </body>
 </html>
