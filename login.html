@@ -1,8 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
     <title>B.Y PRO - Login</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
@@ -250,6 +251,9 @@
             font-size: 13px;
             word-break: break-all;
         }
+        .success {
+            color: #2a6df4;
+        }
         .welcome-message {
             position: fixed;
             top: 15px;
@@ -264,10 +268,32 @@
             z-index: 2000;
             min-width: 250px;
             text-align: center;
+            animation: slideDown 0.3s ease;
+            box-shadow: 0 4px 20px rgba(42, 109, 244, 0.4);
+        }
+        @keyframes slideDown {
+            from {
+                top: -100px;
+                opacity: 0;
+            }
+            to {
+                top: 15px;
+                opacity: 1;
+            }
+        }
+        
+        /* منع الترجمة */
+        [translate="no"] {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .brand-black, .brand-account {
+            -webkit-user-select: text;
+            user-select: text;
         }
     </style>
 </head>
-<body>
+<body translate="no">
     <div class="container">
         <div class="card">
             <div class="header">
@@ -362,7 +388,9 @@
     <script>
         // ==================== CONFIG ====================
         const CONFIG = {
-            API_BASE: 'https://b-y-pro-acounts-login.onrender.com'
+            API_BASE: 'https://b-y-pro-acounts-login.onrender.com',
+            SESSION_KEY: 'bypro_session',
+            SESSION_DURATION: 30 * 24 * 60 * 60 * 1000 // 30 days
         };
 
         // ==================== DOM Elements ====================
@@ -371,6 +399,62 @@
         const loginPassword = document.getElementById('loginPassword');
         const loginError = document.getElementById('loginError');
         const togglePassword = document.getElementById('togglePassword');
+
+        // ==================== Session Management ====================
+        const Session = {
+            save: (userData) => {
+                const session = {
+                    user: userData,
+                    timestamp: Date.now(),
+                    expires: Date.now() + CONFIG.SESSION_DURATION
+                };
+                localStorage.setItem(CONFIG.SESSION_KEY, JSON.stringify(session));
+            },
+            get: () => {
+                try {
+                    const session = JSON.parse(localStorage.getItem(CONFIG.SESSION_KEY));
+                    if (!session) return null;
+                    
+                    // Check if expired
+                    if (Date.now() > session.expires) {
+                        localStorage.removeItem(CONFIG.SESSION_KEY);
+                        return null;
+                    }
+                    
+                    return session.user;
+                } catch {
+                    return null;
+                }
+            },
+            clear: () => {
+                localStorage.removeItem(CONFIG.SESSION_KEY);
+            },
+            isValid: () => {
+                const session = Session.get();
+                return session !== null;
+            }
+        };
+
+        // ==================== Check Session Periodically ====================
+        function startSessionChecker() {
+            // Check every minute
+            setInterval(() => {
+                if (!Session.isValid()) {
+                    // Session expired, reload to show login form
+                    window.location.reload();
+                }
+            }, 60000); // 60 seconds
+        }
+
+        // ==================== Auto Login from Session ====================
+        function attemptAutoLogin() {
+            const user = Session.get();
+            if (user) {
+                showWelcomeMessage(user.name || 'User', true); // true = auto login
+                return true;
+            }
+            return false;
+        }
 
         // ==================== Toggle Password ====================
         togglePassword.addEventListener('click', function() {
@@ -401,6 +485,9 @@
                 const result = await response.json();
 
                 if (result.success) {
+                    // Save session
+                    Session.save(result.account);
+                    
                     loginError.style.color = '#2a6df4';
                     loginError.textContent = '';
                     showWelcomeMessage(result.account.name || 'User');
@@ -414,12 +501,24 @@
             }
         });
 
-        function showWelcomeMessage(username) {
+        function showWelcomeMessage(username, isAutoLogin = false) {
             const welcomeDiv = document.createElement('div');
             welcomeDiv.className = 'welcome-message';
-            welcomeDiv.innerHTML = `<i class="fas fa-smile-wink"></i> Welcome back, ${username}!`;
+            welcomeDiv.innerHTML = `<i class="fas fa-check-circle"></i> Welcome back, ${username}!`;
             document.body.appendChild(welcomeDiv);
-            setTimeout(() => window.location.href = 'signup.html', 2000);
+            
+            // Hide login form
+            document.querySelector('.card').style.opacity = '0.5';
+            
+            setTimeout(() => {
+                welcomeDiv.remove();
+                document.querySelector('.card').style.opacity = '1';
+                
+                if (!isAutoLogin) {
+                    // After manual login, we stay on login page but show logged in state
+                    // You could redirect to dashboard here if needed
+                }
+            }, 2000);
         }
 
         // ==================== QR Code Logic ====================
@@ -538,6 +637,9 @@
                         const result = await response.json();
                         
                         if (result.success) {
+                            // Save session
+                            Session.save(result.account);
+                            
                             qrModalResult.innerHTML = '<span style="color:#2a6df4;">✅ Login successful!</span>';
                             qrModal.style.display = 'none';
                             if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
@@ -553,6 +655,17 @@
                 qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Invalid QR format</span>';
             }
         }
+
+        // ==================== Initialize ====================
+        document.addEventListener('DOMContentLoaded', () => {
+            if (!attemptAutoLogin()) {
+                // No active session, show login form
+                startSessionChecker();
+            } else {
+                // User is already logged in via session
+                document.querySelector('.card').style.opacity = '0.5';
+            }
+        });
     </script>
 </body>
 </html>
