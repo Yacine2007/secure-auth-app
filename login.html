@@ -3,31 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>B.Y PRO Accounts - Login</title>
-    <link rel="icon" type="image/png" href="https://by-pro.kesug.com/B.Y%20PRO.png">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <title>B.Y PRO - Login</title>
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <!-- jsQR -->
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
         * {
             margin: 0;
             padding: 0;
             box-sizing: border-box;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
-
         body {
             background: #000000;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 16px;
+            padding: 12px;
         }
-
         .container {
             width: 100%;
             max-width: 400px;
         }
-
         .card {
             background: #ffffff;
             border-radius: 28px;
@@ -35,33 +34,28 @@
             box-shadow: 0 15px 30px rgba(255, 255, 255, 0.03);
             border: 1px solid #e0e0e0;
         }
-
         .header {
             display: flex;
             align-items: center;
             gap: 10px;
             margin-bottom: 6px;
         }
-
         .logo-img {
-            width: 40px;
-            height: 40px;
+            width: 32px;
+            height: 32px;
             object-fit: contain;
         }
-
         .brand {
             display: flex;
             align-items: center;
             flex-wrap: wrap;
         }
-
         .brand-black {
             font-size: 24px;
             font-weight: 600;
             color: #000000;
             letter-spacing: -0.3px;
         }
-
         .brand-account {
             font-size: 24px;
             font-weight: 600;
@@ -69,36 +63,15 @@
             letter-spacing: -0.3px;
             margin-left: 4px;
         }
-
         .subtitle {
             color: #4a4a4a;
             font-size: 14px;
             margin-bottom: 24px;
-            margin-left: 50px;
+            margin-left: 42px;
         }
-
-        .connection-dot {
-            width: 12px;
-            height: 12px;
-            border-radius: 50%;
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #ff4444;
-            box-shadow: 0 0 10px rgba(255, 68, 68, 0.5);
-            transition: all 0.3s ease;
-            z-index: 1000;
-        }
-
-        .connection-online {
-            background: #00C851;
-            box-shadow: 0 0 10px rgba(0, 200, 81, 0.5);
-        }
-
         .input-group {
             margin-bottom: 20px;
         }
-
         label {
             display: block;
             font-size: 13px;
@@ -106,41 +79,24 @@
             color: #333333;
             margin-bottom: 6px;
         }
-
-        .input-with-icon {
-            position: relative;
-            display: flex;
-            align-items: center;
-        }
-
-        .input-icon {
-            position: absolute;
-            left: 16px;
-            color: #2a6df4;
-            font-size: 16px;
-        }
-
         input {
             width: 100%;
-            padding: 14px 18px 14px 45px;
+            padding: 14px 18px;
             border: 1.5px solid #cccccc;
             border-radius: 30px;
             font-size: 15px;
             transition: 0.2s;
             background: white;
         }
-
         input:focus {
             outline: none;
             border-color: #2a6df4;
             box-shadow: 0 0 0 3px rgba(42, 109, 244, 0.1);
         }
-
         .password-wrapper {
             position: relative;
             width: 100%;
         }
-
         .eye-icon {
             position: absolute;
             right: 18px;
@@ -149,766 +105,454 @@
             cursor: pointer;
             color: #777777;
             font-size: 16px;
-            z-index: 2;
         }
-
-        .login-methods {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 25px;
-        }
-
-        .method-btn {
-            flex: 1;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 30px;
-            background: white;
-            color: #666;
-            font-size: 14px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s ease;
+        .qr-trigger {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 8px;
-        }
-
-        .method-btn i {
-            font-size: 16px;
-        }
-
-        .method-btn.active {
-            background: #000000;
-            color: white;
-            border-color: #000000;
-        }
-
-        .method-btn.active i {
-            color: white;
-        }
-
-        .login-form {
-            display: none;
-        }
-
-        .login-form.active {
-            display: block;
-        }
-
-        .qr-upload-area {
-            border: 2px dashed #cccccc;
-            border-radius: 20px;
-            padding: 30px 20px;
-            text-align: center;
+            margin: 16px 0 8px;
+            color: #555;
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: 20px;
-            background: #f8fafd;
+            padding: 8px;
+            border-radius: 30px;
+            font-size: 14px;
         }
-
-        .qr-upload-area:hover {
-            border-color: #2a6df4;
-            background: #e6f0ff;
-        }
-
-        .qr-upload-area i {
-            font-size: 48px;
+        .qr-trigger:hover {
             color: #2a6df4;
-            margin-bottom: 10px;
+            background: #f5f5f5;
         }
-
-        .qr-upload-area p {
-            color: #333;
-            font-weight: 500;
-            margin-bottom: 5px;
+        .qr-trigger i {
+            font-size: 20px;
         }
-
-        .qr-upload-area span {
-            color: #666;
-            font-size: 12px;
-        }
-
-        .qr-file-input {
-            display: none;
-        }
-
-        .remember-me {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-bottom: 20px;
-        }
-
-        .remember-me input[type="checkbox"] {
-            width: 18px;
-            height: 18px;
-            cursor: pointer;
-        }
-
-        .remember-me label {
-            margin-bottom: 0;
-            cursor: pointer;
-        }
-
-        .login-btn {
+        .btn-primary {
             width: 100%;
             padding: 14px;
             background: #000000;
             color: white;
             border: none;
             border-radius: 40px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
             cursor: pointer;
             transition: 0.2s;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
+            margin-top: 10px;
         }
-
-        .login-btn:hover {
+        .btn-primary:hover {
             background: #2a6df4;
         }
-
-        .login-btn:disabled {
-            background: #cccccc;
-            cursor: not-allowed;
-        }
-
-        .status-message {
-            padding: 12px;
-            border-radius: 30px;
-            margin-bottom: 20px;
-            display: none;
-            text-align: center;
-            font-size: 14px;
-        }
-
-        .status-success {
-            background: #d4edda;
-            color: #155724;
-            border: 1px solid #c3e6cb;
-        }
-
-        .status-error {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
-        }
-
-        .loading-spinner {
-            width: 20px;
-            height: 20px;
-            border: 3px solid #ffffff;
-            border-top: 3px solid #2a6df4;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        .signup-section {
-            text-align: center;
-            margin-top: 25px;
-            padding-top: 20px;
-            border-top: 1px solid #e0e0e0;
-        }
-
-        .signup-text {
-            color: #666;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .signup-btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 10px 25px;
-            background: white;
+        .link {
             color: #2a6df4;
-            border: 2px solid #2a6df4;
-            border-radius: 40px;
             text-decoration: none;
-            font-weight: 600;
+            font-weight: 500;
             font-size: 14px;
-            transition: all 0.3s ease;
+            display: inline-block;
+            margin-top: 16px;
         }
-
-        .signup-btn:hover {
-            background: #2a6df4;
-            color: white;
-        }
-
-        .qr-error-details {
-            margin-top: 20px;
-            padding: 15px;
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            border-radius: 15px;
-            display: none;
-        }
-
-        .qr-error-details h4 {
-            color: #856404;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .qr-error-details ul {
-            color: #856404;
-            margin-left: 20px;
+        .error-message {
+            color: #e53e3e;
             font-size: 13px;
+            margin-top: 5px;
+            padding-left: 14px;
         }
-
-        .logged-in-info {
+        
+        /* Modal */
+        .modal {
             display: none;
-            text-align: center;
-        }
-
-        .user-avatar {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 15px;
-            border-radius: 50%;
-            overflow: hidden;
-            border: 3px solid #2a6df4;
-        }
-
-        .default-avatar {
-            width: 100%;
-            height: 100%;
-            background: #2a6df4;
-            display: flex;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
             align-items: center;
             justify-content: center;
-            color: white;
-            font-size: 40px;
+            padding: 12px;
+            z-index: 1000;
         }
-
-        .welcome-message {
-            background: #d4edda;
-            color: #155724;
-            padding: 10px;
+        .modal-content {
+            background: white;
+            border-radius: 28px;
+            padding: 24px;
+            max-width: 400px;
+            width: 100%;
+        }
+        .close {
+            float: right;
+            font-size: 24px;
+            cursor: pointer;
+            color: #aaa;
+        }
+        .qr-option-btn {
+            width: 100%;
+            padding: 16px;
+            margin: 8px 0;
+            border: 1.5px solid #e0e0e0;
             border-radius: 30px;
-            margin: 15px 0;
-            font-size: 14px;
-        }
-
-        .device-info {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 15px;
-            margin: 15px 0;
-            text-align: left;
-            font-size: 13px;
-        }
-
-        .device-info h4 {
-            color: #333;
-            margin-bottom: 10px;
-            font-size: 14px;
-        }
-
-        .device-info div {
+            background: white;
+            cursor: pointer;
             display: flex;
-            justify-content: space-between;
-            margin-bottom: 5px;
-            color: #666;
+            align-items: center;
+            gap: 12px;
+            font-size: 15px;
         }
-
-        .logout-btn {
-            padding: 10px 30px;
-            background: #dc3545;
-            color: white;
+        .qr-option-btn:hover {
+            border-color: #2a6df4;
+            background: #f5f5f5;
+        }
+        .qr-option-btn i {
+            font-size: 24px;
+            color: #2a6df4;
+        }
+        .camera-container {
+            width: 100%;
+            margin: 15px 0;
+            border-radius: 20px;
+            overflow: hidden;
+            background: #f0f0f0;
+        }
+        #cameraView {
+            width: 100%;
+            max-height: 250px;
+            object-fit: cover;
+        }
+        .camera-btn {
+            padding: 12px;
             border: none;
             border-radius: 30px;
-            font-size: 14px;
-            font-weight: 600;
+            background: #000000;
+            color: white;
             cursor: pointer;
-            transition: 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
+            font-weight: 500;
+            margin: 5px 0;
         }
-
-        .logout-btn:hover {
-            background: #c82333;
+        .upload-area {
+            margin: 15px 0;
+            padding: 20px;
+            border: 2px dashed #cccccc;
+            border-radius: 20px;
+            cursor: pointer;
+            text-align: center;
+        }
+        .upload-area i {
+            font-size: 30px;
+            color: #2a6df4;
+        }
+        .back-btn {
+            color: #2a6df4;
+            cursor: pointer;
+            font-size: 13px;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .qr-result {
+            margin-top: 12px;
+            padding: 10px;
+            border-radius: 16px;
+            background: #f0f7ff;
+            font-size: 13px;
+            word-break: break-all;
+        }
+        .welcome-message {
+            position: fixed;
+            top: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #2a6df4;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 40px;
+            font-weight: 500;
+            font-size: 14px;
+            z-index: 2000;
+            min-width: 250px;
+            text-align: center;
         }
     </style>
 </head>
 <body>
-    <div class="connection-dot" id="connectionDot"></div>
-
     <div class="container">
         <div class="card">
             <div class="header">
-                <img src="https://by-pro.kesug.com/B.Y%20PRO.png" alt="B.Y PRO Logo" class="logo-img">
+                <img src="https://by-pro.kesug.com/B.Y%20PRO.png" alt="B.Y PRO Logo" class="logo-img" onerror="this.style.display='none'">
                 <div class="brand">
                     <span class="brand-black">B.Y PRO</span>
                     <span class="brand-account">Account</span>
                 </div>
             </div>
             <div class="subtitle">Login to your account</div>
-
-            <!-- Logged In State -->
-            <div class="logged-in-info" id="loggedInInfo">
-                <div class="user-avatar" id="userAvatar"></div>
-                <h3>Welcome, <span id="userName">User</span>!</h3>
-                <div class="welcome-message">
-                    <i class="fas fa-check-circle"></i>
-                    <span>Successfully logged in</span>
+            
+            <form id="loginForm">
+                <div class="input-group">
+                    <label>ID</label>
+                    <input type="text" id="loginId" placeholder="Enter your ID" required>
                 </div>
-                <div class="device-info" id="deviceInfo"></div>
-                <button class="logout-btn" id="logoutBtn">
-                    <i class="fas fa-sign-out-alt"></i> Logout
-                </button>
-            </div>
-
-            <!-- Login Section -->
-            <div id="loginSection">
-                <div class="login-methods">
-                    <button class="method-btn active" data-method="qr">
-                        <i class="fas fa-qrcode"></i> QR Code
-                    </button>
-                    <button class="method-btn" data-method="manual">
-                        <i class="fas fa-keyboard"></i> Manual
-                    </button>
-                </div>
-
-                <!-- QR Form -->
-                <div class="login-form active" id="qrForm">
-                    <p class="qr-instruction" style="text-align: center; margin-bottom: 15px; color: #666;">Upload QR code image to login</p>
-                    
-                    <div class="qr-upload-area" id="qrUploadArea">
-                        <i class="fas fa-cloud-upload-alt"></i>
-                        <p>Click to upload QR Code</p>
-                        <span>PNG, JPG up to 5MB</span>
-                        <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
-                    </div>
-
-                    <div class="remember-me">
-                        <input type="checkbox" id="rememberQR">
-                        <label for="rememberQR">Remember me</label>
-                    </div>
-
-                    <div class="qr-error-details" id="qrErrorDetails">
-                        <h4>Possible reasons:</h4>
-                        <ul>
-                            <li>No QR code found</li>
-                            <li>Invalid QR format</li>
-                            <li>Image corrupted or blurry</li>
-                        </ul>
+                <div class="input-group">
+                    <label>Password</label>
+                    <div class="password-wrapper">
+                        <input type="password" id="loginPassword" placeholder="Enter password" required>
+                        <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
                     </div>
                 </div>
+                <div id="loginError" class="error-message"></div>
 
-                <!-- Manual Form -->
-                <div class="login-form" id="manualForm">
-                    <div class="form-group">
-                        <label for="userIdInput">Account ID</label>
-                        <div class="input-with-icon">
-                            <i class="fas fa-user input-icon"></i>
-                            <input type="text" id="userIdInput" placeholder="Enter your account ID">
-                        </div>
-                    </div>
-                    <div class="form-group">
-                        <label for="passwordInput">Password</label>
-                        <div class="password-wrapper">
-                            <div class="input-with-icon">
-                                <i class="fas fa-key input-icon"></i>
-                                <input type="password" id="passwordInput" placeholder="Enter your password">
-                                <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="remember-me">
-                        <input type="checkbox" id="rememberMe">
-                        <label for="rememberMe">Remember me</label>
-                    </div>
-
-                    <div id="statusMessage" class="status-message"></div>
-
-                    <button class="login-btn" id="loginBtn">
-                        <i class="fas fa-sign-in-alt"></i> Login
-                    </button>
+                <div class="qr-trigger" id="showQrOptions">
+                    <i class="fas fa-qrcode"></i>
+                    <span>Login with QR code</span>
                 </div>
 
-                <div class="signup-section">
-                    <p class="signup-text">Don't have an account?</p>
-                    <a href="signup.html" class="signup-btn">
-                        <i class="fas fa-user-plus"></i> Create Account
-                    </a>
-                </div>
-            </div>
+                <button type="submit" class="btn-primary">Log in</button>
+            </form>
+
+            <p style="text-align: center;">
+                <a href="signup.html" class="link">Create new account →</a>
+            </p>
         </div>
     </div>
 
-    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
-    
+    <!-- QR Options Modal -->
+    <div id="qrChoiceModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeChoiceModal">&times;</span>
+            <h3 style="margin-bottom: 20px; font-size: 18px;">Choose QR method</h3>
+            
+            <button class="qr-option-btn" id="chooseCamera">
+                <i class="fas fa-camera"></i>
+                <div style="text-align: left;">
+                    <div style="font-weight: 600;">Live Scan</div>
+                    <div style="font-size: 12px; color: #666;">Use camera</div>
+                </div>
+            </button>
+            
+            <button class="qr-option-btn" id="chooseUpload">
+                <i class="fas fa-cloud-upload-alt"></i>
+                <div style="text-align: left;">
+                    <div style="font-weight: 600;">Upload Image</div>
+                    <div style="font-size: 12px; color: #666;">Upload photo</div>
+                </div>
+            </button>
+        </div>
+    </div>
+
+    <!-- QR Modal -->
+    <div id="qrModal" class="modal">
+        <div class="modal-content">
+            <span class="close" id="closeModal">&times;</span>
+            <span class="back-btn" id="backToChoice"><i class="fas fa-arrow-left"></i> Back</span>
+            <h3 style="margin: 10px 0 15px; font-size: 18px;" id="modalTitle">Scan QR Code</h3>
+            
+            <div id="cameraContainer" style="display: none;">
+                <div class="camera-container">
+                    <video id="cameraView" autoplay playsinline></video>
+                </div>
+                <canvas id="cameraCanvas" style="display: none;"></canvas>
+                <button class="camera-btn" id="captureBtn" style="width: 100%;">Capture</button>
+            </div>
+            
+            <div id="uploadContainer" style="display: none;">
+                <div class="upload-area" id="uploadArea">
+                    <i class="fas fa-cloud-upload-alt"></i>
+                    <p style="margin: 5px 0;">Click to upload</p>
+                    <input type="file" id="qrFileInput" class="file-input" accept="image/*" style="display: none;">
+                </div>
+            </div>
+            
+            <canvas id="qrCanvas" style="display: none;"></canvas>
+            <div id="qrModalResult" class="qr-result"></div>
+        </div>
+    </div>
+
     <script>
-        // ==================== CONFIGURATION ====================
+        // ==================== CONFIG ====================
         const CONFIG = {
-            API_BASE: 'https://b-y-pro-acounts-login.onrender.com',
-            STORAGE_KEY: 'bypro_auth_data',
-            GITHUB_IMAGES: 'https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-Accounts-pic/main/'
+            API_BASE: 'https://b-y-pro-acounts-login.onrender.com'
         };
 
         // ==================== DOM Elements ====================
-        const elements = {
-            loginSection: document.getElementById('loginSection'),
-            loggedInInfo: document.getElementById('loggedInInfo'),
-            methodBtns: document.querySelectorAll('.method-btn'),
-            qrForm: document.getElementById('qrForm'),
-            manualForm: document.getElementById('manualForm'),
-            loginBtn: document.getElementById('loginBtn'),
-            logoutBtn: document.getElementById('logoutBtn'),
-            statusMessage: document.getElementById('statusMessage'),
-            qrFileInput: document.getElementById('qrFileInput'),
-            qrUploadArea: document.getElementById('qrUploadArea'),
-            qrErrorDetails: document.getElementById('qrErrorDetails'),
-            userId: document.getElementById('userIdInput'),
-            password: document.getElementById('passwordInput'),
-            rememberMe: document.getElementById('rememberMe'),
-            rememberQR: document.getElementById('rememberQR'),
-            userName: document.getElementById('userName'),
-            userAvatar: document.getElementById('userAvatar'),
-            deviceInfo: document.getElementById('deviceInfo'),
-            connectionDot: document.getElementById('connectionDot'),
-            togglePassword: document.getElementById('togglePassword')
-        };
-
-        let currentUser = null;
-        let currentMethod = 'qr';
-
-        // ==================== Storage ====================
-        const Storage = {
-            get: () => {
-                try {
-                    const data = localStorage.getItem(CONFIG.STORAGE_KEY);
-                    return data ? JSON.parse(data) : null;
-                } catch { return null; }
-            },
-            set: (data, remember = false) => {
-                if (!remember) return false;
-                try {
-                    localStorage.setItem(CONFIG.STORAGE_KEY, JSON.stringify({
-                        user: data,
-                        timestamp: Date.now(),
-                        expires: Date.now() + (30 * 24 * 60 * 60 * 1000)
-                    }));
-                    return true;
-                } catch { return false; }
-            },
-            clear: () => {
-                localStorage.removeItem(CONFIG.STORAGE_KEY);
-            }
-        };
-
-        // ==================== Device Info ====================
-        function getDeviceInfo() {
-            return {
-                browser: getBrowser(),
-                os: getOS(),
-                screen: `${window.screen.width}x${window.screen.height}`,
-                timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-                loginDate: new Date().toLocaleString()
-            };
-        }
-
-        function getBrowser() {
-            const ua = navigator.userAgent;
-            if (ua.includes('Firefox')) return 'Firefox';
-            if (ua.includes('Chrome')) return 'Chrome';
-            if (ua.includes('Safari')) return 'Safari';
-            if (ua.includes('Edg')) return 'Edge';
-            return 'Unknown';
-        }
-
-        function getOS() {
-            const ua = navigator.userAgent;
-            if (ua.includes('Windows')) return 'Windows';
-            if (ua.includes('Mac')) return 'macOS';
-            if (ua.includes('Linux')) return 'Linux';
-            if (ua.includes('Android')) return 'Android';
-            if (ua.includes('iPhone')) return 'iOS';
-            return 'Unknown';
-        }
-
-        // ==================== UI Helpers ====================
-        function showStatus(message, type) {
-            elements.statusMessage.textContent = message;
-            elements.statusMessage.className = `status-message status-${type}`;
-            elements.statusMessage.style.display = 'block';
-            setTimeout(() => {
-                elements.statusMessage.style.display = 'none';
-            }, 4000);
-        }
-
-        function updateConnectionStatus(online) {
-            elements.connectionDot.className = 'connection-dot';
-            elements.connectionDot.classList.add(online ? 'connection-online' : 'connection-offline');
-        }
-
-        function setLoading(loading) {
-            elements.loginBtn.disabled = loading;
-            elements.loginBtn.innerHTML = loading ? 
-                '<div class="loading-spinner"></div>' : 
-                '<i class="fas fa-sign-in-alt"></i> Login';
-        }
+        const loginForm = document.getElementById('loginForm');
+        const loginId = document.getElementById('loginId');
+        const loginPassword = document.getElementById('loginPassword');
+        const loginError = document.getElementById('loginError');
+        const togglePassword = document.getElementById('togglePassword');
 
         // ==================== Toggle Password ====================
-        elements.togglePassword.addEventListener('click', function() {
-            const type = elements.password.getAttribute('type') === 'password' ? 'text' : 'password';
-            elements.password.setAttribute('type', type);
+        togglePassword.addEventListener('click', function() {
+            const type = loginPassword.getAttribute('type') === 'password' ? 'text' : 'password';
+            loginPassword.setAttribute('type', type);
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
 
-        // ==================== Auto Login ====================
-        function attemptAutoLogin() {
-            const stored = Storage.get();
-            if (stored?.user && stored.expires > Date.now()) {
-                currentUser = stored.user;
-                showLoggedInState(stored.user);
-                return true;
-            }
-            return false;
-        }
-
-        // ==================== Show Logged In State ====================
-        function showLoggedInState(user) {
-            elements.loginSection.style.display = 'none';
-            elements.loggedInInfo.style.display = 'block';
-            elements.userName.textContent = user.name || user.id || 'User';
+        // ==================== Login Form ====================
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = loginId.value.trim();
+            const pwd = loginPassword.value.trim();
             
-            // Load avatar
-            const img = new Image();
-            img.onload = () => {
-                elements.userAvatar.innerHTML = '';
-                img.style.width = '100%';
-                img.style.height = '100%';
-                img.style.objectFit = 'cover';
-                elements.userAvatar.appendChild(img);
-            };
-            img.onerror = () => {
-                elements.userAvatar.innerHTML = '<div class="default-avatar"><i class="fas fa-user"></i></div>';
-            };
-            img.src = `${CONFIG.GITHUB_IMAGES}${user.id}.png?t=${Date.now()}`;
-            
-            // Show device info
-            const device = getDeviceInfo();
-            elements.deviceInfo.innerHTML = `
-                <h4>Device Information</h4>
-                <div><span>Browser:</span> <span>${device.browser}</span></div>
-                <div><span>OS:</span> <span>${device.os}</span></div>
-                <div><span>Screen:</span> <span>${device.screen}</span></div>
-                <div><span>Timezone:</span> <span>${device.timezone}</span></div>
-                <div><span>Login:</span> <span>${device.loginDate}</span></div>
-            `;
-        }
-
-        // ==================== Logout ====================
-        function logout() {
-            Storage.clear();
-            currentUser = null;
-            elements.loggedInInfo.style.display = 'none';
-            elements.loginSection.style.display = 'block';
-            elements.userId.value = '';
-            elements.password.value = '';
-            showStatus('Logged out successfully', 'success');
-        }
-
-        // ==================== Method Switching ====================
-        elements.methodBtns.forEach(btn => {
-            btn.addEventListener('click', () => {
-                elements.methodBtns.forEach(b => b.classList.remove('active'));
-                btn.classList.add('active');
-                currentMethod = btn.dataset.method;
-                
-                elements.qrForm.classList.remove('active');
-                elements.manualForm.classList.remove('active');
-                
-                if (currentMethod === 'qr') {
-                    elements.qrForm.classList.add('active');
-                } else {
-                    elements.manualForm.classList.add('active');
-                    elements.userId.focus();
-                }
-            });
-        });
-
-        // ==================== QR Upload ====================
-        elements.qrUploadArea.addEventListener('click', () => {
-            elements.qrFileInput.click();
-        });
-
-        elements.qrFileInput.addEventListener('change', async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-
-            if (file.size > 5 * 1024 * 1024) {
-                showStatus('File too large (max 5MB)', 'error');
+            if (!id || !pwd) {
+                loginError.textContent = 'Please enter both ID and password.';
                 return;
             }
-
-            elements.qrUploadArea.innerHTML = `
-                <div class="loading-spinner" style="margin:20px auto;"></div>
-                <p>Processing QR code...</p>
-            `;
-
-            try {
-                const reader = new FileReader();
-                reader.onload = async (event) => {
-                    const img = new Image();
-                    img.onload = () => {
-                        const canvas = document.createElement('canvas');
-                        const ctx = canvas.getContext('2d');
-                        canvas.width = img.width;
-                        canvas.height = img.height;
-                        ctx.drawImage(img, 0, 0);
-                        
-                        const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                        const code = jsQR(imageData.data, imageData.width, canvas.height);
-                        
-                        if (code) {
-                            const data = code.data;
-                            if (data.startsWith('BYPRO:')) {
-                                const parts = data.split(':');
-                                if (parts.length === 3) {
-                                    verifyLogin(parts[1], parts[2], 'qr');
-                                } else {
-                                    throw new Error('Invalid QR format');
-                                }
-                            } else {
-                                throw new Error('Not a B.Y PRO QR code');
-                            }
-                        } else {
-                            throw new Error('No QR code found');
-                        }
-                    };
-                    img.src = event.target.result;
-                };
-                reader.readAsDataURL(file);
-            } catch (error) {
-                showStatus(error.message, 'error');
-                elements.qrErrorDetails.style.display = 'block';
-                resetQRUpload();
-            }
-        });
-
-        function resetQRUpload() {
-            elements.qrUploadArea.innerHTML = `
-                <i class="fas fa-cloud-upload-alt"></i>
-                <p>Click to upload QR Code Image</p>
-                <span>PNG, JPG up to 5MB</span>
-                <input type="file" id="qrFileInput" class="qr-file-input" accept="image/*">
-            `;
-            document.getElementById('qrFileInput').addEventListener('change', (e) => {
-                elements.qrFileInput.files = e.target.files;
-                elements.qrFileInput.dispatchEvent(new Event('change'));
-            });
-        }
-
-        // ==================== Verify Login ====================
-        async function verifyLogin(id, password, method = 'manual') {
-            if (!id || !password) {
-                showStatus('ID and password required', 'error');
-                return;
-            }
-
-            setLoading(true);
-            showStatus('Connecting to server...', 'success');
 
             try {
                 const response = await fetch(`${CONFIG.API_BASE}/api/verify-account`, {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    },
-                    body: JSON.stringify({ id, password }),
-                    mode: 'cors'
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id, password: pwd })
                 });
 
                 const result = await response.json();
 
-                if (result.success && result.account) {
-                    const userData = {
-                        id: result.account.id,
-                        name: result.account.name || result.account.id,
-                        email: result.account.email || '',
-                        loginTime: new Date().toISOString(),
-                        loginMethod: method
-                    };
-
-                    currentUser = userData;
-
-                    const shouldRemember = (method === 'manual' && elements.rememberMe.checked) || 
-                                          (method === 'qr' && elements.rememberQR.checked);
-
-                    if (shouldRemember) {
-                        Storage.set(userData, true);
-                    }
-
-                    showStatus('Login successful!', 'success');
-                    updateConnectionStatus(true);
-                    showLoggedInState(userData);
+                if (result.success) {
+                    loginError.style.color = '#2a6df4';
+                    loginError.textContent = '';
+                    showWelcomeMessage(result.account.name || 'User');
                 } else {
-                    showStatus(result.error || 'Invalid credentials', 'error');
-                    updateConnectionStatus(false);
+                    loginError.style.color = '#e53e3e';
+                    loginError.textContent = '❌ ' + (result.error || 'Invalid credentials');
                 }
             } catch (error) {
-                console.error('Login error:', error);
-                showStatus('Cannot connect to server. Please try again.', 'error');
-                updateConnectionStatus(false);
-            } finally {
-                setLoading(false);
+                loginError.style.color = '#e53e3e';
+                loginError.textContent = '❌ Connection error';
             }
+        });
+
+        function showWelcomeMessage(username) {
+            const welcomeDiv = document.createElement('div');
+            welcomeDiv.className = 'welcome-message';
+            welcomeDiv.innerHTML = `<i class="fas fa-smile-wink"></i> Welcome back, ${username}!`;
+            document.body.appendChild(welcomeDiv);
+            setTimeout(() => window.location.href = 'signup.html', 2000);
         }
 
-        // ==================== Event Listeners ====================
-        elements.loginBtn.addEventListener('click', () => {
-            const id = elements.userId.value.trim();
-            const password = elements.password.value.trim();
-            verifyLogin(id, password, 'manual');
+        // ==================== QR Code Logic ====================
+        const qrChoiceModal = document.getElementById('qrChoiceModal');
+        const qrModal = document.getElementById('qrModal');
+        const showQrOptions = document.getElementById('showQrOptions');
+        const closeChoiceModal = document.getElementById('closeChoiceModal');
+        const closeModal = document.getElementById('closeModal');
+        const backToChoice = document.getElementById('backToChoice');
+        const chooseCamera = document.getElementById('chooseCamera');
+        const chooseUpload = document.getElementById('chooseUpload');
+        const modalTitle = document.getElementById('modalTitle');
+        const cameraContainer = document.getElementById('cameraContainer');
+        const uploadContainer = document.getElementById('uploadContainer');
+        const cameraView = document.getElementById('cameraView');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const uploadArea = document.getElementById('uploadArea');
+        const qrFileInput = document.getElementById('qrFileInput');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const qrModalResult = document.getElementById('qrModalResult');
+
+        let cameraStream = null;
+
+        showQrOptions.addEventListener('click', () => qrChoiceModal.style.display = 'flex');
+
+        closeChoiceModal.addEventListener('click', () => qrChoiceModal.style.display = 'none');
+        closeModal.addEventListener('click', () => {
+            qrModal.style.display = 'none';
+            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
         });
 
-        elements.logoutBtn.addEventListener('click', logout);
-
-        [elements.userId, elements.password].forEach(input => {
-            input.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') elements.loginBtn.click();
-            });
+        backToChoice.addEventListener('click', () => {
+            qrModal.style.display = 'none';
+            qrChoiceModal.style.display = 'flex';
+            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
         });
 
-        // ==================== Connection Check ====================
-        async function checkConnection() {
+        chooseCamera.addEventListener('click', () => {
+            qrChoiceModal.style.display = 'none';
+            qrModal.style.display = 'flex';
+            cameraContainer.style.display = 'block';
+            uploadContainer.style.display = 'none';
+            modalTitle.textContent = 'Scan with Camera';
+            startCamera();
+        });
+
+        chooseUpload.addEventListener('click', () => {
+            qrChoiceModal.style.display = 'none';
+            qrModal.style.display = 'flex';
+            cameraContainer.style.display = 'none';
+            uploadContainer.style.display = 'block';
+            modalTitle.textContent = 'Upload QR Code';
+            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+        });
+
+        async function startCamera() {
             try {
-                const response = await fetch(`${CONFIG.API_BASE}/api/health`, { 
-                    method: 'GET',
-                    mode: 'cors'
-                });
-                updateConnectionStatus(response.ok);
-            } catch {
-                updateConnectionStatus(false);
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                cameraView.srcObject = cameraStream;
+            } catch (err) {
+                qrModalResult.innerHTML = '<span style="color:#e53e3e;">Camera access denied</span>';
             }
         }
 
-        // ==================== Initialize ====================
-        document.addEventListener('DOMContentLoaded', () => {
-            if (!attemptAutoLogin()) {
-                checkConnection();
-                setInterval(checkConnection, 30000);
-                if (currentMethod === 'manual') elements.userId.focus();
-            }
+        captureBtn.addEventListener('click', () => {
+            if (!cameraStream) return;
+            cameraCanvas.width = cameraView.videoWidth;
+            cameraCanvas.height = cameraView.videoHeight;
+            const ctx = cameraCanvas.getContext('2d');
+            ctx.drawImage(cameraView, 0, 0, cameraCanvas.width, cameraCanvas.height);
+            const imageData = ctx.getImageData(0, 0, cameraCanvas.width, cameraCanvas.height);
+            const code = jsQR(imageData.data, cameraCanvas.width, cameraCanvas.height);
+            if (code) processQRLogin(code.data);
+            else qrModalResult.innerHTML = '<span style="color:#e53e3e;">No QR code found</span>';
         });
+
+        uploadArea.addEventListener('click', () => qrFileInput.click());
+
+        qrFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    qrCanvas.width = img.width;
+                    qrCanvas.height = img.height;
+                    const ctx = qrCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    const imageData = ctx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+                    const code = jsQR(imageData.data, qrCanvas.width, qrCanvas.height);
+                    if (code) processQRLogin(code.data);
+                    else qrModalResult.innerHTML = '<span style="color:#e53e3e;">No QR code found</span>';
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function processQRLogin(qrData) {
+            // QR format: BYPRO:ID:PASSWORD
+            if (qrData.startsWith('BYPRO:')) {
+                const parts = qrData.split(':');
+                if (parts.length === 3) {
+                    const id = parts[1];
+                    const password = parts[2];
+                    
+                    try {
+                        const response = await fetch(`${CONFIG.API_BASE}/api/verify-account`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id, password })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        if (result.success) {
+                            qrModalResult.innerHTML = '<span style="color:#2a6df4;">✅ Login successful!</span>';
+                            qrModal.style.display = 'none';
+                            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+                            showWelcomeMessage(result.account.name || 'User');
+                        } else {
+                            qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Invalid QR</span>';
+                        }
+                    } catch (error) {
+                        qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Connection error</span>';
+                    }
+                }
+            } else {
+                qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Invalid QR format</span>';
+            }
+        }
     </script>
 </body>
 </html>
