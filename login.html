@@ -34,6 +34,7 @@
             padding: 30px 24px;
             box-shadow: 0 15px 30px rgba(255, 255, 255, 0.03);
             border: 1px solid #e0e0e0;
+            transition: all 0.3s ease;
         }
         .header {
             display: flex;
@@ -69,6 +70,78 @@
             font-size: 14px;
             margin-bottom: 24px;
             margin-left: 42px;
+        }
+        
+        /* Logged In Section - داخل البطاقة */
+        .logged-in-section {
+            display: none;
+            text-align: center;
+            padding: 20px 0;
+        }
+        .success-icon {
+            font-size: 60px;
+            color: #2a6df4;
+            margin-bottom: 15px;
+        }
+        .welcome-title {
+            font-size: 24px;
+            font-weight: 600;
+            color: #000000;
+            margin-bottom: 10px;
+        }
+        .welcome-subtitle {
+            color: #4a4a4a;
+            font-size: 16px;
+            margin-bottom: 25px;
+        }
+        .user-info {
+            background: #f8fafd;
+            border-radius: 20px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: left;
+        }
+        .info-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .info-row:last-child {
+            border-bottom: none;
+        }
+        .info-label {
+            color: #666;
+            font-weight: 500;
+        }
+        .info-value {
+            color: #2a6df4;
+            font-weight: 600;
+        }
+        .logout-btn {
+            width: 100%;
+            padding: 14px;
+            background: #dc3545;
+            color: white;
+            border: none;
+            border-radius: 40px;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        .logout-btn:hover {
+            background: #c82333;
+        }
+        
+        /* Login Form */
+        .login-section {
+            display: block;
         }
         .input-group {
             margin-bottom: 20px;
@@ -254,33 +327,6 @@
         .success {
             color: #2a6df4;
         }
-        .welcome-message {
-            position: fixed;
-            top: 15px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #2a6df4;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 40px;
-            font-weight: 500;
-            font-size: 14px;
-            z-index: 2000;
-            min-width: 250px;
-            text-align: center;
-            animation: slideDown 0.3s ease;
-            box-shadow: 0 4px 20px rgba(42, 109, 244, 0.4);
-        }
-        @keyframes slideDown {
-            from {
-                top: -100px;
-                opacity: 0;
-            }
-            to {
-                top: 15px;
-                opacity: 1;
-            }
-        }
         
         /* منع الترجمة */
         [translate="no"] {
@@ -303,33 +349,65 @@
                     <span class="brand-account">Account</span>
                 </div>
             </div>
-            <div class="subtitle">Login to your account</div>
-            
-            <form id="loginForm">
-                <div class="input-group">
-                    <label>ID</label>
-                    <input type="text" id="loginId" placeholder="Enter your ID" required>
+
+            <!-- Logged In Section (يظهر داخل البطاقة) -->
+            <div id="loggedInSection" class="logged-in-section">
+                <div class="success-icon">
+                    <i class="fas fa-check-circle"></i>
                 </div>
-                <div class="input-group">
-                    <label>Password</label>
-                    <div class="password-wrapper">
-                        <input type="password" id="loginPassword" placeholder="Enter password" required>
-                        <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
+                <div class="welcome-title" id="welcomeName">Welcome back!</div>
+                <div class="welcome-subtitle">You are successfully logged in</div>
+                
+                <div class="user-info" id="userInfo">
+                    <div class="info-row">
+                        <span class="info-label">Account ID</span>
+                        <span class="info-value" id="displayId">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Email</span>
+                        <span class="info-value" id="displayEmail">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Login Time</span>
+                        <span class="info-value" id="loginTime">-</span>
                     </div>
                 </div>
-                <div id="loginError" class="error-message"></div>
+                
+                <button class="logout-btn" id="logoutBtn">
+                    <i class="fas fa-sign-out-alt"></i> Logout
+                </button>
+            </div>
 
-                <div class="qr-trigger" id="showQrOptions">
-                    <i class="fas fa-qrcode"></i>
-                    <span>Login with QR code</span>
-                </div>
+            <!-- Login Section -->
+            <div id="loginSection" class="login-section">
+                <div class="subtitle">Login to your account</div>
+                
+                <form id="loginForm">
+                    <div class="input-group">
+                        <label>ID</label>
+                        <input type="text" id="loginId" placeholder="Enter your ID" required autocomplete="off">
+                    </div>
+                    <div class="input-group">
+                        <label>Password</label>
+                        <div class="password-wrapper">
+                            <input type="password" id="loginPassword" placeholder="Enter password" required autocomplete="new-password">
+                            <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
+                        </div>
+                    </div>
+                    <div id="loginError" class="error-message"></div>
 
-                <button type="submit" class="btn-primary">Log in</button>
-            </form>
+                    <div class="qr-trigger" id="showQrOptions">
+                        <i class="fas fa-qrcode"></i>
+                        <span>Login with QR code</span>
+                    </div>
 
-            <p style="text-align: center;">
-                <a href="signup.html" class="link">Create new account →</a>
-            </p>
+                    <button type="submit" class="btn-primary">Log in</button>
+                </form>
+
+                <p style="text-align: center;">
+                    <a href="signup.html" class="link">Create new account →</a>
+                </p>
+            </div>
         </div>
     </div>
 
@@ -394,11 +472,18 @@
         };
 
         // ==================== DOM Elements ====================
+        const loginSection = document.getElementById('loginSection');
+        const loggedInSection = document.getElementById('loggedInSection');
         const loginForm = document.getElementById('loginForm');
         const loginId = document.getElementById('loginId');
         const loginPassword = document.getElementById('loginPassword');
         const loginError = document.getElementById('loginError');
         const togglePassword = document.getElementById('togglePassword');
+        const logoutBtn = document.getElementById('logoutBtn');
+        const displayId = document.getElementById('displayId');
+        const displayEmail = document.getElementById('displayEmail');
+        const loginTime = document.getElementById('loginTime');
+        const welcomeName = document.getElementById('welcomeName');
 
         // ==================== Session Management ====================
         const Session = {
@@ -430,18 +515,43 @@
                 localStorage.removeItem(CONFIG.SESSION_KEY);
             },
             isValid: () => {
-                const session = Session.get();
-                return session !== null;
+                return Session.get() !== null;
             }
         };
+
+        // ==================== Show Logged In State ====================
+        function showLoggedInState(user) {
+            loginSection.style.display = 'none';
+            loggedInSection.style.display = 'block';
+            
+            welcomeName.textContent = `Welcome back, ${user.name || user.id}!`;
+            displayId.textContent = user.id;
+            displayEmail.textContent = user.email || 'Not provided';
+            loginTime.textContent = new Date().toLocaleString();
+        }
+
+        function showLoginForm() {
+            loginSection.style.display = 'block';
+            loggedInSection.style.display = 'none';
+        }
+
+        // ==================== Logout ====================
+        logoutBtn.addEventListener('click', () => {
+            Session.clear();
+            showLoginForm();
+            loginId.value = '';
+            loginPassword.value = '';
+        });
 
         // ==================== Check Session Periodically ====================
         function startSessionChecker() {
             // Check every minute
             setInterval(() => {
-                if (!Session.isValid()) {
-                    // Session expired, reload to show login form
-                    window.location.reload();
+                const user = Session.get();
+                if (user) {
+                    showLoggedInState(user);
+                } else {
+                    showLoginForm();
                 }
             }, 60000); // 60 seconds
         }
@@ -450,7 +560,7 @@
         function attemptAutoLogin() {
             const user = Session.get();
             if (user) {
-                showWelcomeMessage(user.name || 'User', true); // true = auto login
+                showLoggedInState(user);
                 return true;
             }
             return false;
@@ -490,7 +600,9 @@
                     
                     loginError.style.color = '#2a6df4';
                     loginError.textContent = '';
-                    showWelcomeMessage(result.account.name || 'User');
+                    
+                    // Show logged in state داخل البطاقة
+                    showLoggedInState(result.account);
                 } else {
                     loginError.style.color = '#e53e3e';
                     loginError.textContent = '❌ ' + (result.error || 'Invalid credentials');
@@ -500,26 +612,6 @@
                 loginError.textContent = '❌ Connection error';
             }
         });
-
-        function showWelcomeMessage(username, isAutoLogin = false) {
-            const welcomeDiv = document.createElement('div');
-            welcomeDiv.className = 'welcome-message';
-            welcomeDiv.innerHTML = `<i class="fas fa-check-circle"></i> Welcome back, ${username}!`;
-            document.body.appendChild(welcomeDiv);
-            
-            // Hide login form
-            document.querySelector('.card').style.opacity = '0.5';
-            
-            setTimeout(() => {
-                welcomeDiv.remove();
-                document.querySelector('.card').style.opacity = '1';
-                
-                if (!isAutoLogin) {
-                    // After manual login, we stay on login page but show logged in state
-                    // You could redirect to dashboard here if needed
-                }
-            }, 2000);
-        }
 
         // ==================== QR Code Logic ====================
         const qrChoiceModal = document.getElementById('qrChoiceModal');
@@ -643,7 +735,9 @@
                             qrModalResult.innerHTML = '<span style="color:#2a6df4;">✅ Login successful!</span>';
                             qrModal.style.display = 'none';
                             if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
-                            showWelcomeMessage(result.account.name || 'User');
+                            
+                            // Show logged in state
+                            showLoggedInState(result.account);
                         } else {
                             qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Invalid QR</span>';
                         }
@@ -661,9 +755,6 @@
             if (!attemptAutoLogin()) {
                 // No active session, show login form
                 startSessionChecker();
-            } else {
-                // User is already logged in via session
-                document.querySelector('.card').style.opacity = '0.5';
             }
         });
     </script>
