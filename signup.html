@@ -1,15 +1,15 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" translate="no">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="google" content="notranslate">
     <title>B.Y PRO - Sign Up</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <!-- QR Code library -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
-        /* نفس التصميم الذي أرسلته */
         * {
             margin: 0;
             padding: 0;
@@ -137,22 +137,6 @@
         }
         .btn-primary:hover {
             background: #2a6df4;
-        }
-        
-        /* رسالة Elastic Email */
-        .elastic-warning {
-            background: #fff3cd;
-            border: 1px solid #ffeaa7;
-            color: #856404;
-            padding: 12px;
-            border-radius: 20px;
-            margin: 15px 0;
-            font-size: 13px;
-            text-align: center;
-        }
-        .elastic-warning i {
-            color: #f0ad4e;
-            margin-right: 5px;
         }
         
         /* ===== المرحلة الأخيرة - تصميم أصغر ومتكيف ===== */
@@ -325,9 +309,19 @@
             from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
+        /* منع الترجمة */
+        [translate="no"] {
+            -webkit-user-select: none;
+            user-select: none;
+        }
+        .brand-black, .brand-account {
+            -webkit-user-select: text;
+            user-select: text;
+        }
     </style>
 </head>
-<body>
+<body translate="no">
     <div class="container">
         <div class="card">
             <div class="header">
@@ -346,12 +340,6 @@
                 <div class="step-dot" id="step3Dot"></div>
             </div>
 
-            <!-- رسالة Elastic Email -->
-            <div class="elastic-warning" id="elasticWarning">
-                <i class="fas fa-info-circle"></i>
-                For testing: Codes are sent to byprosprt2007@gmail.com only
-            </div>
-
             <!-- الخطوات - مع منع الملء التلقائي -->
             <div id="step1">
                 <div class="input-group">
@@ -362,7 +350,9 @@
                     <label><i class="fas fa-envelope"></i> Email</label>
                     <input type="email" id="email" name="email" placeholder="you@example.com" autocomplete="off">
                 </div>
-                <button class="btn-primary" id="sendCodeBtn">Send code</button>
+                <button class="btn-primary" id="sendCodeBtn">
+                    <i class="fas fa-paper-plane"></i> Send code
+                </button>
                 <div id="step1Error" class="error"></div>
             </div>
 
@@ -371,9 +361,14 @@
                     <label><i class="fas fa-lock"></i> Verification code</label>
                     <input type="text" id="verificationCode" name="verificationCode" placeholder="6-digit code" maxlength="6" autocomplete="off">
                 </div>
-                <button class="btn-primary" id="verifyCodeBtn">Verify</button>
+                <button class="btn-primary" id="verifyCodeBtn">
+                    <i class="fas fa-check-circle"></i> Verify
+                </button>
                 <div id="step2Error" class="error"></div>
-                <div class="timer" id="timer">Code sent! <span id="resendLink" class="resend-link">Resend</span></div>
+                <div class="timer" id="timer">
+                    <span id="timerText"></span>
+                    <span id="resendLink" class="resend-link">Resend code</span>
+                </div>
             </div>
 
             <div id="step3" style="display: none;">
@@ -384,11 +379,13 @@
                         <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
                     </div>
                 </div>
-                <button class="btn-primary" id="signupBtn">Create account</button>
+                <button class="btn-primary" id="signupBtn">
+                    <i class="fas fa-user-plus"></i> Create account
+                </button>
                 <div id="step3Error" class="error"></div>
             </div>
 
-            <!-- المرحلة الأخيرة -->
+            <!-- المرحلة الأخيرة - مصغرة ومتكيفة -->
             <div id="resultArea" style="display: none;">
                 <div class="result-box">
                     <i class="fas fa-check-circle"></i>
@@ -400,11 +397,15 @@
                     <div class="qr-note"><i class="fas fa-qrcode"></i> Scan to login</div>
                     <div id="qrcode" class="qr-container"></div>
                     
-                    <p>Save QR for quick login</p>
+                    <p>Save this QR code for quick login</p>
                     
                     <div class="result-actions">
-                        <button class="btn-primary" id="saveQRBtn"><i class="fas fa-download"></i> Save</button>
-                        <button class="btn-primary btn-success" id="confirmLoginBtn"><i class="fas fa-sign-in-alt"></i> Login</button>
+                        <button class="btn-primary" id="saveQRBtn">
+                            <i class="fas fa-download"></i> Save QR
+                        </button>
+                        <button class="btn-primary btn-success" id="confirmLoginBtn">
+                            <i class="fas fa-sign-in-alt"></i> Go to Login
+                        </button>
                     </div>
                 </div>
             </div>
@@ -448,15 +449,14 @@
         const step2Error = document.getElementById('step2Error');
         const step3Error = document.getElementById('step3Error');
         const timer = document.getElementById('timer');
+        const timerText = document.getElementById('timerText');
         
         const displayId = document.getElementById('displayId');
         const qrcode = document.getElementById('qrcode');
-        const elasticWarning = document.getElementById('elasticWarning');
 
         // ==================== State ====================
         let currentStep = 1;
         let userData = {};
-        let generatedCode = '';
         let timerInterval;
         let timeLeft = 60;
         let canResend = true;
@@ -500,16 +500,17 @@
             canResend = false;
             resendLink.classList.add('disabled');
             
-            timer.innerHTML = `Resend in ${timeLeft}s <span id="resendLink" class="resend-link disabled">Resend</span>`;
+            timerText.textContent = `Resend in ${timeLeft}s `;
             
             timerInterval = setInterval(() => {
                 timeLeft--;
                 if (timeLeft <= 0) {
                     clearInterval(timerInterval);
                     canResend = true;
-                    timer.innerHTML = `<span id="resendLink" class="resend-link">Resend</span>`;
+                    resendLink.classList.remove('disabled');
+                    timerText.textContent = 'Code expired. ';
                 } else {
-                    timer.innerHTML = `Resend in ${timeLeft}s <span id="resendLink" class="resend-link disabled">Resend</span>`;
+                    timerText.textContent = `Resend in ${timeLeft}s `;
                 }
             }, 1000);
         }
@@ -544,16 +545,6 @@
                 if (response.ok && result.success) {
                     userData = { username: name, email: emailValue };
                     
-                    // Check if using test email
-                    if (emailValue === 'byprosprt2007@gmail.com') {
-                        elasticWarning.style.display = 'block';
-                    } else {
-                        elasticWarning.innerHTML = '<i class="fas fa-info-circle"></i> Code sent! Check your email';
-                        elasticWarning.style.background = '#d4edda';
-                        elasticWarning.style.color = '#155724';
-                        elasticWarning.style.borderColor = '#c3e6cb';
-                    }
-                    
                     showStep(2);
                     startTimer();
                     step1Error.textContent = '';
@@ -562,9 +553,9 @@
                 }
             } catch (error) {
                 console.error('Send OTP error:', error);
-                step1Error.textContent = 'Connection error - check console';
+                step1Error.textContent = 'Connection error. Please try again.';
             } finally {
-                sendCodeBtn.innerHTML = 'Send code';
+                sendCodeBtn.innerHTML = '<i class="fas fa-paper-plane"></i> Send code';
                 sendCodeBtn.disabled = false;
             }
         });
@@ -573,20 +564,7 @@
         resendLink.addEventListener('click', async () => {
             if (!canResend || !userData.email) return;
             
-            try {
-                const response = await fetch(`${CONFIG.API_BASE}/api/send-otp`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: userData.email })
-                });
-
-                if (response.ok) {
-                    startTimer();
-                    step2Error.textContent = '';
-                }
-            } catch (error) {
-                step2Error.textContent = 'Failed to resend';
-            }
+            sendCodeBtn.click();
         });
 
         // ==================== Verify Code ====================
@@ -621,7 +599,7 @@
                 console.error('Verify OTP error:', error);
                 step2Error.textContent = 'Verification failed';
             } finally {
-                verifyCodeBtn.innerHTML = 'Verify';
+                verifyCodeBtn.innerHTML = '<i class="fas fa-check-circle"></i> Verify';
                 verifyCodeBtn.disabled = false;
             }
         });
@@ -631,7 +609,7 @@
             const pass = password.value.trim();
             
             if (pass.length < 6) {
-                step3Error.textContent = 'Password too short';
+                step3Error.textContent = 'Password must be at least 6 characters';
                 return;
             }
 
@@ -687,9 +665,9 @@
                 }
             } catch (error) {
                 console.error('Create account error:', error);
-                step3Error.textContent = 'Server error - check console';
+                step3Error.textContent = 'Server error. Please try again.';
             } finally {
-                signupBtn.innerHTML = 'Create account';
+                signupBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create account';
                 signupBtn.disabled = false;
             }
         });
@@ -720,6 +698,16 @@
             verificationCode.value = '';
             password.value = '';
         }, 100);
+
+        // إضافة animate للـ spinner
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
+        `;
+        document.head.appendChild(style);
     </script>
 </body>
 </html>
