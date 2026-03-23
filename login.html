@@ -5,9 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
     <title>B.Y PRO - Login</title>
-    <!-- Font Awesome -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <!-- jsQR -->
+    <link rel="icon" type="image/png" href="https://by-pro.kesug.com/B.Y%20PRO.png">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.min.js"></script>
     <style>
         * {
@@ -72,7 +71,7 @@
             margin-left: 42px;
         }
         
-        /* Logged In Section - داخل البطاقة */
+        /* Logged In Section */
         .logged-in-section {
             display: none;
             text-align: center;
@@ -324,18 +323,11 @@
             font-size: 13px;
             word-break: break-all;
         }
-        .success {
-            color: #2a6df4;
-        }
         
         /* منع الترجمة */
         [translate="no"] {
             -webkit-user-select: none;
             user-select: none;
-        }
-        .brand-black, .brand-account {
-            -webkit-user-select: text;
-            user-select: text;
         }
     </style>
 </head>
@@ -350,7 +342,7 @@
                 </div>
             </div>
 
-            <!-- Logged In Section (يظهر داخل البطاقة) -->
+            <!-- Logged In Section -->
             <div id="loggedInSection" class="logged-in-section">
                 <div class="success-icon">
                     <i class="fas fa-check-circle"></i>
@@ -358,10 +350,14 @@
                 <div class="welcome-title" id="welcomeName">Welcome back!</div>
                 <div class="welcome-subtitle">You are successfully logged in</div>
                 
-                <div class="user-info" id="userInfo">
+                <div class="user-info">
                     <div class="info-row">
                         <span class="info-label">Account ID</span>
                         <span class="info-value" id="displayId">-</span>
+                    </div>
+                    <div class="info-row">
+                        <span class="info-label">Name</span>
+                        <span class="info-value" id="displayName">-</span>
                     </div>
                     <div class="info-row">
                         <span class="info-label">Email</span>
@@ -481,6 +477,7 @@
         const togglePassword = document.getElementById('togglePassword');
         const logoutBtn = document.getElementById('logoutBtn');
         const displayId = document.getElementById('displayId');
+        const displayName = document.getElementById('displayName');
         const displayEmail = document.getElementById('displayEmail');
         const loginTime = document.getElementById('loginTime');
         const welcomeName = document.getElementById('welcomeName');
@@ -499,13 +496,10 @@
                 try {
                     const session = JSON.parse(localStorage.getItem(CONFIG.SESSION_KEY));
                     if (!session) return null;
-                    
-                    // Check if expired
                     if (Date.now() > session.expires) {
                         localStorage.removeItem(CONFIG.SESSION_KEY);
                         return null;
                     }
-                    
                     return session.user;
                 } catch {
                     return null;
@@ -513,48 +507,77 @@
             },
             clear: () => {
                 localStorage.removeItem(CONFIG.SESSION_KEY);
-            },
-            isValid: () => {
-                return Session.get() !== null;
             }
         };
 
-        // ==================== Show Logged In State ====================
+        // ==================== COMMUNICATION WITH PARENT (iframe) ====================
+        function sendToParent(data) {
+            if (window.parent !== window) {
+                try {
+                    window.parent.postMessage(data, '*');
+                } catch (e) {
+                    console.log('Cannot send to parent:', e);
+                }
+            }
+        }
+
+        function notifyParentAuthState(user) {
+            sendToParent({
+                type: 'BYPRO_AUTH_RESPONSE',
+                authenticated: !!user,
+                user: user,
+                timestamp: Date.now()
+            });
+        }
+
+        // استقبال الأوامر من التطبيق الأب
+        window.addEventListener('message', (event) => {
+            const data = event.data;
+            
+            switch (data.type) {
+                case 'BYPRO_AUTH_REQUEST':
+                    const user = Session.get();
+                    notifyParentAuthState(user);
+                    break;
+                    
+                case 'BYPRO_LOGOUT_REQUEST':
+                    performLogout();
+                    break;
+            }
+        });
+
+        // ==================== Show/Hide UI ====================
         function showLoggedInState(user) {
             loginSection.style.display = 'none';
             loggedInSection.style.display = 'block';
             
             welcomeName.textContent = `Welcome back, ${user.name || user.id}!`;
             displayId.textContent = user.id;
+            displayName.textContent = user.name || user.id;
             displayEmail.textContent = user.email || 'Not provided';
             loginTime.textContent = new Date().toLocaleString();
+            
+            // إبلاغ التطبيق الأب بحالة تسجيل الدخول
+            notifyParentAuthState(user);
         }
 
         function showLoginForm() {
             loginSection.style.display = 'block';
             loggedInSection.style.display = 'none';
+            
+            // إبلاغ التطبيق الأب بأنه لا يوجد مستخدم
+            notifyParentAuthState(null);
         }
 
         // ==================== Logout ====================
-        logoutBtn.addEventListener('click', () => {
+        function performLogout() {
             Session.clear();
             showLoginForm();
             loginId.value = '';
             loginPassword.value = '';
-        });
-
-        // ==================== Check Session Periodically ====================
-        function startSessionChecker() {
-            // Check every minute
-            setInterval(() => {
-                const user = Session.get();
-                if (user) {
-                    showLoggedInState(user);
-                } else {
-                    showLoginForm();
-                }
-            }, 60000); // 60 seconds
         }
+
+        logoutBtn.addEventListener('click', performLogout);
 
         // ==================== Auto Login from Session ====================
         function attemptAutoLogin() {
@@ -595,13 +618,9 @@
                 const result = await response.json();
 
                 if (result.success) {
-                    // Save session
                     Session.save(result.account);
-                    
                     loginError.style.color = '#2a6df4';
                     loginError.textContent = '';
-                    
-                    // Show logged in state داخل البطاقة
                     showLoggedInState(result.account);
                 } else {
                     loginError.style.color = '#e53e3e';
@@ -712,7 +731,6 @@
         });
 
         async function processQRLogin(qrData) {
-            // QR format: BYPRO:ID:PASSWORD
             if (qrData.startsWith('BYPRO:')) {
                 const parts = qrData.split(':');
                 if (parts.length === 3) {
@@ -729,14 +747,10 @@
                         const result = await response.json();
                         
                         if (result.success) {
-                            // Save session
                             Session.save(result.account);
-                            
                             qrModalResult.innerHTML = '<span style="color:#2a6df4;">✅ Login successful!</span>';
                             qrModal.style.display = 'none';
                             if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
-                            
-                            // Show logged in state
                             showLoggedInState(result.account);
                         } else {
                             qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Invalid QR</span>';
@@ -752,10 +766,7 @@
 
         // ==================== Initialize ====================
         document.addEventListener('DOMContentLoaded', () => {
-            if (!attemptAutoLogin()) {
-                // No active session, show login form
-                startSessionChecker();
-            }
+            attemptAutoLogin();
         });
     </script>
 </body>
