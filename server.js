@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Accounts System v6.1 (Optimized)');
+console.log('🚀 Starting B.Y PRO Accounts System v6.2 (Optimized with Keep-Alive)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -33,29 +33,25 @@ const {
   ALLOWED_ORIGINS = 'https://yacine2007.github.io,http://localhost:5500,http://localhost:3000,https://b-y-pro-acounts-login.onrender.com',
   NODE_ENV = 'production',
   
-  // GitHub (اختياري)
   GITHUB_TOKEN
 } = process.env;
 
-// التحقق من وجود المفاتيح الأساسية
+// التحقق من وجود المفاتيح
 if (!BREVO_SMTP_USER || !BREVO_SMTP_KEY) {
-  console.error('❌ FATAL: Brevo SMTP credentials are not set in environment variables');
+  console.error('❌ FATAL: Brevo SMTP credentials are not set');
   process.exit(1);
 }
 
 if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
-  console.error('❌ FATAL: Google Drive credentials are not set in environment variables');
+  console.error('❌ FATAL: Google Drive credentials are not set');
   process.exit(1);
 }
 
 // ==================== OPTIMIZATIONS ====================
-// تقليل وقت استجابة Brevo
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
 
-// ==================== BREVO SMTP SETUP WITH RETRY ====================
+// ==================== BREVO SMTP SETUP ====================
 let brevoTransporter = null;
-let brevoConnectionAttempts = 0;
-const MAX_RETRIES = 3;
 
 function createBrevoTransporter() {
   return nodemailer.createTransport({
@@ -66,54 +62,34 @@ function createBrevoTransporter() {
       user: BREVO_SMTP_USER,
       pass: BREVO_SMTP_KEY
     },
-    tls: {
-      rejectUnauthorized: false,
-      ciphers: 'SSLv3'
-    },
-    connectionTimeout: 5000, // 5 seconds
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 5000,
     greetingTimeout: 5000,
-    socketTimeout: 5000,
-    debug: NODE_ENV !== 'production' // تفعيل التصحيح في بيئة التطوير فقط
+    socketTimeout: 5000
   });
 }
 
-// تهيئة الاتصال فوراً
 function initializeBrevo() {
   try {
     brevoTransporter = createBrevoTransporter();
-    
-    brevoTransporter.verify(function(error, success) {
+    brevoTransporter.verify((error) => {
       if (error) {
-        console.log(`⚠️ Brevo SMTP connection attempt ${brevoConnectionAttempts + 1}/${MAX_RETRIES} failed:`, error.message);
-        
-        if (brevoConnectionAttempts < MAX_RETRIES) {
-          brevoConnectionAttempts++;
-          setTimeout(initializeBrevo, 3000 * brevoConnectionAttempts); // زيادة الوقت مع كل محاولة
-        } else {
-          console.log('⚠️ Using fallback mode - emails will be logged only');
-          brevoTransporter = null; // سيتم استخدام وضع المحاكاة
-        }
+        console.log('⚠️ Brevo SMTP connection error:', error.message);
       } else {
-        console.log('✅ Brevo SMTP server is ready');
-        brevoConnectionAttempts = 0;
+        console.log('✅ Brevo SMTP ready');
       }
     });
   } catch (error) {
-    console.error('❌ Brevo initialization error:', error.message);
+    console.error('❌ Brevo init error:', error.message);
   }
 }
 
 initializeBrevo();
 
-// دالة إرسال الإيميل مع محاولة إعادة الاتصال
 async function sendOTPviaBrevo(email, otpCode) {
   try {
-    console.log(`📨 Sending OTP via Brevo to: ${email}`);
-    
-    // إذا كان الاتصال غير متاح، استخدم وضع المحاكاة للتجربة
     if (!brevoTransporter) {
-      console.log('⚠️ Brevo not available - simulating email send for testing');
-      return { success: true, simulated: true };
+      brevoTransporter = createBrevoTransporter();
     }
     
     const mailOptions = {
@@ -121,64 +97,39 @@ async function sendOTPviaBrevo(email, otpCode) {
       to: email,
       subject: 'B.Y PRO - Verification Code',
       html: `
-        <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; background: #f5f5f5; padding: 20px;">
-          <div style="background: linear-gradient(135deg, #3498db, #2980b9); padding: 30px; text-align: center; color: white; border-radius: 10px 10px 0 0;">
-            <h1 style="margin: 0; font-size: 28px;">B.Y PRO Accounts</h1>
-            <p style="margin: 10px 0 0 0; opacity: 0.9;">Secure Account Verification</p>
+        <div style="font-family: Arial; max-width:600px; margin:0 auto; background:#f5f5f5; padding:20px;">
+          <div style="background:linear-gradient(135deg,#3498db,#2980b9); padding:30px; text-align:center; color:white; border-radius:10px 10px 0 0;">
+            <h1>B.Y PRO Accounts</h1>
+            <p>Secure Account Verification</p>
           </div>
-          
-          <div style="background: white; padding: 30px; border-radius: 0 0 10px 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
-            <h2 style="color: #2c3e50; margin-bottom: 20px;">Email Verification Code</h2>
-            
-            <p style="color: #555; line-height: 1.6; margin-bottom: 25px;">
-              Use the following verification code to complete your account registration:
-            </p>
-            
-            <div style="background: linear-gradient(135deg, #3498db, #2980b9); color: white; padding: 20px; text-align: center; font-size: 32px; font-weight: bold; letter-spacing: 8px; margin: 25px 0; border-radius: 8px; box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);">
+          <div style="background:white; padding:30px; border-radius:0 0 10px 10px;">
+            <h2>Email Verification Code</h2>
+            <div style="background:linear-gradient(135deg,#3498db,#2980b9); color:white; padding:20px; text-align:center; font-size:32px; font-weight:bold; letter-spacing:8px; margin:25px 0; border-radius:8px;">
               ${otpCode}
             </div>
-            
-            <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 5px; margin: 20px 0;">
-              <p style="color: #856404; margin: 0; font-size: 14px;">
-                <strong>⚠️ Important:</strong> This code will expire in <strong>10 minutes</strong>.
-              </p>
-            </div>
-            
-            <p style="color: #888; font-size: 12px; margin-top: 20px; text-align: center;">
-              This is an automated message from B.Y PRO Accounts System.
-            </p>
+            <p>This code expires in 10 minutes.</p>
           </div>
         </div>
       `,
-      text: `Your B.Y PRO verification code is: ${otpCode}. This code expires in 10 minutes.`
+      text: `Your B.Y PRO verification code is: ${otpCode}. Expires in 10 minutes.`
     };
 
-    // وعد مع timeout 10 ثوان فقط
     const sendPromise = brevoTransporter.sendMail(mailOptions);
     const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('SMTP timeout after 10 seconds')), 10000)
+      setTimeout(() => reject(new Error('SMTP timeout')), 10000)
     );
 
     const info = await Promise.race([sendPromise, timeoutPromise]);
-    console.log(`✅ Brevo email sent to: ${email} - ID: ${info.messageId}`);
-    return { success: true, messageId: info.messageId };
+    console.log(`✅ Email sent to: ${email}`);
+    return { success: true };
     
   } catch (error) {
-    console.error('❌ Brevo sending failed:', error.message);
-    
-    // محاولة إعادة إنشاء الاتصال
-    try {
-      console.log('🔄 Recreating Brevo transporter...');
-      brevoTransporter = createBrevoTransporter();
-    } catch (e) {
-      console.error('❌ Failed to recreate transporter:', e.message);
-    }
-    
+    console.error('❌ Email failed:', error.message);
     return { success: false, error: error.message };
   }
 }
 
-// ==================== GOOGLE DRIVE SERVICE ACCOUNT ====================
+// ==================== GOOGLE DRIVE ====================
 const serviceAccount = {
   type: "service_account",
   project_id: GOOGLE_PROJECT_ID,
@@ -189,490 +140,259 @@ const serviceAccount = {
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
   token_uri: "https://oauth2.googleapis.com/token",
   auth_provider_x509_cert_url: "https://www.googleapis.com/oauth2/v1/certs",
-  client_x509_cert_url: GOOGLE_CLIENT_CERT_URL,
-  universe_domain: "googleapis.com"
+  client_x509_cert_url: GOOGLE_CLIENT_CERT_URL
 };
 
-// ==================== GOOGLE DRIVE FILE IDs ====================
 const ACCOUNTS_FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
 const OTP_FILE_ID = "10gOdT98Pk5nhk-cfDA0B24rk8xqsKWE1";
 
-// ==================== CORS CONFIGURATION ====================
-const allowedOrigins = ALLOWED_ORIGINS.split(',').map(origin => origin.trim());
+// ==================== CORS ====================
+const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim());
 
-const corsOptions = {
-  origin: function (origin, callback) {
+app.use(cors({
+  origin: function(origin, callback) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost')) {
       callback(null, true);
     } else {
-      console.log(`❌ CORS blocked: ${origin}`);
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('CORS blocked'));
     }
   },
   credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'x-api-key']
-};
+  methods: ['GET', 'POST', 'OPTIONS']
+}));
 
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('*', cors());
 
-// ==================== MIDDLEWARE ====================
 app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// Logging middleware
+// Logging
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url} - ${new Date().toISOString()}`);
+  console.log(`📥 ${req.method} ${req.url}`);
   next();
 });
 
-// ==================== GOOGLE DRIVE INITIALIZATION ====================
+// ==================== GOOGLE DRIVE INIT ====================
 let driveService = null;
 
-async function initializeDriveService() {
+async function initDrive() {
   try {
     const auth = new google.auth.GoogleAuth({
       credentials: serviceAccount,
       scopes: ["https://www.googleapis.com/auth/drive"],
     });
-    
     driveService = google.drive({ version: 'v3', auth });
-    console.log('✅ Google Drive service initialized');
-    
-    try {
-      await driveService.files.get({ fileId: ACCOUNTS_FILE_ID, fields: 'id' });
-      console.log('✅ Accounts file accessible');
-      
-      await driveService.files.get({ fileId: OTP_FILE_ID, fields: 'id' });
-      console.log('✅ OTP file accessible');
-    } catch (fileError) {
-      console.error('❌ Cannot access Drive files:', fileError.message);
-    }
+    console.log('✅ Google Drive ready');
   } catch (error) {
-    console.error('❌ Google Drive init failed:', error.message);
+    console.error('❌ Drive init failed:', error.message);
+  }
+}
+initDrive();
+
+// ==================== OTP FUNCTIONS ====================
+async function readOTP() {
+  if (!driveService) throw new Error("Drive not ready");
+  try {
+    const res = await driveService.files.get({ fileId: OTP_FILE_ID, alt: 'media' });
+    return res.data || {};
+  } catch {
+    return {};
   }
 }
 
-initializeDriveService();
-
-// ==================== OTP STORAGE FUNCTIONS ====================
-async function readOTPFromDrive() {
-  if (!driveService) throw new Error("Google Drive service is not initialized");
-
-  try {
-    const response = await driveService.files.get({
-      fileId: OTP_FILE_ID,
-      alt: 'media'
-    });
-    return response.data || {};
-  } catch (error) {
-    console.error('❌ Error reading OTP file:', error.message);
-    if (error.message.includes('404')) {
-      return {};
-    }
-    throw error;
-  }
-}
-
-async function saveOTPToDrive(otpData) {
-  if (!driveService) throw new Error("Google Drive service is not initialized");
-
-  try {
-    await driveService.files.update({
-      fileId: OTP_FILE_ID,
-      media: { 
-        mimeType: 'application/json', 
-        body: JSON.stringify(otpData, null, 2) 
-      },
-      fields: 'id,modifiedTime'
-    });
-    return true;
-  } catch (error) {
-    console.error('❌ Error saving OTP file:', error.message);
-    throw error;
-  }
+async function saveOTP(data) {
+  if (!driveService) throw new Error("Drive not ready");
+  await driveService.files.update({
+    fileId: OTP_FILE_ID,
+    media: { mimeType: 'application/json', body: JSON.stringify(data, null, 2) }
+  });
 }
 
 async function storeOTP(email, otp) {
+  const data = await readOTP();
+  data[email] = {
+    otp, expires: Date.now() + 10 * 60 * 1000, attempts: 0, createdAt: new Date().toISOString()
+  };
+  await saveOTP(data);
+  return true;
+}
+
+async function verifyOTP(email, code) {
+  const data = await readOTP();
+  const record = data[email];
+  if (!record) return { success: false, error: "No code found" };
+  if (Date.now() > record.expires) {
+    delete data[email];
+    await saveOTP(data);
+    return { success: false, error: "Code expired" };
+  }
+  record.attempts++;
+  if (record.attempts > 5) {
+    delete data[email];
+    await saveOTP(data);
+    return { success: false, error: "Too many attempts" };
+  }
+  if (record.otp === code) {
+    delete data[email];
+    await saveOTP(data);
+    return { success: true };
+  }
+  await saveOTP(data);
+  return { success: false, error: "Invalid code", remaining: 5 - record.attempts };
+}
+
+// ==================== ACCOUNT FUNCTIONS ====================
+async function readCSV() {
+  if (!driveService) throw new Error("Drive not ready");
   try {
-    const otpData = await readOTPFromDrive();
-    
-    otpData[email] = {
-      otp: otp,
-      expires: Date.now() + 10 * 60 * 1000, // 10 minutes
-      attempts: 0,
-      createdAt: new Date().toISOString()
-    };
-    
-    await saveOTPToDrive(otpData);
-    console.log(`✅ OTP stored for ${email}`);
-    return true;
-  } catch (error) {
-    console.error('❌ Error storing OTP:', error.message);
-    return false;
+    const res = await driveService.files.get({ fileId: ACCOUNTS_FILE_ID, alt: 'media' });
+    return res.data;
+  } catch {
+    return '';
   }
 }
 
-async function verifyAndRemoveOTP(email, submittedOtp) {
-  try {
-    const otpData = await readOTPFromDrive();
-    const storedData = otpData[email];
-    
-    if (!storedData) {
-      return { success: false, error: "No verification code found" };
+function parseCSV(csv) {
+  const lines = csv.split('\n').filter(l => l.trim());
+  const accounts = [];
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    if (!line || (i === 0 && line.includes('id,ps'))) continue;
+    const vals = [];
+    let cur = '', inQuotes = false;
+    for (let ch of line) {
+      if (ch === '"') inQuotes = !inQuotes;
+      else if (ch === ',' && !inQuotes) { vals.push(cur); cur = ''; }
+      else cur += ch;
     }
-
-    if (Date.now() > storedData.expires) {
-      delete otpData[email];
-      await saveOTPToDrive(otpData);
-      return { success: false, error: "Verification code expired" };
+    vals.push(cur);
+    if (vals.length >= 2) {
+      accounts.push({ id: vals[0], ps: vals[1], email: vals[2] || '', name: vals[3] || '' });
     }
-
-    storedData.attempts += 1;
-    
-    if (storedData.attempts > 5) {
-      delete otpData[email];
-      await saveOTPToDrive(otpData);
-      return { success: false, error: "Too many attempts" };
-    }
-
-    if (storedData.otp === submittedOtp) {
-      delete otpData[email];
-      await saveOTPToDrive(otpData);
-      return { success: true };
-    } else {
-      await saveOTPToDrive(otpData);
-      return { 
-        success: false, 
-        error: "Invalid code", 
-        remainingAttempts: 5 - storedData.attempts 
-      };
-    }
-  } catch (error) {
-    console.error('❌ Error verifying OTP:', error.message);
-    return { success: false, error: "OTP verification failed" };
   }
+  return accounts;
 }
 
-// ==================== GITHUB ACCOUNTS FETCHING ====================
-async function fetchGitHubAccounts() {
-  try {
-    const headers = {
-      'User-Agent': 'B.Y-PRO-System',
-      'Accept': 'application/vnd.github.v3+json'
-    };
-    
-    if (GITHUB_TOKEN) {
-      headers['Authorization'] = `token ${GITHUB_TOKEN}`;
-    }
-    
-    const response = await axios.get(
-      'https://api.github.com/repos/yacine2007/secure-auth-app/contents/accounts.json',
-      { headers, timeout: 5000 }
-    );
-
-    if (response.data && response.data.content) {
-      const content = Buffer.from(response.data.content, 'base64').toString('utf-8');
-      return JSON.parse(content);
-    }
-    return [];
-  } catch (error) {
-    console.log('ℹ️ Using local accounts - GitHub fetch failed:', error.message);
-    return [];
-  }
-}
-
-// ==================== CSV OPERATIONS ====================
-async function readCSVFromDrive() {
-  if (!driveService) throw new Error("Google Drive service is not initialized");
-
-  try {
-    const response = await driveService.files.get({
-      fileId: ACCOUNTS_FILE_ID,
-      alt: 'media'
-    });
-    return response.data;
-  } catch (error) {
-    if (error.message.includes('404')) return '';
-    throw error;
-  }
-}
-
-function parseCSVToAccounts(csvData) {
-  try {
-    const lines = csvData.split('\n').filter(line => line.trim() !== '');
-    if (lines.length === 0) return [];
-
-    const accounts = [];
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (!line || (i === 0 && line.includes('id,ps,email,name'))) continue;
-      
-      const values = [];
-      let current = '';
-      let inQuotes = false;
-      
-      for (let char of line) {
-        if (char === '"') {
-          inQuotes = !inQuotes;
-        } else if (char === ',' && !inQuotes) {
-          values.push(current);
-          current = '';
-        } else {
-          current += char;
-        }
-      }
-      values.push(current);
-      
-      if (values.length >= 2) {
-        accounts.push({
-          id: values[0] || '',
-          ps: values[1] || '',
-          email: values[2] || '',
-          name: values[3] || ''
-        });
-      }
-    }
-    return accounts;
-  } catch (error) {
-    console.error('❌ Error parsing CSV:', error.message);
-    return [];
-  }
-}
-
-async function saveAllAccounts(accounts) {
-  if (!driveService) throw new Error("Google Drive service is not initialized");
-
+async function saveCSV(accounts) {
   const headers = ['id', 'ps', 'email', 'name'];
-  const csvLines = [
-    headers.join(','),
-    ...accounts.map(account => 
-      headers.map(header => 
-        account[header] ? `"${account[header].toString().replace(/"/g, '""')}"` : '""'
-      ).join(',')
-    )
-  ];
-  
-  const csvContent = csvLines.join('\n');
-  
+  const lines = [headers.join(',')];
+  for (const acc of accounts) {
+    lines.push(headers.map(h => `"${(acc[h] || '').replace(/"/g, '""')}"`).join(','));
+  }
   await driveService.files.update({
     fileId: ACCOUNTS_FILE_ID,
-    media: { mimeType: 'text/csv', body: csvContent },
-    fields: 'id,modifiedTime'
+    media: { mimeType: 'text/csv', body: lines.join('\n') }
   });
+}
 
+async function getNextId() {
+  const csv = await readCSV();
+  const accounts = parseCSV(csv);
+  const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
+  return ids.length ? (Math.max(...ids) + 1).toString() : "1001";
+}
+
+async function addAccount(account) {
+  const csv = await readCSV();
+  let accounts = parseCSV(csv);
+  if (accounts.find(a => a.email === account.email)) throw new Error("Email exists");
+  const existing = accounts.find(a => a.id === account.id);
+  if (existing) account.id = await getNextId();
+  accounts.push(account);
+  await saveCSV(accounts);
   return true;
 }
 
-async function getNextAvailableId() {
-  try {
-    const csvData = await readCSVFromDrive();
-    const accounts = parseCSVToAccounts(csvData);
-    
-    if (accounts.length === 0) return "1001";
-    
-    const ids = accounts.map(acc => parseInt(acc.id)).filter(id => !isNaN(id));
-    if (ids.length === 0) return "1001";
-    
-    return (Math.max(...ids) + 1).toString();
-  } catch (error) {
-    return (1000 + Math.floor(Math.random() * 9000)).toString();
+async function verifyAccount(id, password) {
+  const csv = await readCSV();
+  const accounts = parseCSV(csv);
+  const account = accounts.find(a => a.id === id && a.ps === password);
+  if (account) {
+    return {
+      success: true,
+      account: {
+        id: account.id,
+        name: account.name || `User ${account.id}`,
+        email: account.email || `${account.id}@bypro.com`
+      }
+    };
   }
+  return { success: false, error: "Invalid credentials" };
 }
 
-async function addNewAccount(accountData) {
-  const csvData = await readCSVFromDrive();
-  let accounts = parseCSVToAccounts(csvData);
-  
-  if (accountData.email) {
-    const existingAccount = accounts.find(acc => acc.email === accountData.email);
-    if (existingAccount) throw new Error("An account with this email already exists");
-  }
-  
-  const existingId = accounts.find(acc => acc.id === accountData.id);
-  if (existingId) {
-    accountData.id = await getNextAvailableId();
-  }
-  
-  accounts.push(accountData);
-  await saveAllAccounts(accounts);
-  return true;
-}
-
-async function verifyAccountCredentials(id, password) {
-  try {
-    const csvData = await readCSVFromDrive();
-    const accounts = parseCSVToAccounts(csvData);
-    
-    const account = accounts.find(acc => 
-      acc.id && acc.id.toString() === id.toString() && 
-      acc.ps && acc.ps === password
-    );
-    
-    if (account) {
-      return {
-        success: true,
-        account: {
-          id: account.id,
-          name: account.name || `User ${account.id}`,
-          email: account.email || `${account.id}@bypro.com`
-        }
-      };
-    } else {
-      return { success: false, error: "Invalid credentials provided" };
-    }
-  } catch (error) {
-    console.error('❌ Error verifying account:', error.message);
-    return { success: false, error: "Authentication service temporarily unavailable" };
-  }
-}
-
-// ==================== OTP FUNCTIONS ====================
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
 
-// ==================== QR CODE FUNCTIONS ====================
-async function generateQRCode(qrData) {
+async function generateQR(data) {
   try {
-    const qrCodeDataURL = await QRCode.toDataURL(qrData, {
-      width: 200,
-      margin: 2,
-      color: { dark: "#1a237e", light: "#ffffff" },
-      errorCorrectionLevel: 'H'
-    });
-
-    return { success: true, qrCode: qrCodeDataURL, qrData: qrData };
-  } catch (error) {
-    return { success: false, error: "QR code generation failed" };
+    const qr = await QRCode.toDataURL(data, { width: 200, margin: 2, errorCorrectionLevel: 'H' });
+    return { success: true, qrCode: qr };
+  } catch {
+    return { success: false };
   }
 }
 
-// ==================== MIDDLEWARE FOR PROTECTED ROUTES ====================
-function requireInternalApiKey(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.api_key;
-  
-  if (apiKey === INTERNAL_API_KEY) {
+// ==================== PROTECTED ROUTE MIDDLEWARE ====================
+function requireApiKey(req, res, next) {
+  if (req.headers['x-api-key'] === INTERNAL_API_KEY || req.query.api_key === INTERNAL_API_KEY) {
     next();
   } else {
-    res.status(403).json({ success: false, error: "Access denied. Invalid API key." });
+    res.status(403).json({ success: false, error: "Access denied" });
   }
 }
 
 // ==================== ROUTES ====================
 
-// Route سريع للتحقق من صحة السيرفر (بدون تأخير)
+// 🏓 Ping route - سريع جداً للإيقاظ
 app.get('/api/ping', (req, res) => {
-  res.json({ 
-    success: true, 
-    time: Date.now(),
-    status: 'awake',
-    email_provider: 'Brevo SMTP'
-  });
+  res.json({ success: true, time: Date.now(), status: 'awake' });
 });
 
-app.get('/api/health', async (req, res) => {
-  res.json({ 
+app.get('/api/health', (req, res) => {
+  res.json({
     status: 'operational',
-    service: 'B.Y PRO Accounts System v6.1',
+    service: 'B.Y PRO v6.2',
     email_provider: 'Brevo SMTP',
-    timestamp: new Date().toISOString(),
-    version: '6.1.0',
-    brevo_connected: brevoTransporter !== null,
-    features: ['signup', 'login', 'otp_verification', 'qr_codes', 'github_accounts']
+    timestamp: new Date().toISOString()
   });
-});
-
-app.get('/api/accounts', async (req, res) => {
-  try {
-    const csvData = await readCSVFromDrive();
-    const driveAccounts = parseCSVToAccounts(csvData);
-    const githubAccounts = await fetchGitHubAccounts();
-    
-    const allAccounts = [
-      ...driveAccounts.map(acc => ({
-        ...acc,
-        source: 'drive'
-      })),
-      ...githubAccounts.map(acc => ({
-        ...acc,
-        source: 'github'
-      }))
-    ];
-    
-    res.json({
-      success: true,
-      count: allAccounts.length,
-      drive_count: driveAccounts.length,
-      github_count: githubAccounts.length,
-      accounts: allAccounts
-    });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
 });
 
 app.post('/api/send-otp', async (req, res) => {
-  // تعيين timeout للطلب نفسه
-  req.setTimeout(15000); // 15 ثانية
-  
+  req.setTimeout(15000);
   try {
     const { email } = req.body;
-    
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ success: false, error: "Valid email is required" });
+      return res.status(400).json({ success: false, error: "Valid email required" });
     }
-
     const otp = generateOTP();
-    const stored = await storeOTP(email, otp);
-    
-    if (!stored) {
-      return res.status(500).json({ success: false, error: "Failed to store verification code" });
-    }
-
-    // إرسال الإيميل مع timeout
+    await storeOTP(email, otp);
     const emailResult = await sendOTPviaBrevo(email, otp);
-    
     if (emailResult.success) {
-      // حتى لو كان محاكاة، نعتبره نجاح للتجربة
-      res.json({ 
-        success: true, 
-        message: emailResult.simulated ? 
-          "Development mode: Code sent (simulated)" : 
-          "Verification code sent to your email", 
-        expiresIn: "10 minutes" 
-      });
+      res.json({ success: true, message: "Code sent", expiresIn: "10 minutes" });
     } else {
-      // حذف OTP إذا فشل الإرسال
-      await verifyAndRemoveOTP(email, '');
-      res.status(500).json({ success: false, error: emailResult.error || "Email service is currently unavailable" });
+      res.status(500).json({ success: false, error: "Email service unavailable" });
     }
   } catch (error) {
-    console.error('❌ Error in /api/send-otp:', error.message);
-    res.status(500).json({ success: false, error: "Server timeout. Please try again." });
+    res.status(500).json({ success: false, error: "Server error" });
   }
 });
 
 app.post('/api/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
-    
     if (!email || !otp) {
-      return res.status(400).json({ success: false, error: "Email and code are required" });
+      return res.status(400).json({ success: false, error: "Email and code required" });
     }
-
-    const result = await verifyAndRemoveOTP(email, otp);
-    
+    const result = await verifyOTP(email, otp);
     if (result.success) {
-      res.json({ success: true, message: "Verification successful" });
+      res.json({ success: true, message: "Verified" });
     } else {
       res.status(400).json(result);
     }
   } catch (error) {
-    console.error('❌ Error in /api/verify-otp:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -680,25 +400,21 @@ app.post('/api/verify-otp', async (req, res) => {
 app.post('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.body;
-    
     if (!id || !password) {
-      return res.json({ success: false, error: "ID and password are required" });
+      return res.json({ success: false, error: "ID and password required" });
     }
-
-    const result = await verifyAccountCredentials(id, password);
+    const result = await verifyAccount(id, password);
     res.json(result);
   } catch (error) {
-    console.error('❌ Error in /api/verify-account:', error.message);
-    res.json({ success: false, error: "Authentication service unavailable" });
+    res.json({ success: false, error: "Service unavailable" });
   }
 });
 
-app.get('/api/next-id', requireInternalApiKey, async (req, res) => {
+app.get('/api/next-id', requireApiKey, async (req, res) => {
   try {
-    const nextId = await getNextAvailableId();
-    res.json({ success: true, nextId: nextId });
+    const nextId = await getNextId();
+    res.json({ success: true, nextId });
   } catch (error) {
-    console.error('❌ Error in /api/next-id:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -706,39 +422,22 @@ app.get('/api/next-id', requireInternalApiKey, async (req, res) => {
 app.post('/api/create-account', async (req, res) => {
   try {
     const { id, name, email, password, otpCode } = req.body;
-    
     if (!id || !name || !email || !password || !otpCode) {
-      return res.status(400).json({ success: false, error: "All fields including OTP code are required" });
+      return res.status(400).json({ success: false, error: "All fields required" });
     }
-    
-    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ success: false, error: "Valid email is required" });
-    }
-
-    const otpResult = await verifyAndRemoveOTP(email, otpCode);
-    
+    const otpResult = await verifyOTP(email, otpCode);
     if (!otpResult.success) {
-      return res.status(400).json({ success: false, error: otpResult.error || "Invalid verification code" });
+      return res.status(400).json({ success: false, error: otpResult.error });
     }
-
-    const accountData = { id: id.toString(), ps: password, email: email, name: name };
-    await addNewAccount(accountData);
-    
-    const qrData = `BYPRO:${accountData.id}:${accountData.ps}`;
-    const qrResult = await generateQRCode(qrData);
-
+    await addAccount({ id: id.toString(), ps: password, email, name });
+    const qrResult = await generateQR(`BYPRO:${id}:${password}`);
     res.json({
       success: true,
-      message: "Account created successfully",
-      account: {
-        id: accountData.id,
-        name: accountData.name,
-        email: accountData.email
-      },
+      message: "Account created",
+      account: { id, name, email },
       qrCode: qrResult.qrCode
     });
   } catch (error) {
-    console.error('❌ Error in /api/create-account:', error.message);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -748,28 +447,33 @@ app.get('/', (req, res) => {
 });
 
 app.use('*', (req, res) => {
-  res.status(404).json({ success: false, error: "Route not found" });
+  res.status(404).json({ success: false, error: "Not found" });
 });
 
-app.use((err, req, res, next) => {
-  console.error('💥 Server Error:', err);
-  res.status(500).json({ success: false, error: "Internal server error" });
-});
+// ==================== KEEP-ALIVE (يبقي السيرفر مستيقظاً) ====================
+// كل دقيقتين، نرسل طلب ping داخلي للحفاظ على السيرفر نشطاً
+setInterval(async () => {
+  try {
+    const response = await fetch(`http://localhost:${PORT}/api/ping`);
+    if (response.ok) {
+      console.log('💓 Keep-alive ping at', new Date().toISOString());
+    }
+  } catch (e) {
+    // السيرفر لا يزال يعمل حتى لو فشل الطلب الداخلي
+  }
+}, 120000); // كل 120000 مللي ثانية = دقيقتين
 
-// بدء السيرفر
+// ==================== START SERVER ====================
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS SYSTEM v6.1');
+  console.log('🚀 B.Y PRO ACCOUNTS v6.2');
   console.log('✅ CORS: SECURE');
-  console.log('✅ Email: BREVO SMTP (Optimized)');
-  console.log('✅ OTP Storage: Google Drive');
-  console.log('✅ Protected Routes: /api/next-id');
+  console.log('✅ Email: BREVO SMTP');
+  console.log('✅ Keep-Alive: ACTIVE (every 2 min)');
   console.log(`✅ Server: http://localhost:${PORT}`);
-  console.log(`🔗 API: http://localhost:${PORT}/api`);
   console.log(`🏓 Ping: http://localhost:${PORT}/api/ping`);
   console.log('🎉 =================================\n');
 });
 
-// ضبط timeout السيرفر
-server.timeout = 30000; // 30 ثانية
+server.timeout = 30000;
 server.keepAliveTimeout = 30000;
