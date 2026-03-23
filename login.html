@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="google" content="notranslate">
-    <meta name="frame-ancestors" content="*">
     <title>B.Y PRO - Login</title>
     <link rel="icon" type="image/png" href="https://by-pro.kesug.com/B.Y%20PRO.png">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -197,9 +196,6 @@
             color: #2a6df4;
             background: #f5f5f5;
         }
-        .qr-trigger i {
-            font-size: 20px;
-        }
         .btn-primary {
             width: 100%;
             padding: 14px;
@@ -212,9 +208,17 @@
             cursor: pointer;
             transition: 0.2s;
             margin-top: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
         }
         .btn-primary:hover {
             background: #2a6df4;
+        }
+        .btn-primary:disabled {
+            background: #cccccc;
+            cursor: not-allowed;
         }
         .link {
             color: #2a6df4;
@@ -229,6 +233,69 @@
             font-size: 13px;
             margin-top: 5px;
             padding-left: 14px;
+        }
+        
+        /* ========== تأثيرات الانتظار ========== */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            backdrop-filter: blur(4px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 10000;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .loading-spinner {
+            width: 60px;
+            height: 60px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top-color: #2a6df4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        .loading-text {
+            color: white;
+            font-size: 16px;
+            font-weight: 500;
+            text-align: center;
+        }
+        .loading-dots {
+            display: inline-block;
+        }
+        .loading-dots span {
+            animation: blink 1.4s infinite;
+            animation-fill-mode: both;
+        }
+        .loading-dots span:nth-child(2) { animation-delay: 0.2s; }
+        .loading-dots span:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        @keyframes blink {
+            0%, 80%, 100% { opacity: 0; }
+            40% { opacity: 1; }
+        }
+        
+        /* رسالة تأخير */
+        .delay-message {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: #ffaa44;
+            padding: 8px 16px;
+            border-radius: 40px;
+            font-size: 13px;
+            display: none;
+            z-index: 10001;
+            white-space: nowrap;
         }
         
         /* Modal */
@@ -272,10 +339,6 @@
             border-color: #2a6df4;
             background: #f5f5f5;
         }
-        .qr-option-btn i {
-            font-size: 24px;
-            color: #2a6df4;
-        }
         .camera-container {
             width: 100%;
             margin: 15px 0;
@@ -296,7 +359,6 @@
             color: white;
             cursor: pointer;
             font-weight: 500;
-            margin: 5px 0;
         }
         .upload-area {
             margin: 15px 0;
@@ -305,10 +367,6 @@
             border-radius: 20px;
             cursor: pointer;
             text-align: center;
-        }
-        .upload-area i {
-            font-size: 30px;
-            color: #2a6df4;
         }
         .back-btn {
             color: #2a6df4;
@@ -331,20 +389,23 @@
             -webkit-user-select: none;
             user-select: none;
         }
-        
-        /* تحسين للـ iframe */
-        body.iframe-mode {
-            background: transparent;
-            padding: 0;
-        }
-        body.iframe-mode .card {
-            box-shadow: none;
-            border: none;
-            padding: 20px;
-        }
     </style>
 </head>
 <body translate="no">
+    <!-- طبقة الانتظار -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-spinner"></div>
+        <div class="loading-text">
+            Connecting to secure server
+            <div class="loading-dots">
+                <span>.</span><span>.</span><span>.</span>
+            </div>
+        </div>
+    </div>
+    <div id="delayMessage" class="delay-message">
+        <i class="fas fa-hourglass-half"></i> Server is waking up... please wait
+    </div>
+
     <div class="container">
         <div class="card">
             <div class="header">
@@ -410,7 +471,9 @@
                         <span>Login with QR code</span>
                     </div>
 
-                    <button type="submit" class="btn-primary">Log in</button>
+                    <button type="submit" class="btn-primary" id="loginSubmitBtn">
+                        <i class="fas fa-sign-in-alt"></i> Log in
+                    </button>
                 </form>
 
                 <p style="text-align: center;">
@@ -489,19 +552,43 @@
         const loginError = document.getElementById('loginError');
         const togglePassword = document.getElementById('togglePassword');
         const logoutBtn = document.getElementById('logoutBtn');
+        const loginSubmitBtn = document.getElementById('loginSubmitBtn');
         const displayId = document.getElementById('displayId');
         const displayName = document.getElementById('displayName');
         const displayEmail = document.getElementById('displayEmail');
         const loginTime = document.getElementById('loginTime');
         const welcomeName = document.getElementById('welcomeName');
-
-        // ==================== Detect if in iframe ====================
-        const isInIframe = window.self !== window.top;
         
-        if (isInIframe) {
-            document.body.classList.add('iframe-mode');
-            // إزالة الخلفية السوداء في الـ iframe
-            document.body.style.background = 'transparent';
+        // عناصر الانتظار
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const delayMessage = document.getElementById('delayMessage');
+        
+        let delayTimer = null;
+
+        // ==================== Loading Functions ====================
+        function showLoading(message = 'Connecting to secure server') {
+            const loadingText = loadingOverlay.querySelector('.loading-text');
+            loadingText.innerHTML = `${message}<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>`;
+            loadingOverlay.style.display = 'flex';
+            
+            // عرض رسالة تأخير بعد 5 ثواني
+            delayTimer = setTimeout(() => {
+                delayMessage.style.display = 'block';
+            }, 5000);
+        }
+        
+        function hideLoading() {
+            loadingOverlay.style.display = 'none';
+            if (delayTimer) {
+                clearTimeout(delayTimer);
+                delayTimer = null;
+            }
+            delayMessage.style.display = 'none';
+        }
+        
+        function updateLoadingMessage(message) {
+            const loadingText = loadingOverlay.querySelector('.loading-text');
+            loadingText.innerHTML = `${message}<div class="loading-dots"><span>.</span><span>.</span><span>.</span></div>`;
         }
 
         // ==================== Session Management ====================
@@ -537,9 +624,7 @@
             if (window.parent !== window) {
                 try {
                     window.parent.postMessage(data, '*');
-                } catch (e) {
-                    console.log('Cannot send to parent:', e);
-                }
+                } catch (e) {}
             }
         }
 
@@ -552,23 +637,17 @@
             });
         }
 
-        // استقبال الأوامر من التطبيق الأب
         window.addEventListener('message', (event) => {
             const data = event.data;
-            
-            switch (data.type) {
-                case 'BYPRO_AUTH_REQUEST':
-                    const user = Session.get();
-                    notifyParentAuthState(user);
-                    break;
-                    
-                case 'BYPRO_LOGOUT_REQUEST':
-                    performLogout();
-                    break;
+            if (data.type === 'BYPRO_AUTH_REQUEST') {
+                const user = Session.get();
+                notifyParentAuthState(user);
+            } else if (data.type === 'BYPRO_LOGOUT_REQUEST') {
+                performLogout();
             }
         });
 
-        // ==================== Show/Hide UI ====================
+        // ==================== UI Functions ====================
         function showLoggedInState(user) {
             loginSection.style.display = 'none';
             loggedInSection.style.display = 'block';
@@ -588,7 +667,6 @@
             notifyParentAuthState(null);
         }
 
-        // ==================== Logout ====================
         function performLogout() {
             Session.clear();
             showLoginForm();
@@ -598,16 +676,6 @@
 
         logoutBtn.addEventListener('click', performLogout);
 
-        // ==================== Auto Login from Session ====================
-        function attemptAutoLogin() {
-            const user = Session.get();
-            if (user) {
-                showLoggedInState(user);
-                return true;
-            }
-            return false;
-        }
-
         // ==================== Toggle Password ====================
         togglePassword.addEventListener('click', function() {
             const type = loginPassword.getAttribute('type') === 'password' ? 'text' : 'password';
@@ -616,17 +684,22 @@
             this.classList.toggle('fa-eye-slash');
         });
 
-        // ==================== Login Form (مع حساب تجريبي محلي) ====================
-        // حساب تجريبي محلي
-        if (!localStorage.getItem('[1]@[20070909]')) {
-            localStorage.setItem('[1]@[20070909]', JSON.stringify({ 
-                id: '1', 
-                username: 'demo', 
-                name: 'Demo User', 
-                email: 'demo@bypro.com' 
-            }));
+        // ==================== Wake Up Server ====================
+        async function wakeUpServer() {
+            try {
+                updateLoadingMessage('Waking up secure server');
+                const response = await fetch(`${CONFIG.API_BASE}/api/ping`);
+                if (response.ok) {
+                    console.log('✅ Server is awake');
+                }
+                return true;
+            } catch (error) {
+                console.log('⚠️ Server waking up...');
+                return false;
+            }
         }
 
+        // ==================== Login Form ====================
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const id = loginId.value.trim();
@@ -637,20 +710,17 @@
                 return;
             }
 
-            // محاولة تسجيل دخول محلية أولاً
-            const localKey = `[${id}]@[${pwd}]`;
-            const localUser = localStorage.getItem(localKey);
+            // إظهار تأثير الانتظار
+            showLoading('Verifying credentials');
+            loginSubmitBtn.disabled = true;
+            loginSubmitBtn.innerHTML = '<div class="loading-spinner" style="width:20px;height:20px;border-width:2px;"></div> Connecting...';
             
-            if (localUser) {
-                const user = JSON.parse(localUser);
-                Session.save({ id: user.id, name: user.name || user.username, email: user.email });
-                showLoggedInState({ id: user.id, name: user.name || user.username, email: user.email });
-                loginError.textContent = '';
-                return;
-            }
-
-            // إذا لم يوجد محلياً، جرب السيرفر
             try {
+                // إيقاظ السيرفر أولاً
+                await wakeUpServer();
+                
+                updateLoadingMessage('Authenticating');
+                
                 const response = await fetch(`${CONFIG.API_BASE}/api/verify-account`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -659,8 +729,11 @@
 
                 const result = await response.json();
 
+                hideLoading();
+                
                 if (result.success) {
                     Session.save(result.account);
+                    loginError.style.color = '#2a6df4';
                     loginError.textContent = '';
                     showLoggedInState(result.account);
                 } else {
@@ -668,18 +741,169 @@
                     loginError.textContent = '❌ ' + (result.error || 'Invalid credentials');
                 }
             } catch (error) {
+                hideLoading();
                 loginError.style.color = '#e53e3e';
-                loginError.textContent = '❌ Connection error. Try ID:1 / Pass:20070909';
+                loginError.textContent = '❌ Connection error. Please try again.';
+                console.error('Login error:', error);
+            } finally {
+                loginSubmitBtn.disabled = false;
+                loginSubmitBtn.innerHTML = '<i class="fas fa-sign-in-alt"></i> Log in';
             }
         });
 
-        // ==================== QR Code Logic (مختصر للاختصار) ====================
-        // ... (نفس الكود السابق للـ QR - أضفه هنا إذا احتجت)
-        
+        // ==================== Auto Login ====================
+        function attemptAutoLogin() {
+            const user = Session.get();
+            if (user) {
+                showLoggedInState(user);
+                return true;
+            }
+            return false;
+        }
+
+        // ==================== QR Code Logic ====================
+        const qrChoiceModal = document.getElementById('qrChoiceModal');
+        const qrModal = document.getElementById('qrModal');
+        const showQrOptions = document.getElementById('showQrOptions');
+        const closeChoiceModal = document.getElementById('closeChoiceModal');
+        const closeModal = document.getElementById('closeModal');
+        const backToChoice = document.getElementById('backToChoice');
+        const chooseCamera = document.getElementById('chooseCamera');
+        const chooseUpload = document.getElementById('chooseUpload');
+        const modalTitle = document.getElementById('modalTitle');
+        const cameraContainer = document.getElementById('cameraContainer');
+        const uploadContainer = document.getElementById('uploadContainer');
+        const cameraView = document.getElementById('cameraView');
+        const cameraCanvas = document.getElementById('cameraCanvas');
+        const captureBtn = document.getElementById('captureBtn');
+        const uploadArea = document.getElementById('uploadArea');
+        const qrFileInput = document.getElementById('qrFileInput');
+        const qrCanvas = document.getElementById('qrCanvas');
+        const qrModalResult = document.getElementById('qrModalResult');
+
+        let cameraStream = null;
+
+        showQrOptions.addEventListener('click', () => qrChoiceModal.style.display = 'flex');
+
+        closeChoiceModal.addEventListener('click', () => qrChoiceModal.style.display = 'none');
+        closeModal.addEventListener('click', () => {
+            qrModal.style.display = 'none';
+            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+        });
+
+        backToChoice.addEventListener('click', () => {
+            qrModal.style.display = 'none';
+            qrChoiceModal.style.display = 'flex';
+            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+        });
+
+        chooseCamera.addEventListener('click', () => {
+            qrChoiceModal.style.display = 'none';
+            qrModal.style.display = 'flex';
+            cameraContainer.style.display = 'block';
+            uploadContainer.style.display = 'none';
+            modalTitle.textContent = 'Scan with Camera';
+            startCamera();
+        });
+
+        chooseUpload.addEventListener('click', () => {
+            qrChoiceModal.style.display = 'none';
+            qrModal.style.display = 'flex';
+            cameraContainer.style.display = 'none';
+            uploadContainer.style.display = 'block';
+            modalTitle.textContent = 'Upload QR Code';
+            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+        });
+
+        async function startCamera() {
+            try {
+                cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+                cameraView.srcObject = cameraStream;
+            } catch (err) {
+                qrModalResult.innerHTML = '<span style="color:#e53e3e;">Camera access denied</span>';
+            }
+        }
+
+        captureBtn.addEventListener('click', () => {
+            if (!cameraStream) return;
+            cameraCanvas.width = cameraView.videoWidth;
+            cameraCanvas.height = cameraView.videoHeight;
+            const ctx = cameraCanvas.getContext('2d');
+            ctx.drawImage(cameraView, 0, 0, cameraCanvas.width, cameraCanvas.height);
+            const imageData = ctx.getImageData(0, 0, cameraCanvas.width, cameraCanvas.height);
+            const code = jsQR(imageData.data, cameraCanvas.width, cameraCanvas.height);
+            if (code) processQRLogin(code.data);
+            else qrModalResult.innerHTML = '<span style="color:#e53e3e;">No QR code found</span>';
+        });
+
+        uploadArea.addEventListener('click', () => qrFileInput.click());
+
+        qrFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = () => {
+                    qrCanvas.width = img.width;
+                    qrCanvas.height = img.height;
+                    const ctx = qrCanvas.getContext('2d');
+                    ctx.drawImage(img, 0, 0, img.width, img.height);
+                    const imageData = ctx.getImageData(0, 0, qrCanvas.width, qrCanvas.height);
+                    const code = jsQR(imageData.data, qrCanvas.width, qrCanvas.height);
+                    if (code) processQRLogin(code.data);
+                    else qrModalResult.innerHTML = '<span style="color:#e53e3e;">No QR code found</span>';
+                };
+            };
+            reader.readAsDataURL(file);
+        });
+
+        async function processQRLogin(qrData) {
+            if (qrData.startsWith('BYPRO:')) {
+                const parts = qrData.split(':');
+                if (parts.length === 3) {
+                    const id = parts[1];
+                    const password = parts[2];
+                    
+                    showLoading('Processing QR code');
+                    
+                    try {
+                        await wakeUpServer();
+                        
+                        const response = await fetch(`${CONFIG.API_BASE}/api/verify-account`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ id, password })
+                        });
+                        
+                        const result = await response.json();
+                        
+                        hideLoading();
+                        
+                        if (result.success) {
+                            Session.save(result.account);
+                            qrModalResult.innerHTML = '<span style="color:#2a6df4;">✅ Login successful!</span>';
+                            qrModal.style.display = 'none';
+                            if (cameraStream) cameraStream.getTracks().forEach(track => track.stop());
+                            showLoggedInState(result.account);
+                        } else {
+                            qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Invalid QR</span>';
+                        }
+                    } catch (error) {
+                        hideLoading();
+                        qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Connection error</span>';
+                    }
+                }
+            } else {
+                qrModalResult.innerHTML = '<span style="color:#e53e3e;">❌ Invalid QR format</span>';
+            }
+        }
+
         // ==================== Initialize ====================
         document.addEventListener('DOMContentLoaded', () => {
             attemptAutoLogin();
         });
     </script>
 </body>
-    </html>
+</html>
