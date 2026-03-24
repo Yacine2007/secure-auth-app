@@ -379,14 +379,14 @@ app.post('/api/create-payment', async (req, res) => {
     if (isNaN(amountNum) || amountNum <= 0 || amountNum > MAX_PAYMENT_AMOUNT) {
       return res.status(400).json({ success: false, error: `Amount must be between 0 and ${MAX_PAYMENT_AMOUNT}` });
     }
-    if (!callbackUrl || !callbackUrl.startsWith('https://')) {
-      return res.status(400).json({ success: false, error: "Valid callbackUrl required" });
+    // السماح بـ http://localhost للتطوير و https للإنتاج
+    if (!callbackUrl || (!callbackUrl.startsWith('https://') && !callbackUrl.startsWith('http://localhost'))) {
+      return res.status(400).json({ success: false, error: "Valid callbackUrl required (https:// or http://localhost)" });
     }
 
     const paymentId = crypto.randomBytes(16).toString('hex');
     const expiresAt = new Date(Date.now() + PAYMENT_EXPIRY_MINUTES * 60 * 1000).toISOString();
 
-    // حفظ في JSONBin
     const data = await readJSONBin();
     data.pending_payments = data.pending_payments || {};
     data.pending_payments[paymentId] = {
@@ -404,7 +404,7 @@ app.post('/api/create-payment', async (req, res) => {
     res.json({
       success: true,
       paymentId,
-      gatewayUrl: `https://b-y-pro-acounts-login.onrender.com/gateway?payment_id=${paymentId}`,
+      gatewayUrl: `https://b-y-pro-acounts-login.onrender.com/Payment%20gateway.html?payment_id=${paymentId}`,
       amount: amountNum,
       expiresIn: PAYMENT_EXPIRY_MINUTES * 60
     });
@@ -501,7 +501,6 @@ app.post('/api/verify-password', async (req, res) => {
       return res.status(400).json({ success: false, error: "accountId and password required" });
     }
 
-    // استدعاء Auth API الأصلي (نفس نظام تسجيل الدخول)
     const authResponse = await axios.post(
       `https://b-y-pro-acounts-login.onrender.com/api/verify-account`,
       { id: accountId, password },
@@ -530,7 +529,6 @@ app.post('/api/process-payment', async (req, res) => {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
 
-    // 1. التحقق من صلاحية paymentId
     const data = await readJSONBin();
     const payment = data.pending_payments?.[paymentId];
     if (!payment) {
@@ -543,7 +541,6 @@ app.post('/api/process-payment', async (req, res) => {
       return res.status(400).json({ success: false, error: "Payment already processed" });
     }
 
-    // 2. التحقق من صحة المستخدم والبطاقة
     const users = data.users || {};
     const user = users[accountId];
     if (!user || user.cardCode !== cardCode) {
@@ -555,7 +552,6 @@ app.post('/api/process-payment', async (req, res) => {
       return res.status(402).json({ success: false, error: "Insufficient balance" });
     }
 
-    // 3. تنفيذ الخصم وتسجيل المعاملة
     user.balance -= amountNum;
     user.transactions = user.transactions || [];
     const transaction = {
@@ -568,16 +564,14 @@ app.post('/api/process-payment', async (req, res) => {
     };
     user.transactions.unshift(transaction);
 
-    // تحديث حالة الدفع
     payment.status = 'completed';
     payment.completedAt = new Date().toISOString();
     payment.accountId = accountId;
 
-    // حفظ في JSONBin
     const updated = await writeJSONBin(data);
     if (!updated) throw new Error("Failed to update financial data");
 
-    // 4. إرسال callback للتطبيق الخارجي (غير متزامن)
+    // إرسال callback للتطبيق الخارجي
     if (payment.callbackUrl) {
       const callbackData = {
         paymentId,
@@ -587,7 +581,6 @@ app.post('/api/process-payment', async (req, res) => {
         transactionId: `txn_${Date.now()}`,
         timestamp: new Date().toISOString()
       };
-      // إرسال callback في الخلفية
       const sendCallback = async (url, data, retries = 0) => {
         try {
           await axios.post(url, data, { timeout: 5000 });
@@ -614,10 +607,35 @@ app.post('/api/process-payment', async (req, res) => {
   }
 });
 
+/**
+ * 2.6 POST /api/payment-callback
+ * نقطة نهاية لاستقبال الإشعارات من بوابة الدفع (للتطبيقات)
+ */
+app.post('/api/payment-callback', async (req, res) => {
+  try {
+    const { paymentId, success, accountId, amount, transactionId, timestamp } = req.body;
+    
+    console.log(`📞 Payment callback received:`, { paymentId, success, accountId, amount, transactionId });
+    
+    // هنا يمكن تخزين نتيجة الدفع في قاعدة بيانات أو إرسال إشعار
+    // للتطبيق، سنقوم فقط بتسجيلها وإرجاع تأكيد
+    
+    res.json({ 
+      success: true, 
+      message: 'Callback received successfully',
+      received: { paymentId, success, accountId, amount, transactionId, timestamp }
+    });
+  } catch (error) {
+    console.error('❌ Callback error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
 // ==================== EXISTING AUTH ROUTES ====================
 app.get('/api/ping', (req, res) => {
   res.json({ success: true, time: Date.now(), status: 'awake' });
 });
+
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
@@ -627,6 +645,7 @@ app.get('/api/health', (req, res) => {
     timestamp: new Date().toISOString()
   });
 });
+
 app.post('/api/send-otp', async (req, res) => {
   req.setTimeout(15000);
   try {
@@ -646,6 +665,7 @@ app.post('/api/send-otp', async (req, res) => {
     res.status(500).json({ success: false, error: "Server error" });
   }
 });
+
 app.post('/api/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
@@ -662,6 +682,7 @@ app.post('/api/verify-otp', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
 app.post('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.body;
@@ -674,6 +695,7 @@ app.post('/api/verify-account', async (req, res) => {
     res.json({ success: false, error: "Service unavailable" });
   }
 });
+
 app.get('/api/next-id', requireApiKey, async (req, res) => {
   try {
     const nextId = await getNextId();
@@ -682,6 +704,7 @@ app.get('/api/next-id', requireApiKey, async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
 app.post('/api/create-account', async (req, res) => {
   try {
     const { id, name, email, password, otpCode } = req.body;
@@ -704,9 +727,20 @@ app.post('/api/create-account', async (req, res) => {
     res.status(500).json({ success: false, error: error.message });
   }
 });
+
+// ==================== STATIC PAGES ====================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
+
+app.get('/Payment%20gateway.html', (req, res) => {
+  res.sendFile(path.join(__dirname, 'Payment gateway.html'));
+});
+
+app.get('/payment-gateway', (req, res) => {
+  res.redirect('/Payment%20gateway.html');
+});
+
 app.use('*', (req, res) => {
   res.status(404).json({ success: false, error: "Not found" });
 });
@@ -721,7 +755,7 @@ setInterval(async () => {
   } catch (e) {
     // silent fail
   }
-}, 120000); // كل دقيقتين
+}, 120000);
 
 // ==================== START SERVER ====================
 const server = app.listen(PORT, '0.0.0.0', () => {
