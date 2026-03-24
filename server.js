@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Accounts System v6.4 (Full Payment Gateway)');
+console.log('🚀 Starting B.Y PRO Accounts System v7.0 (Integrated with Financial Data)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -47,31 +47,21 @@ const {
   GITHUB_TOKEN
 } = process.env;
 
-// ==================== CORS CONFIGURATION (محسّن) ====================
+// ==================== CORS CONFIGURATION ====================
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim());
 
-// CORS middleware متقدم
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  
-  // السماح لجميع origins المحددة
   if (allowedOrigins.includes(origin) || origin?.startsWith('http://localhost')) {
     res.header('Access-Control-Allow-Origin', origin);
     res.header('Access-Control-Allow-Credentials', 'true');
     res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
     res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, x-api-key');
-    res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With');
-    
-    // معالجة preflight requests
-    if (req.method === 'OPTIONS') {
-      return res.sendStatus(200);
-    }
+    if (req.method === 'OPTIONS') return res.sendStatus(200);
   }
-  
   next();
 });
 
-// CORS لجميع الطلبات
 app.use(cors({
   origin: function(origin, callback) {
     if (!origin) return callback(null, true);
@@ -144,8 +134,6 @@ function createBrevoTransporter() {
   });
 }
 
-initializeBrevo();
-
 function initializeBrevo() {
   try {
     brevoTransporter = createBrevoTransporter();
@@ -157,6 +145,7 @@ function initializeBrevo() {
     console.error('❌ Brevo init error:', error.message);
   }
 }
+initializeBrevo();
 
 async function sendOTPviaBrevo(email, otpCode) {
   try {
@@ -293,7 +282,7 @@ async function addAccount(account) {
   if (existing) account.id = await getNextId();
   accounts.push(account);
   await saveCSV(accounts);
-  return true;
+  return account.id;
 }
 
 async function verifyAccount(id, password) {
@@ -320,7 +309,7 @@ async function generateQR(data) {
   } catch { return { success: false }; }
 }
 
-// ==================== JSONBIN HELPERS ====================
+// ==================== JSONBIN HELPERS (FINANCIAL DATA) ====================
 async function readJSONBin() {
   try {
     const response = await axios.get(JSONBIN_API_URL, {
@@ -348,6 +337,68 @@ async function writeJSONBin(data) {
   } catch (error) {
     console.error('❌ JSONBin write error:', error.message);
     return false;
+  }
+}
+
+/**
+ * إنشاء بطاقة عشوائية فريدة
+ * التنسيق: byppcn- + 15 رقم عشوائي
+ */
+function generateUniqueCardCode(existingCardCodes = []) {
+  let cardCode;
+  let attempts = 0;
+  do {
+    const randomDigits = Math.floor(100000000000000 + Math.random() * 900000000000000).toString();
+    cardCode = `byppcn-${randomDigits}`;
+    attempts++;
+    if (attempts > 100) break;
+  } while (existingCardCodes.includes(cardCode));
+  return cardCode;
+}
+
+/**
+ * إنشاء بيانات مالية جديدة للحساب
+ */
+async function createFinancialAccount(userId, userName, userEmail) {
+  try {
+    const data = await readJSONBin();
+    const existingUsers = data.users || {};
+    
+    // التحقق من عدم وجود ID مكرر
+    if (existingUsers[userId]) {
+      console.log(`⚠️ Financial account for ID ${userId} already exists`);
+      return existingUsers[userId];
+    }
+    
+    // جمع جميع أكواد البطاقات الموجودة
+    const existingCardCodes = Object.values(existingUsers).map(u => u.cardCode).filter(c => c);
+    
+    // إنشاء بطاقة فريدة
+    const newCardCode = generateUniqueCardCode(existingCardCodes);
+    
+    // إنشاء الحساب المالي
+    const newFinancialAccount = {
+      id: userId,
+      name: userName,
+      email: userEmail,
+      balance: 0,
+      cardCode: newCardCode,
+      transactions: []
+    };
+    
+    data.users = data.users || {};
+    data.users[userId] = newFinancialAccount;
+    
+    const saved = await writeJSONBin(data);
+    if (saved) {
+      console.log(`✅ Financial account created for ${userId} with card: ${newCardCode}`);
+      return newFinancialAccount;
+    } else {
+      throw new Error('Failed to save financial data');
+    }
+  } catch (error) {
+    console.error('❌ Error creating financial account:', error);
+    return null;
   }
 }
 
@@ -488,7 +539,6 @@ app.post('/api/process-payment', async (req, res) => {
       return res.status(402).json({ success: false, error: "Insufficient balance" });
     }
     
-    // الخصم وتسجيل المعاملة مع سبب الدفع
     user.balance -= amountNum;
     user.transactions = user.transactions || [];
     const transaction = {
@@ -507,7 +557,6 @@ app.post('/api/process-payment', async (req, res) => {
     
     await writeJSONBin(data);
     
-    // إرسال callback
     if (payment.callbackUrl) {
       const callbackData = { paymentId, success: true, accountId, amount: amountNum, transactionId: `txn_${Date.now()}`, timestamp: new Date().toISOString(), description: transaction.description };
       axios.post(payment.callbackUrl, callbackData, { timeout: 5000 }).catch(e => console.log('Callback failed:', e.message));
@@ -525,7 +574,7 @@ app.post('/api/process-payment', async (req, res) => {
   }
 });
 
-// ==================== AUTH ROUTES ====================
+// ==================== AUTH ROUTES (MODIFIED) ====================
 app.get('/api/ping', (req, res) => {
   res.json({ success: true, time: Date.now(), status: 'awake' });
 });
@@ -533,9 +582,10 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v6.4',
+    service: 'B.Y PRO v7.0',
     email_provider: 'Brevo SMTP',
     payment_gateway: 'active',
+    financial_integration: 'active',
     timestamp: new Date().toISOString()
   });
 });
@@ -594,18 +644,120 @@ app.get('/api/next-id', (req, res, next) => {
   }
 });
 
+/**
+ * CREATE ACCOUNT - المعدل ليشمل إنشاء حساب مالي تلقائياً
+ */
 app.post('/api/create-account', async (req, res) => {
   try {
     const { id, name, email, password, otpCode } = req.body;
+    
+    // التحقق من البيانات
     if (!id || !name || !email || !password || !otpCode) {
       return res.status(400).json({ success: false, error: "All fields required" });
     }
+    
+    // التحقق من OTP
     const otpResult = await verifyOTP(email, otpCode);
-    if (!otpResult.success) return res.status(400).json({ success: false, error: otpResult.error });
-    await addAccount({ id: id.toString(), ps: password, email, name });
-    const qrResult = await generateQR(`BYPRO:${id}:${password}`);
-    res.json({ success: true, message: "Account created", account: { id, name, email }, qrCode: qrResult.qrCode });
+    if (!otpResult.success) {
+      return res.status(400).json({ success: false, error: otpResult.error });
+    }
+    
+    // إنشاء الحساب في Google Drive (Auth)
+    const finalId = await addAccount({ id: id.toString(), ps: password, email, name });
+    
+    // إنشاء الحساب المالي في JSONBin مع بطاقة فريدة
+    const financialAccount = await createFinancialAccount(finalId, name, email);
+    
+    if (!financialAccount) {
+      console.error('⚠️ Failed to create financial account for user:', finalId);
+    }
+    
+    // إنشاء QR Code
+    const qrResult = await generateQR(`BYPRO:${finalId}:${password}`);
+    
+    res.json({
+      success: true,
+      message: "Account created successfully",
+      account: { 
+        id: finalId, 
+        name, 
+        email 
+      },
+      financialAccount: financialAccount ? {
+        cardCode: financialAccount.cardCode,
+        balance: financialAccount.balance
+      } : null,
+      qrCode: qrResult.qrCode
+    });
+    
   } catch (error) {
+    console.error('❌ Error creating account:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// ==================== FINANCIAL DATA ENDPOINTS ====================
+app.get('/api/financial/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const data = await readJSONBin();
+    const userData = data.users?.[userId];
+    
+    if (!userData) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: userData.id,
+        name: userData.name,
+        email: userData.email,
+        balance: userData.balance,
+        cardCode: userData.cardCode,
+        transactions: userData.transactions || []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error fetching financial data:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.post('/api/financial/add-balance', async (req, res) => {
+  try {
+    const { userId, amount, description } = req.body;
+    const apiKey = req.headers['x-api-key'];
+    
+    if (apiKey !== INTERNAL_API_KEY) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+    
+    const data = await readJSONBin();
+    const user = data.users?.[userId];
+    
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found" });
+    }
+    
+    const amountNum = parseFloat(amount);
+    user.balance += amountNum;
+    user.transactions = user.transactions || [];
+    user.transactions.unshift({
+      type: 'deposit',
+      amount: amountNum,
+      description: description || 'Admin deposit',
+      date: new Date().toISOString()
+    });
+    
+    await writeJSONBin(data);
+    
+    res.json({
+      success: true,
+      newBalance: user.balance
+    });
+  } catch (error) {
+    console.error('❌ Error adding balance:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -633,11 +785,12 @@ setInterval(async () => {
 
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS v6.4 (Payment Gateway)');
+  console.log('🚀 B.Y PRO ACCOUNTS v7.0');
   console.log('✅ CORS: FULLY ENABLED');
   console.log('✅ Email: BREVO SMTP');
   console.log('✅ Keep-Alive: ACTIVE');
   console.log('✅ Payment Gateway: ACTIVE');
+  console.log('✅ Financial Integration: ACTIVE');
   console.log(`✅ Server: http://localhost:${PORT}`);
   console.log('🎉 =================================\n');
 });
