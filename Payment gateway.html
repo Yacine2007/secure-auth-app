@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <title>B.Y PRO Pay | Secure Payment</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* نفس التصميم السابق - لم يتغير */
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #f5f7fc 0%, #eef2f8 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+        .payment-container { max-width: 520px; width: 100%; margin: 0 auto; }
+        .payment-card {
+            background: white;
+            border-radius: 32px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.05);
+            border: 1px solid #eef2f8;
+            overflow: hidden;
+        }
+        .card-header {
+            padding: 1.75rem 2rem 0.75rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid #f0f4f9;
+        }
+        .logo-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+        .payment-icon { width: 44px; height: 44px; object-fit: contain; }
+        .logo-text { font-size: 1.5rem; font-weight: 700; color: #0a2540; }
+        .logo-text span { color: #0066ff; }
+        .badge { font-size: 0.7rem; color: #6c86a3; margin-top: 0.25rem; }
+        .amount-section {
+            padding: 1.75rem 2rem 1.5rem 2rem;
+            text-align: center;
+            border-bottom: 1px solid #f0f4f9;
+        }
+        .amount-label {
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+            color: #6c86a3;
+            margin-bottom: 0.75rem;
+        }
+        .amount-value { font-size: 4rem; font-weight: 800; color: #10b981; display: inline-flex; align-items: baseline; gap: 0.1rem; }
+        .currency { font-size: 2rem; font-weight: 600; color: #10b981; }
+        .amount-hint { font-size: 0.7rem; color: #8ba0b5; margin-top: 0.5rem; }
+        .input-section { padding: 1.75rem 2rem 1.5rem 2rem; }
+        .card-input-header {
+            display: flex;
+            align-items: center;
+            gap: 0.85rem;
+            margin-bottom: 1.25rem;
+        }
+        .card-direct-image img { height: 48px; width: auto; display: block; }
+        .card-input-title h3 { font-size: 0.9rem; font-weight: 600; color: #1e293b; margin-bottom: 0.2rem; }
+        .card-input-title p { font-size: 0.7rem; color: #8ba0b5; }
+        .code-field, .password-field { margin-bottom: 1.25rem; }
+        .input-container {
+            border: 1.5px solid #e2e8f0;
+            border-radius: 60px;
+            background: white;
+            transition: all 0.2s;
+            padding: 0.1rem 0.1rem 0.1rem 1.25rem;
+        }
+        .input-container:focus-within {
+            border-color: #0066ff;
+            box-shadow: 0 0 0 3px rgba(0, 102, 255, 0.08);
+        }
+        .input-container input {
+            width: 100%;
+            border: none;
+            padding: 0.9rem 0.8rem 0.9rem 0;
+            font-family: 'SF Mono', 'Monaco', monospace;
+            font-size: 0.85rem;
+            outline: none;
+            background: transparent;
+        }
+        .input-container input::placeholder {
+            color: #cbd5e1;
+            font-family: monospace;
+            font-size: 0.75rem;
+        }
+        .password-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            margin-bottom: 0.5rem;
+        }
+        .password-label { font-size: 0.75rem; font-weight: 600; color: #2c3e50; }
+        .forgot-link {
+            font-size: 0.7rem;
+            color: #0066ff;
+            cursor: pointer;
+        }
+        .forgot-link:hover { text-decoration: underline; }
+        .support-note {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: #f8fafc;
+            padding: 0.6rem 0.8rem;
+            border-radius: 12px;
+        }
+        .format-hint {
+            font-size: 0.65rem;
+            color: #94a3b8;
+            margin-top: 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .pay-button {
+            width: 100%;
+            background: #0066ff;
+            border: none;
+            padding: 1rem;
+            border-radius: 60px;
+            font-weight: 700;
+            font-size: 1rem;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.75rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-top: 1.5rem;
+        }
+        .pay-button:hover:not(:disabled) {
+            background: #0052cc;
+            transform: translateY(-1px);
+            box-shadow: 0 8px 20px rgba(0, 102, 255, 0.2);
+        }
+        .pay-button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .status-area { padding: 0 2rem 1.75rem 2rem; min-height: 80px; }
+        .message-card {
+            background: #f8fafc;
+            border-radius: 20px;
+            padding: 0.9rem 1rem;
+            font-size: 0.8rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            border: 1px solid #eef2f8;
+        }
+        .message-card i { margin-right: 0.5rem; }
+        .message-card.info { background: #f0f9ff; color: #0066cc; border-color: #d9efff; }
+        .message-card.success { background: #e8f5e9; color: #10b981; border-color: #d0e6d0; }
+        .message-card.error { background: #fef2f2; color: #dc2626; border-color: #fee2e2; }
+        .message-card.processing { background: #fff7e5; color: #d97706; border-color: #feebc8; }
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.2s;
+        }
+        .modal-overlay.active { opacity: 1; visibility: visible; }
+        .support-modal {
+            background: white;
+            border-radius: 28px;
+            width: 90%;
+            max-width: 380px;
+            padding: 1.75rem;
+            text-align: center;
+        }
+        .support-modal i { font-size: 3rem; color: #0066ff; margin-bottom: 1rem; }
+        .support-modal h3 { font-size: 1.3rem; margin-bottom: 0.5rem; color: #1e293b; }
+        .support-modal p { color: #6c757d; font-size: 0.85rem; margin-bottom: 1.5rem; line-height: 1.5; }
+        .support-modal button {
+            background: #0066ff;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 40px;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .loader {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 0.6s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        @media (max-width: 560px) {
+            .amount-value { font-size: 3rem; }
+            .card-header, .amount-section, .input-section, .status-area {
+                padding-left: 1.25rem;
+                padding-right: 1.25rem;
+            }
+            .card-direct-image img { height: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="payment-container">
+    <div class="payment-card">
+        <div class="card-header">
+            <div class="logo-wrapper">
+                <img class="payment-icon" src="https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-App/refs/heads/main/public/wallet.png" alt="B.Y PRO" onerror="this.style.display='none'">
+                <div class="logo-text">B.Y <span>PRO</span> Pay</div>
+            </div>
+            <div class="badge">secure payment gateway</div>
+        </div>
+
+        <div class="amount-section">
+            <div class="amount-label"><i class="fas fa-tag"></i> PAYMENT AMOUNT</div>
+            <div class="amount-value">
+                <span class="currency">$</span>
+                <span class="number" id="amountNumber">10.00</span>
+            </div>
+            <div class="amount-hint"><i class="fas fa-check-circle"></i> amount confirmed</div>
+        </div>
+
+        <div class="input-section">
+            <div class="card-input-header">
+                <div class="card-direct-image">
+                    <img src="https://raw.githubusercontent.com/Yacine2007/B.Y-PRO-App/refs/heads/main/public/card.png" alt="payment card">
+                </div>
+                <div class="card-input-title">
+                    <h3>Enter Card Code</h3>
+                    <p>Input your payment card code</p>
+                </div>
+            </div>
+
+            <div class="code-field">
+                <div class="input-container">
+                    <input type="text" id="cardCodeInput" placeholder="byppcn-xxxxxxxxxxxxxxx" autocomplete="off" spellcheck="false">
+                </div>
+                <div class="format-hint">
+                    <i class="fas fa-lock"></i>
+                    <span>Format: byppcn- followed by 15 digits</span>
+                </div>
+            </div>
+
+            <div class="password-field">
+                <div class="password-header">
+                    <div class="password-label"><i class="fas fa-key"></i> B.Y PRO Account Password</div>
+                    <div class="forgot-link" id="forgotPasswordBtn"><i class="fas fa-question-circle"></i> Forgot?</div>
+                </div>
+                <div class="input-container">
+                    <input type="password" id="passwordInput" placeholder="Enter your B.Y PRO account password" autocomplete="off">
+                </div>
+                <div class="support-note" id="supportNote" style="display: none;">
+                    <i class="fas fa-headset"></i>
+                    <span>If you forgot your password, please contact support via <strong>B.Y PRO App</strong></span>
+                </div>
+            </div>
+
+            <button class="pay-button" id="payButton">
+                <i class="fas fa-lock"></i>
+                <span id="payButtonText">Pay Now</span>
+            </button>
+        </div>
+
+        <div class="status-area">
+            <div class="message-card info" id="statusMessage">
+                <i class="fas fa-info-circle"></i> Enter card code and password to continue
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal-overlay" id="supportModal">
+    <div class="support-modal">
+        <i class="fas fa-headset"></i>
+        <h3>Need Help?</h3>
+        <p>If you forgot your B.Y PRO account password, please contact our support team through the <strong>B.Y PRO App</strong> for assistance.</p>
+        <button onclick="closeSupportModal()">Close</button>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // B.Y PRO Pay Gateway - Secure & Clean Version
+    // ============================================================
+    // 
+    // 🔒 أمان المفاتيح:
+    //   - لتجنب ظهور المفاتيح في الكود المصدر عند النشر على GitHub Pages،
+    //     يُنصح بشدة باستخدام Proxy API (مثل Cloudflare Worker).
+    //   - إذا كنت مضطراً لوضع المفاتيح هنا، فاعلم أنها ستكون ظاهرة.
+    //   - الكود الحالي يستخدم خدمة وسيطة (BYPASS) لاستدعاء APIs.
+    //     يمكنك تعيين URL الـ Proxy في المتغير أدناه.
+    // ============================================================
+
+    // ⚠️ مكان إضافة الـ Proxy API (يجب أن يكون سرياً)
+    const PROXY_API_URL = 'https://your-proxy-service.com/api'; // ← استبدل بعنوان الـ Proxy الخاص بك
+    // إذا لم يكن لديك Proxy، يمكنك استخدام المتغيرات المباشرة (غير آمن) ولكن للاختبار فقط.
+    const USE_PROXY = true; // غيّر إلى false إذا أردت استخدام المفاتيح المباشرة (غير مستحسن للنشر)
+
+    // المفاتيح (في حالة عدم استخدام Proxy) - لا تضعها هنا في النسخة النهائية
+    const DIRECT_KEYS = {
+        AUTH_API: 'https://b-y-pro-acounts-login.onrender.com/api/verify-account',
+        JSONBIN_API: 'https://api.jsonbin.io/v3/b/69c12accaa77b81da90ed823',
+        JSONBIN_API_KEY: '$2a$10$yDHSLnhevrj04WsUtdi5RuwB9snZKOu3JCacq9f4Hrn9BGD9ZNjhK',
+        JSONBIN_ACCESS_KEY: 'B.Y PRO App'
+    };
+
+    let currentAmount = 10.00;
+    let isProcessing = false;
+
+    // DOM Elements
+    const cardInput = document.getElementById('cardCodeInput');
+    const passwordInput = document.getElementById('passwordInput');
+    const payButton = document.getElementById('payButton');
+    const payButtonText = document.getElementById('payButtonText');
+    const statusMessageDiv = document.getElementById('statusMessage');
+    const supportNote = document.getElementById('supportNote');
+    const forgotBtn = document.getElementById('forgotPasswordBtn');
+    const supportModal = document.getElementById('supportModal');
+
+    function updateStatus(message, type = 'info') {
+        if (!statusMessageDiv) return;
+        statusMessageDiv.style.opacity = '0';
+        setTimeout(() => {
+            let icon = '';
+            switch(type) {
+                case 'success': icon = '<i class="fas fa-check-circle"></i> '; break;
+                case 'error': icon = '<i class="fas fa-exclamation-triangle"></i> '; break;
+                case 'processing': icon = '<i class="fas fa-spinner fa-pulse"></i> '; break;
+                default: icon = '<i class="fas fa-info-circle"></i> ';
+            }
+            statusMessageDiv.innerHTML = icon + message;
+            statusMessageDiv.className = `message-card ${type}`;
+            statusMessageDiv.style.opacity = '1';
+        }, 150);
+    }
+
+    function validateCardCode(code) {
+        const trimmed = code.trim().toLowerCase();
+        const regex = /^byppcn-\d{15}$/;
+        return regex.test(trimmed);
+    }
+
+    // ============= الاتصال بالـ Proxy API (آمن) =============
+    async function callProxy(endpoint, data) {
+        try {
+            const response = await fetch(PROXY_API_URL, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ endpoint, data })
+            });
+            if (!response.ok) throw new Error();
+            return await response.json();
+        } catch (error) {
+            return { success: false, error: 'Connection error' };
+        }
+    }
+
+    // ============= البحث عن account_id من كود البطاقة =============
+    async function findAccountIdByCardCode(cardCode) {
+        try {
+            let result;
+            if (USE_PROXY) {
+                result = await callProxy('findCard', { cardCode });
+            } else {
+                // مباشر (غير آمن)
+                const response = await fetch(DIRECT_KEYS.JSONBIN_API, {
+                    headers: {
+                        'X-Master-Key': DIRECT_KEYS.JSONBIN_API_KEY,
+                        'X-Access-Key': DIRECT_KEYS.JSONBIN_ACCESS_KEY
+                    }
+                });
+                if (!response.ok) throw new Error();
+                const data = await response.json();
+                const users = data.record?.users || {};
+                let found = null;
+                for (const [accId, userData] of Object.entries(users)) {
+                    if (userData.cardCode && userData.cardCode.toLowerCase() === cardCode.toLowerCase()) {
+                        found = { accountId: accId, userData };
+                        break;
+                    }
+                }
+                result = found ? { success: true, ...found } : { success: false, error: 'Card not found' };
+            }
+            return result;
+        } catch (error) {
+            return { success: false, error: 'Service unavailable' };
+        }
+    }
+
+    // ============= التحقق من كلمة المرور عبر Auth API =============
+    async function verifyPasswordWithAuth(accountId, password) {
+        try {
+            let result;
+            if (USE_PROXY) {
+                result = await callProxy('verifyAuth', { accountId, password });
+            } else {
+                const response = await fetch(DIRECT_KEYS.AUTH_API, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: accountId, password })
+                });
+                if (!response.ok) throw new Error();
+                result = await response.json();
+            }
+            return result;
+        } catch (error) {
+            return { success: false, error: 'Authentication failed' };
+        }
+    }
+
+    // ============= تنفيذ الخصم =============
+    async function processPayment(accountId, cardCode, amount, currentBalance, userData) {
+        try {
+            const newBalance = currentBalance - amount;
+            if (newBalance < 0) throw new Error('Insufficient funds');
+
+            userData.balance = newBalance;
+            if (!userData.transactions) userData.transactions = [];
+            userData.transactions.push({
+                type: 'payment',
+                amount: amount,
+                cardCode: cardCode,
+                description: `Payment via card ${cardCode}`,
+                date: new Date().toISOString(),
+                newBalance: newBalance
+            });
+
+            let updateResult;
+            if (USE_PROXY) {
+                updateResult = await callProxy('updateBalance', { accountId, userData });
+            } else {
+                // جلب البيانات الحالية
+                const getResponse = await fetch(DIRECT_KEYS.JSONBIN_API, {
+                    headers: {
+                        'X-Master-Key': DIRECT_KEYS.JSONBIN_API_KEY,
+                        'X-Access-Key': DIRECT_KEYS.JSONBIN_ACCESS_KEY
+                    }
+                });
+                const fullData = await getResponse.json();
+                const allUsers = fullData.record?.users || {};
+                allUsers[accountId] = userData;
+                const updateResponse = await fetch(DIRECT_KEYS.JSONBIN_API, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Master-Key': DIRECT_KEYS.JSONBIN_API_KEY,
+                        'X-Access-Key': DIRECT_KEYS.JSONBIN_ACCESS_KEY
+                    },
+                    body: JSON.stringify({ users: allUsers })
+                });
+                updateResult = updateResponse.ok ? { success: true } : { success: false };
+            }
+            if (updateResult.success) {
+                return { success: true, newBalance };
+            } else {
+                throw new Error('Update failed');
+            }
+        } catch (error) {
+            return { success: false, error: error.message };
+        }
+    }
+
+    // ============= العملية الرئيسية =============
+    async function executePayment() {
+        if (isProcessing) return;
+
+        const rawCode = cardInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        if (!rawCode) {
+            updateStatus('Please enter your card code', 'error');
+            cardInput.focus();
+            return;
+        }
+        let fullCode = rawCode.toLowerCase();
+        if (!fullCode.startsWith('byppcn-')) {
+            updateStatus('Invalid format — code must begin with "byppcn-"', 'error');
+            return;
+        }
+        if (!validateCardCode(fullCode)) {
+            updateStatus('Invalid card code — must be byppcn- followed by exactly 15 digits', 'error');
+            return;
+        }
+        if (!password) {
+            updateStatus('Please enter your B.Y PRO account password', 'error');
+            passwordInput.focus();
+            return;
+        }
+
+        isProcessing = true;
+        payButton.disabled = true;
+        payButtonText.innerHTML = '<span class="loader"></span> Processing';
+
+        try {
+            updateStatus('Verifying card information...', 'processing');
+            const cardLookup = await findAccountIdByCardCode(fullCode);
+            if (!cardLookup.success) throw new Error('Invalid card code');
+
+            const accountId = cardLookup.accountId;
+            const userData = cardLookup.userData;
+
+            updateStatus('Checking account credentials...', 'processing');
+            const authResult = await verifyPasswordWithAuth(accountId, password);
+            if (!authResult.success) throw new Error('Incorrect password');
+
+            const currentBalance = userData.balance || 0;
+            if (currentBalance < currentAmount) throw new Error('Insufficient balance');
+
+            updateStatus('Processing payment, please wait...', 'processing');
+            const paymentResult = await processPayment(accountId, fullCode, currentAmount, currentBalance, userData);
+            if (!paymentResult.success) throw new Error('Payment failed');
+
+            updateStatus(`Payment successful! New balance: $${paymentResult.newBalance.toFixed(2)}`, 'success');
+            cardInput.value = '';
+            passwordInput.value = '';
+            supportNote.style.display = 'none';
+
+            setTimeout(() => {
+                updateStatus('Ready for next payment', 'info');
+            }, 4000);
+        } catch (err) {
+            updateStatus(err.message || 'Transaction failed', 'error');
+            if (err.message.includes('password') || err.message.includes('Invalid')) {
+                supportNote.style.display = 'flex';
+                setTimeout(() => {
+                    if (supportNote.style.display === 'flex') supportNote.style.display = 'none';
+                }, 5000);
+            }
+        } finally {
+            isProcessing = false;
+            payButton.disabled = false;
+            payButtonText.innerHTML = 'Pay Now';
+        }
+    }
+
+    // ============= التحقق من صحة الإدخال =============
+    function handleInputValidation() {
+        const value = cardInput.value;
+        if (value.length > 0 && !value.toLowerCase().startsWith('byppcn-')) {
+            updateStatus('Card code must start with "byppcn-"', 'info');
+        } else if (value.length > 10) {
+            const testCode = value.toLowerCase();
+            if (testCode.startsWith('byppcn-') && testCode.replace('byppcn-', '').length === 15 && /^\d+$/.test(testCode.replace('byppcn-', ''))) {
+                updateStatus('Card format valid', 'success');
+            } else if (testCode.startsWith('byppcn-')) {
+                const digits = testCode.replace('byppcn-', '');
+                if (digits.length > 0 && !/^\d+$/.test(digits)) {
+                    updateStatus('Only digits allowed after prefix', 'error');
+                } else {
+                    updateStatus(`Enter 15 digits (${digits.length}/15)`, 'info');
+                }
+            }
+        } else {
+            updateStatus('Enter card code and password to continue', 'info');
+        }
+    }
+
+    function showSupportModal() { supportModal.classList.add('active'); }
+    function closeSupportModal() { supportModal.classList.remove('active'); }
+
+    // إخفاء أي رسائل تقنية من وحدة التحكم
+    window.addEventListener('load', () => {
+        // منع ظهور أي أخطاء غير مرغوب فيها في وحدة التحكم (اختياري)
+        const originalConsoleError = console.error;
+        console.error = function(...args) {
+            // تصفية الأخطاء المتعلقة بالمفاتيح فقط، لكن الأفضل الاحتفاظ بالأخطاء العادية للتطوير
+            if (args[0] && typeof args[0] === 'string' && args[0].includes('API')) return;
+            originalConsoleError.apply(console, args);
+        };
+    });
+
+    cardInput.addEventListener('input', handleInputValidation);
+    passwordInput.addEventListener('focus', () => supportNote.style.display = 'none');
+    payButton.addEventListener('click', executePayment);
+    forgotBtn.addEventListener('click', showSupportModal);
+    supportModal.onclick = (e) => { if (e.target === supportModal) closeSupportModal(); };
+
+    function init() {
+        cardInput.value = '';
+        passwordInput.value = '';
+        supportNote.style.display = 'none';
+        updateStatus('Enter card code and password to continue', 'info');
+        // اختبار الاتصال الأولي (بدون عرض تفاصيل)
+        if (!USE_PROXY) {
+            // تنبيه خفيف للمطور فقط في وحدة التحكم (يمكن إزالته)
+            console.warn('⚠️ Direct API keys are exposed. Use a proxy for production.');
+        }
+    }
+    init();
+</script>
+</body>
+</html>
