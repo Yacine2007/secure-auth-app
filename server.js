@@ -10,7 +10,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Accounts System v6.3 (Payment Gateway + Keep-Alive)');
+console.log('🚀 Starting B.Y PRO Accounts System v6.4 (Full Payment Gateway)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -20,7 +20,7 @@ const {
   BREVO_SMTP_USER,
   BREVO_SMTP_KEY,
   
-  // Google Drive Service Account
+  // Google Drive
   GOOGLE_PRIVATE_KEY,
   GOOGLE_CLIENT_EMAIL,
   GOOGLE_CLIENT_ID,
@@ -30,111 +30,77 @@ const {
   
   // Internal
   INTERNAL_API_KEY = 'bypro-internal-key-2025',
-  ALLOWED_ORIGINS = 'https://yacine2007.github.io,http://localhost:5500,http://localhost:3000,https://b-y-pro-acounts-login.onrender.com',
+  ALLOWED_ORIGINS = 'https://yacine2007.github.io,http://localhost:5500,http://localhost:3000,https://b-y-pro-acounts-login.onrender.com,http://localhost:5000',
   NODE_ENV = 'production',
   
-  // GitHub (optional)
-  GITHUB_TOKEN,
-  
-  // ========== PAYMENT GATEWAY ENV ==========
+  // JSONBin
   JSONBIN_BIN_ID,
   JSONBIN_API_KEY,
   JSONBIN_ACCESS_KEY,
   JSONBIN_API_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`,
-  PAYMENT_SECRET = 'bypro-pay-secret-key-2024-secure',
+  
+  // Payment
+  PAYMENT_SECRET = 'bypro-pay-secret-key-2024',
   PAYMENT_EXPIRY_MINUTES = 30,
   MAX_PAYMENT_AMOUNT = 1000.00,
-  CALLBACK_MAX_RETRIES = 3,
-  CALLBACK_RETRY_DELAY_MS = 2000,
+  
+  GITHUB_TOKEN
 } = process.env;
 
-// التحقق من وجود المفاتيح الأساسية
-if (!BREVO_SMTP_USER || !BREVO_SMTP_KEY) {
-  console.error('❌ FATAL: Brevo SMTP credentials are not set');
-  process.exit(1);
-}
-if (!GOOGLE_PRIVATE_KEY || !GOOGLE_CLIENT_EMAIL) {
-  console.error('❌ FATAL: Google Drive credentials are not set');
-  process.exit(1);
-}
-if (!JSONBIN_BIN_ID || !JSONBIN_API_KEY) {
-  console.error('❌ FATAL: JSONBin credentials are not set (Payment Gateway)');
-  process.exit(1);
-}
+// ==================== CORS CONFIGURATION (محسّن) ====================
+const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim());
 
-// ==================== OPTIMIZATIONS ====================
-process.env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
-
-// ==================== BREVO SMTP SETUP ====================
-let brevoTransporter = null;
-
-function createBrevoTransporter() {
-  return nodemailer.createTransport({
-    host: BREVO_SMTP_HOST,
-    port: parseInt(BREVO_SMTP_PORT),
-    secure: false,
-    auth: {
-      user: BREVO_SMTP_USER,
-      pass: BREVO_SMTP_KEY
-    },
-    tls: { rejectUnauthorized: false },
-    connectionTimeout: 5000,
-    greetingTimeout: 5000,
-    socketTimeout: 5000
-  });
-}
-
-function initializeBrevo() {
-  try {
-    brevoTransporter = createBrevoTransporter();
-    brevoTransporter.verify((error) => {
-      if (error) {
-        console.log('⚠️ Brevo SMTP connection error:', error.message);
-      } else {
-        console.log('✅ Brevo SMTP ready');
-      }
-    });
-  } catch (error) {
-    console.error('❌ Brevo init error:', error.message);
+// CORS middleware متقدم
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  
+  // السماح لجميع origins المحددة
+  if (allowedOrigins.includes(origin) || origin?.startsWith('http://localhost')) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, x-api-key');
+    res.header('Access-Control-Expose-Headers', 'Content-Length, X-Requested-With');
+    
+    // معالجة preflight requests
+    if (req.method === 'OPTIONS') {
+      return res.sendStatus(200);
+    }
   }
-}
-initializeBrevo();
+  
+  next();
+});
 
-async function sendOTPviaBrevo(email, otpCode) {
-  try {
-    if (!brevoTransporter) brevoTransporter = createBrevoTransporter();
-    const mailOptions = {
-      from: `"B.Y PRO Accounts" <${BREVO_SMTP_USER}>`,
-      to: email,
-      subject: 'B.Y PRO - Verification Code',
-      html: `<div style="font-family: Arial; max-width:600px; margin:0 auto; background:#f5f5f5; padding:20px;">
-        <div style="background:linear-gradient(135deg,#3498db,#2980b9); padding:30px; text-align:center; color:white; border-radius:10px 10px 0 0;">
-          <h1>B.Y PRO Accounts</h1>
-          <p>Secure Account Verification</p>
-        </div>
-        <div style="background:white; padding:30px; border-radius:0 0 10px 10px;">
-          <h2>Email Verification Code</h2>
-          <div style="background:linear-gradient(135deg,#3498db,#2980b9); color:white; padding:20px; text-align:center; font-size:32px; font-weight:bold; letter-spacing:8px; margin:25px 0; border-radius:8px;">${otpCode}</div>
-          <p>This code expires in 10 minutes.</p>
-        </div>
-      </div>`,
-      text: `Your B.Y PRO verification code is: ${otpCode}. Expires in 10 minutes.`
-    };
-    const info = await brevoTransporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to: ${email}`);
-    return { success: true };
-  } catch (error) {
-    console.error('❌ Email failed:', error.message);
-    return { success: false, error: error.message };
-  }
-}
+// CORS لجميع الطلبات
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost')) {
+      callback(null, true);
+    } else {
+      callback(new Error('CORS blocked'));
+    }
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-api-key', 'Accept']
+}));
 
-// ==================== GOOGLE DRIVE ====================
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.static(__dirname));
+
+app.use((req, res, next) => {
+  console.log(`📥 ${req.method} ${req.url}`);
+  next();
+});
+
+// ==================== GOOGLE DRIVE SETUP ====================
 const serviceAccount = {
   type: "service_account",
   project_id: GOOGLE_PROJECT_ID,
   private_key_id: GOOGLE_PRIVATE_KEY_ID,
-  private_key: GOOGLE_PRIVATE_KEY.replace(/\\n/g, '\n'),
+  private_key: GOOGLE_PRIVATE_KEY?.replace(/\\n/g, '\n'),
   client_email: GOOGLE_CLIENT_EMAIL,
   client_id: GOOGLE_CLIENT_ID,
   auth_uri: "https://accounts.google.com/o/oauth2/auth",
@@ -146,33 +112,6 @@ const serviceAccount = {
 const ACCOUNTS_FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
 const OTP_FILE_ID = "10gOdT98Pk5nhk-cfDA0B24rk8xqsKWE1";
 
-// ==================== CORS ====================
-const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim());
-
-app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost')) {
-      callback(null, true);
-    } else {
-      callback(new Error('CORS blocked'));
-    }
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'OPTIONS']
-}));
-app.options('*', cors());
-
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true }));
-app.use(express.static(__dirname));
-
-app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url}`);
-  next();
-});
-
-// ==================== GOOGLE DRIVE INIT ====================
 let driveService = null;
 
 async function initDrive() {
@@ -189,16 +128,73 @@ async function initDrive() {
 }
 initDrive();
 
+// ==================== BREVO SMTP ====================
+let brevoTransporter = null;
+
+function createBrevoTransporter() {
+  return nodemailer.createTransport({
+    host: BREVO_SMTP_HOST,
+    port: parseInt(BREVO_SMTP_PORT),
+    secure: false,
+    auth: { user: BREVO_SMTP_USER, pass: BREVO_SMTP_KEY },
+    tls: { rejectUnauthorized: false },
+    connectionTimeout: 5000,
+    greetingTimeout: 5000,
+    socketTimeout: 5000
+  });
+}
+
+initializeBrevo();
+
+function initializeBrevo() {
+  try {
+    brevoTransporter = createBrevoTransporter();
+    brevoTransporter.verify((error) => {
+      if (error) console.log('⚠️ Brevo error:', error.message);
+      else console.log('✅ Brevo SMTP ready');
+    });
+  } catch (error) {
+    console.error('❌ Brevo init error:', error.message);
+  }
+}
+
+async function sendOTPviaBrevo(email, otpCode) {
+  try {
+    if (!brevoTransporter) brevoTransporter = createBrevoTransporter();
+    const mailOptions = {
+      from: `"B.Y PRO" <${BREVO_SMTP_USER}>`,
+      to: email,
+      subject: 'B.Y PRO - Verification Code',
+      html: `<div style="font-family:Arial;max-width:600px;margin:0 auto;background:#f5f5f5;padding:20px;">
+        <div style="background:linear-gradient(135deg,#3498db,#2980b9);padding:30px;text-align:center;color:white;border-radius:10px 10px 0 0;">
+          <h1>B.Y PRO Accounts</h1>
+        </div>
+        <div style="background:white;padding:30px;border-radius:0 0 10px 10px;">
+          <h2>Verification Code</h2>
+          <div style="background:linear-gradient(135deg,#3498db,#2980b9);color:white;padding:20px;text-align:center;font-size:32px;font-weight:bold;letter-spacing:8px;margin:25px 0;border-radius:8px;">${otpCode}</div>
+          <p>This code expires in 10 minutes.</p>
+        </div>
+      </div>`,
+      text: `Your B.Y PRO verification code is: ${otpCode}. Expires in 10 minutes.`
+    };
+    await brevoTransporter.sendMail(mailOptions);
+    console.log(`✅ Email sent to: ${email}`);
+    return { success: true };
+  } catch (error) {
+    console.error('❌ Email failed:', error.message);
+    return { success: false, error: error.message };
+  }
+}
+
 // ==================== OTP FUNCTIONS ====================
 async function readOTP() {
   if (!driveService) throw new Error("Drive not ready");
   try {
     const res = await driveService.files.get({ fileId: OTP_FILE_ID, alt: 'media' });
     return res.data || {};
-  } catch {
-    return {};
-  }
+  } catch { return {}; }
 }
+
 async function saveOTP(data) {
   if (!driveService) throw new Error("Drive not ready");
   await driveService.files.update({
@@ -206,6 +202,7 @@ async function saveOTP(data) {
     media: { mimeType: 'application/json', body: JSON.stringify(data, null, 2) }
   });
 }
+
 async function storeOTP(email, otp) {
   const data = await readOTP();
   data[email] = {
@@ -214,6 +211,7 @@ async function storeOTP(email, otp) {
   await saveOTP(data);
   return true;
 }
+
 async function verifyOTP(email, code) {
   const data = await readOTP();
   const record = data[email];
@@ -244,10 +242,9 @@ async function readCSV() {
   try {
     const res = await driveService.files.get({ fileId: ACCOUNTS_FILE_ID, alt: 'media' });
     return res.data;
-  } catch {
-    return '';
-  }
+  } catch { return ''; }
 }
+
 function parseCSV(csv) {
   const lines = csv.split('\n').filter(l => l.trim());
   const accounts = [];
@@ -268,6 +265,7 @@ function parseCSV(csv) {
   }
   return accounts;
 }
+
 async function saveCSV(accounts) {
   const headers = ['id', 'ps', 'email', 'name'];
   const lines = [headers.join(',')];
@@ -279,12 +277,14 @@ async function saveCSV(accounts) {
     media: { mimeType: 'text/csv', body: lines.join('\n') }
   });
 }
+
 async function getNextId() {
   const csv = await readCSV();
   const accounts = parseCSV(csv);
   const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
   return ids.length ? (Math.max(...ids) + 1).toString() : "1001";
 }
+
 async function addAccount(account) {
   const csv = await readCSV();
   let accounts = parseCSV(csv);
@@ -295,6 +295,7 @@ async function addAccount(account) {
   await saveCSV(accounts);
   return true;
 }
+
 async function verifyAccount(id, password) {
   const csv = await readCSV();
   const accounts = parseCSV(csv);
@@ -307,26 +308,23 @@ async function verifyAccount(id, password) {
   }
   return { success: false, error: "Invalid credentials" };
 }
+
 function generateOTP() {
   return Math.floor(100000 + Math.random() * 900000).toString();
 }
+
 async function generateQR(data) {
   try {
     const qr = await QRCode.toDataURL(data, { width: 200, margin: 2, errorCorrectionLevel: 'H' });
     return { success: true, qrCode: qr };
-  } catch {
-    return { success: false };
-  }
+  } catch { return { success: false }; }
 }
 
-// ==================== JSONBIN HELPERS (PAYMENT GATEWAY) ====================
+// ==================== JSONBIN HELPERS ====================
 async function readJSONBin() {
   try {
     const response = await axios.get(JSONBIN_API_URL, {
-      headers: {
-        'X-Master-Key': JSONBIN_API_KEY,
-        'X-Access-Key': JSONBIN_ACCESS_KEY
-      },
+      headers: { 'X-Master-Key': JSONBIN_API_KEY, 'X-Access-Key': JSONBIN_ACCESS_KEY },
       timeout: 10000
     });
     return response.data.record || { users: {}, pending_payments: {} };
@@ -353,25 +351,11 @@ async function writeJSONBin(data) {
   }
 }
 
-// ==================== PROTECTED ROUTE MIDDLEWARE ====================
-function requireApiKey(req, res, next) {
-  const apiKey = req.headers['x-api-key'] || req.query.api_key;
-  if (apiKey === INTERNAL_API_KEY) {
-    next();
-  } else {
-    res.status(403).json({ success: false, error: "Access denied" });
-  }
-}
-
 // ==================== PAYMENT GATEWAY ENDPOINTS ====================
-
-/**
- * 2.1 POST /api/create-payment
- * إنشاء طلب دفع جديد
- */
 app.post('/api/create-payment', async (req, res) => {
   try {
     const { appName, amount, callbackUrl, description } = req.body;
+    
     if (!appName || !appName.startsWith('@byproapp:')) {
       return res.status(400).json({ success: false, error: "Invalid appName. Must start with @byproapp:" });
     }
@@ -379,28 +363,18 @@ app.post('/api/create-payment', async (req, res) => {
     if (isNaN(amountNum) || amountNum <= 0 || amountNum > MAX_PAYMENT_AMOUNT) {
       return res.status(400).json({ success: false, error: `Amount must be between 0 and ${MAX_PAYMENT_AMOUNT}` });
     }
-    // السماح بـ http://localhost للتطوير و https للإنتاج
-    if (!callbackUrl || (!callbackUrl.startsWith('https://') && !callbackUrl.startsWith('http://localhost'))) {
-      return res.status(400).json({ success: false, error: "Valid callbackUrl required (https:// or http://localhost)" });
-    }
-
+    
     const paymentId = crypto.randomBytes(16).toString('hex');
     const expiresAt = new Date(Date.now() + PAYMENT_EXPIRY_MINUTES * 60 * 1000).toISOString();
-
+    
     const data = await readJSONBin();
     data.pending_payments = data.pending_payments || {};
     data.pending_payments[paymentId] = {
-      appName,
-      amount: amountNum,
-      callbackUrl,
-      description: description || '',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      expiresAt
+      appName, amount: amountNum, callbackUrl, description: description || '', status: 'pending',
+      createdAt: new Date().toISOString(), expiresAt
     };
-    const saved = await writeJSONBin(data);
-    if (!saved) throw new Error('Failed to save payment');
-
+    await writeJSONBin(data);
+    
     res.json({
       success: true,
       paymentId,
@@ -414,24 +388,18 @@ app.post('/api/create-payment', async (req, res) => {
   }
 });
 
-/**
- * 2.2 POST /api/get-payment-info
- * جلب معلومات الدفع
- */
 app.post('/api/get-payment-info', async (req, res) => {
   try {
     const { paymentId } = req.body;
     if (!paymentId) return res.status(400).json({ success: false, error: "paymentId required" });
-
+    
     const data = await readJSONBin();
     const payment = data.pending_payments?.[paymentId];
-    if (!payment) {
-      return res.status(404).json({ success: false, error: "Payment not found" });
-    }
+    if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
     if (new Date(payment.expiresAt) < new Date()) {
       return res.status(410).json({ success: false, error: "Payment expired" });
     }
-
+    
     res.json({
       success: true,
       amount: payment.amount,
@@ -446,43 +414,27 @@ app.post('/api/get-payment-info', async (req, res) => {
   }
 });
 
-/**
- * 2.3 POST /api/find-card
- * البحث عن accountId من كود البطاقة
- */
 app.post('/api/find-card', async (req, res) => {
   try {
     const { cardCode } = req.body;
     if (!cardCode || !cardCode.startsWith('byppcn-')) {
       return res.status(400).json({ success: false, error: "Invalid card code format" });
     }
-
+    
     const data = await readJSONBin();
     const users = data.users || {};
-    let foundAccount = null;
-    let userId = null;
-
+    let foundAccount = null, userId = null;
     for (const [id, user] of Object.entries(users)) {
       if (user.cardCode === cardCode) {
-        foundAccount = user;
-        userId = id;
-        break;
+        foundAccount = user; userId = id; break;
       }
     }
-
-    if (!foundAccount) {
-      return res.status(404).json({ success: false, error: "Card not found" });
-    }
-
+    if (!foundAccount) return res.status(404).json({ success: false, error: "Card not found" });
+    
     res.json({
       success: true,
       accountId: userId,
-      userData: {
-        id: userId,
-        name: foundAccount.name,
-        balance: foundAccount.balance,
-        cardCode: foundAccount.cardCode
-      }
+      userData: { id: userId, name: foundAccount.name, balance: foundAccount.balance, cardCode: foundAccount.cardCode }
     });
   } catch (error) {
     console.error('❌ find-card error:', error);
@@ -490,68 +442,53 @@ app.post('/api/find-card', async (req, res) => {
   }
 });
 
-/**
- * 2.4 POST /api/verify-password
- * التحقق من كلمة المرور عبر Auth API الأصلي
- */
 app.post('/api/verify-password', async (req, res) => {
   try {
     const { accountId, password } = req.body;
     if (!accountId || !password) {
       return res.status(400).json({ success: false, error: "accountId and password required" });
     }
-
     const authResponse = await axios.post(
       `https://b-y-pro-acounts-login.onrender.com/api/verify-account`,
       { id: accountId, password },
       { timeout: 10000 }
     );
-
-    if (authResponse.data.success) {
-      res.json(authResponse.data);
-    } else {
-      res.status(401).json({ success: false, error: authResponse.data.error || "Invalid credentials" });
-    }
+    res.json(authResponse.data);
   } catch (error) {
     console.error('❌ verify-password error:', error);
     res.status(500).json({ success: false, error: "Auth service unavailable" });
   }
 });
 
-/**
- * 2.5 POST /api/process-payment
- * تنفيذ الخصم من الرصيد
- */
 app.post('/api/process-payment', async (req, res) => {
   try {
-    const { accountId, cardCode, amount, userData, paymentId, appName } = req.body;
+    const { accountId, cardCode, amount, paymentId, appName, description } = req.body;
     if (!accountId || !cardCode || !amount || !paymentId || !appName) {
       return res.status(400).json({ success: false, error: "Missing required fields" });
     }
-
+    
     const data = await readJSONBin();
     const payment = data.pending_payments?.[paymentId];
-    if (!payment) {
-      return res.status(404).json({ success: false, error: "Payment not found" });
-    }
+    if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
     if (new Date(payment.expiresAt) < new Date()) {
       return res.status(410).json({ success: false, error: "Payment expired" });
     }
     if (payment.status !== 'pending') {
       return res.status(400).json({ success: false, error: "Payment already processed" });
     }
-
+    
     const users = data.users || {};
     const user = users[accountId];
     if (!user || user.cardCode !== cardCode) {
       return res.status(400).json({ success: false, error: "Invalid account or card" });
     }
-
+    
     const amountNum = parseFloat(amount);
     if (user.balance < amountNum) {
       return res.status(402).json({ success: false, error: "Insufficient balance" });
     }
-
+    
+    // الخصم وتسجيل المعاملة مع سبب الدفع
     user.balance -= amountNum;
     user.transactions = user.transactions || [];
     const transaction = {
@@ -560,41 +497,22 @@ app.post('/api/process-payment', async (req, res) => {
       appName: appName,
       paymentId: paymentId,
       date: new Date().toISOString(),
-      description: payment.description || `Payment to ${appName}`
+      description: description || payment.description || `Payment to ${appName}`
     };
     user.transactions.unshift(transaction);
-
+    
     payment.status = 'completed';
     payment.completedAt = new Date().toISOString();
     payment.accountId = accountId;
-
-    const updated = await writeJSONBin(data);
-    if (!updated) throw new Error("Failed to update financial data");
-
-    // إرسال callback للتطبيق الخارجي
+    
+    await writeJSONBin(data);
+    
+    // إرسال callback
     if (payment.callbackUrl) {
-      const callbackData = {
-        paymentId,
-        success: true,
-        accountId,
-        amount: amountNum,
-        transactionId: `txn_${Date.now()}`,
-        timestamp: new Date().toISOString()
-      };
-      const sendCallback = async (url, data, retries = 0) => {
-        try {
-          await axios.post(url, data, { timeout: 5000 });
-          console.log(`✅ Callback sent to ${url}`);
-        } catch (err) {
-          console.error(`❌ Callback failed (${retries+1}/${CALLBACK_MAX_RETRIES}): ${err.message}`);
-          if (retries < CALLBACK_MAX_RETRIES) {
-            setTimeout(() => sendCallback(url, data, retries+1), CALLBACK_RETRY_DELAY_MS);
-          }
-        }
-      };
-      sendCallback(payment.callbackUrl, callbackData);
+      const callbackData = { paymentId, success: true, accountId, amount: amountNum, transactionId: `txn_${Date.now()}`, timestamp: new Date().toISOString(), description: transaction.description };
+      axios.post(payment.callbackUrl, callbackData, { timeout: 5000 }).catch(e => console.log('Callback failed:', e.message));
     }
-
+    
     res.json({
       success: true,
       newBalance: user.balance,
@@ -607,31 +525,7 @@ app.post('/api/process-payment', async (req, res) => {
   }
 });
 
-/**
- * 2.6 POST /api/payment-callback
- * نقطة نهاية لاستقبال الإشعارات من بوابة الدفع (للتطبيقات)
- */
-app.post('/api/payment-callback', async (req, res) => {
-  try {
-    const { paymentId, success, accountId, amount, transactionId, timestamp } = req.body;
-    
-    console.log(`📞 Payment callback received:`, { paymentId, success, accountId, amount, transactionId });
-    
-    // هنا يمكن تخزين نتيجة الدفع في قاعدة بيانات أو إرسال إشعار
-    // للتطبيق، سنقوم فقط بتسجيلها وإرجاع تأكيد
-    
-    res.json({ 
-      success: true, 
-      message: 'Callback received successfully',
-      received: { paymentId, success, accountId, amount, transactionId, timestamp }
-    });
-  } catch (error) {
-    console.error('❌ Callback error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ==================== EXISTING AUTH ROUTES ====================
+// ==================== AUTH ROUTES ====================
 app.get('/api/ping', (req, res) => {
   res.json({ success: true, time: Date.now(), status: 'awake' });
 });
@@ -639,7 +533,7 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v6.3',
+    service: 'B.Y PRO v6.4',
     email_provider: 'Brevo SMTP',
     payment_gateway: 'active',
     timestamp: new Date().toISOString()
@@ -647,7 +541,6 @@ app.get('/api/health', (req, res) => {
 });
 
 app.post('/api/send-otp', async (req, res) => {
-  req.setTimeout(15000);
   try {
     const { email } = req.body;
     if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
@@ -655,8 +548,8 @@ app.post('/api/send-otp', async (req, res) => {
     }
     const otp = generateOTP();
     await storeOTP(email, otp);
-    const emailResult = await sendOTPviaBrevo(email, otp);
-    if (emailResult.success) {
+    const result = await sendOTPviaBrevo(email, otp);
+    if (result.success) {
       res.json({ success: true, message: "Code sent", expiresIn: "10 minutes" });
     } else {
       res.status(500).json({ success: false, error: "Email service unavailable" });
@@ -669,15 +562,9 @@ app.post('/api/send-otp', async (req, res) => {
 app.post('/api/verify-otp', async (req, res) => {
   try {
     const { email, otp } = req.body;
-    if (!email || !otp) {
-      return res.status(400).json({ success: false, error: "Email and code required" });
-    }
+    if (!email || !otp) return res.status(400).json({ success: false, error: "Email and code required" });
     const result = await verifyOTP(email, otp);
-    if (result.success) {
-      res.json({ success: true, message: "Verified" });
-    } else {
-      res.status(400).json(result);
-    }
+    result.success ? res.json({ success: true }) : res.status(400).json(result);
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -686,9 +573,7 @@ app.post('/api/verify-otp', async (req, res) => {
 app.post('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.body;
-    if (!id || !password) {
-      return res.json({ success: false, error: "ID and password required" });
-    }
+    if (!id || !password) return res.json({ success: false, error: "ID and password required" });
     const result = await verifyAccount(id, password);
     res.json(result);
   } catch (error) {
@@ -696,7 +581,11 @@ app.post('/api/verify-account', async (req, res) => {
   }
 });
 
-app.get('/api/next-id', requireApiKey, async (req, res) => {
+app.get('/api/next-id', (req, res, next) => {
+  const apiKey = req.headers['x-api-key'] || req.query.api_key;
+  if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
+  next();
+}, async (req, res) => {
   try {
     const nextId = await getNextId();
     res.json({ success: true, nextId });
@@ -712,23 +601,16 @@ app.post('/api/create-account', async (req, res) => {
       return res.status(400).json({ success: false, error: "All fields required" });
     }
     const otpResult = await verifyOTP(email, otpCode);
-    if (!otpResult.success) {
-      return res.status(400).json({ success: false, error: otpResult.error });
-    }
+    if (!otpResult.success) return res.status(400).json({ success: false, error: otpResult.error });
     await addAccount({ id: id.toString(), ps: password, email, name });
     const qrResult = await generateQR(`BYPRO:${id}:${password}`);
-    res.json({
-      success: true,
-      message: "Account created",
-      account: { id, name, email },
-      qrCode: qrResult.qrCode
-    });
+    res.json({ success: true, message: "Account created", account: { id, name, email }, qrCode: qrResult.qrCode });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-// ==================== STATIC PAGES ====================
+// Static pages
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
 });
@@ -737,36 +619,26 @@ app.get('/Payment%20gateway.html', (req, res) => {
   res.sendFile(path.join(__dirname, 'Payment gateway.html'));
 });
 
-app.get('/payment-gateway', (req, res) => {
-  res.redirect('/Payment%20gateway.html');
-});
-
 app.use('*', (req, res) => {
   res.status(404).json({ success: false, error: "Not found" });
 });
 
-// ==================== KEEP-ALIVE (يمنع النوم) ====================
+// ==================== KEEP-ALIVE ====================
 setInterval(async () => {
   try {
-    const response = await axios.get(`http://localhost:${PORT}/api/ping`, { timeout: 5000 });
-    if (response.status === 200) {
-      console.log('💓 Keep-alive ping at', new Date().toISOString());
-    }
-  } catch (e) {
-    // silent fail
-  }
+    await axios.get(`http://localhost:${PORT}/api/ping`, { timeout: 5000 });
+    console.log('💓 Keep-alive ping');
+  } catch (e) {}
 }, 120000);
 
-// ==================== START SERVER ====================
 const server = app.listen(PORT, '0.0.0.0', () => {
   console.log('\n🎉 =================================');
-  console.log('🚀 B.Y PRO ACCOUNTS v6.3 (Payment Gateway + Keep-Alive)');
-  console.log('✅ CORS: SECURE');
+  console.log('🚀 B.Y PRO ACCOUNTS v6.4 (Payment Gateway)');
+  console.log('✅ CORS: FULLY ENABLED');
   console.log('✅ Email: BREVO SMTP');
-  console.log('✅ Keep-Alive: ACTIVE (every 2 min)');
+  console.log('✅ Keep-Alive: ACTIVE');
   console.log('✅ Payment Gateway: ACTIVE');
   console.log(`✅ Server: http://localhost:${PORT}`);
-  console.log(`🏓 Ping: http://localhost:${PORT}/api/ping`);
   console.log('🎉 =================================\n');
 });
 
