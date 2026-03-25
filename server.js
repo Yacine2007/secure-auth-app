@@ -11,7 +11,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.0 (Auth + Financial)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.1 (Auth + Financial + Payment)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -35,7 +35,7 @@ const {
   
   // Internal
   INTERNAL_API_KEY = 'bypro-internal-key-2025',
-  ALLOWED_ORIGINS = 'https://yacine2007.github.io,http://localhost:5500,http://localhost:3000,https://b-y-pro-acounts-login.onrender.com,http://localhost:5000',
+  ALLOWED_ORIGINS = 'https://yacine2007.github.io,https://b-y-pro-acounts-login.onrender.com,http://localhost:5500,http://localhost:3000,http://localhost:5000',
   
   GITHUB_TOKEN
 } = process.env;
@@ -190,6 +190,14 @@ async function getFinancialUser(userId) {
   return await financialUsersCollection.findOne({ id: userId });
 }
 
+async function getFinancialUserByCard(cardCode) {
+  return await financialUsersCollection.findOne({ cardCode: cardCode });
+}
+
+async function getAllFinancialUsers() {
+  return await financialUsersCollection.find({}).toArray();
+}
+
 async function createFinancialUser(userId, name, email) {
   const cardCode = generateUniqueCardCode();
   const newUser = {
@@ -216,11 +224,6 @@ async function updateUserBalance(userId, newBalance, transaction) {
   );
 }
 
-async function getAllFinancialUsers() {
-  return await financialUsersCollection.find({}).toArray();
-}
-
-// ==================== SYNC ACCOUNTS ====================
 async function syncExistingAccounts() {
   console.log('🔄 Syncing existing auth accounts with financial data...');
   
@@ -498,18 +501,58 @@ app.get('/api/next-id', async (req, res) => {
 
 // ==================== FINANCIAL ENDPOINTS (MongoDB) ====================
 
+// مزامنة أو إنشاء مستخدم مالي جديد
+app.post('/api/financial/sync', async (req, res) => {
+  try {
+    const { userId, name, email } = req.body;
+    const apiKey = req.headers['x-api-key'];
+    
+    if (apiKey !== INTERNAL_API_KEY) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+    
+    let user = await getFinancialUser(userId);
+    
+    if (!user) {
+      const cardCode = generateUniqueCardCode();
+      user = {
+        id: userId,
+        name: name || `User ${userId}`,
+        email: email || `${userId}@bypro.com`,
+        balance: 0,
+        cardCode: cardCode,
+        transactions: [],
+        createdAt: new Date().toISOString()
+      };
+      await financialUsersCollection.insertOne(user);
+      console.log(`✅ Created financial user: ${userId} with card ${cardCode}`);
+    }
+    
+    res.json({
+      success: true,
+      data: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        balance: user.balance,
+        cardCode: user.cardCode,
+        transactions: user.transactions || []
+      }
+    });
+  } catch (error) {
+    console.error('❌ Error syncing user:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// جلب البيانات المالية لمستخدم
 app.get('/api/financial/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     let user = await getFinancialUser(userId);
     
     if (!user) {
-      const authAccount = await getAuthAccount(userId, null);
-      if (authAccount) {
-        user = await createFinancialUser(userId, authAccount.name || `User ${userId}`, authAccount.email || `${userId}@bypro.com`);
-      } else {
-        return res.status(404).json({ success: false, error: "User not found" });
-      }
+      return res.status(404).json({ success: false, error: "User not found" });
     }
     
     res.json({
@@ -529,6 +572,7 @@ app.get('/api/financial/:userId', async (req, res) => {
   }
 });
 
+// إضافة رصيد للمستخدم
 app.post('/api/financial/add-balance', async (req, res) => {
   try {
     const { userId, amount, description } = req.body;
@@ -564,6 +608,7 @@ app.post('/api/financial/add-balance', async (req, res) => {
   }
 });
 
+// البحث عن بطاقة
 app.post('/api/find-card', async (req, res) => {
   try {
     const { cardCode } = req.body;
@@ -571,7 +616,7 @@ app.post('/api/find-card', async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid card code" });
     }
     
-    const user = await financialUsersCollection.findOne({ cardCode: cardCode });
+    const user = await getFinancialUserByCard(cardCode);
     if (!user) return res.status(404).json({ success: false, error: "Card not found" });
     
     res.json({
@@ -590,6 +635,7 @@ app.post('/api/find-card', async (req, res) => {
   }
 });
 
+// التحقق من كلمة المرور
 app.post('/api/verify-password', async (req, res) => {
   try {
     const { accountId, password } = req.body;
@@ -604,6 +650,7 @@ app.post('/api/verify-password', async (req, res) => {
   }
 });
 
+// إنشاء طلب دفع
 app.post('/api/create-payment', async (req, res) => {
   try {
     const { appName, amount, callbackUrl, description } = req.body;
@@ -644,6 +691,7 @@ app.post('/api/create-payment', async (req, res) => {
   }
 });
 
+// جلب معلومات الدفع
 app.post('/api/get-payment-info', async (req, res) => {
   try {
     const { paymentId } = req.body;
@@ -666,6 +714,7 @@ app.post('/api/get-payment-info', async (req, res) => {
   }
 });
 
+// تنفيذ الدفع
 app.post('/api/process-payment', async (req, res) => {
   try {
     const { accountId, cardCode, amount, paymentId, appName, description } = req.body;
@@ -675,8 +724,11 @@ app.post('/api/process-payment', async (req, res) => {
     if (payment.status !== 'pending') {
       return res.status(400).json({ success: false, error: "Payment already processed" });
     }
+    if (new Date(payment.expiresAt) < new Date()) {
+      return res.status(410).json({ success: false, error: "Payment expired" });
+    }
     
-    const user = await financialUsersCollection.findOne({ cardCode: cardCode });
+    const user = await getFinancialUserByCard(cardCode);
     if (!user || user.id !== accountId) {
       return res.status(400).json({ success: false, error: "Invalid account or card" });
     }
@@ -722,7 +774,7 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.0',
+    service: 'B.Y PRO v9.1',
     auth_storage: 'Google Drive',
     financial_storage: 'MongoDB',
     email_provider: 'Brevo SMTP',
@@ -759,7 +811,7 @@ async function startServer() {
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.0');
+    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.1');
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
