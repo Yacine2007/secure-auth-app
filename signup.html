@@ -63,25 +63,37 @@
         
         .error { color: #e74c3c; font-size: 11px; margin-top: 6px; text-align: center; }
         
-        /* Result Box - محسن */
+        /* ========== Result Box - تنسيق عمودي نظيف ========== */
         .result-box { text-align: center; padding: 8px 0; }
-        .result-box i { font-size: 36px; color: #2a6df4; margin-bottom: 8px; }
-        .result-box h3 { font-size: 18px; margin-bottom: 12px; font-weight: 600; }
-        .user-id-label { font-size: 10px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-        .user-id { font-size: 20px; font-weight: 700; color: #2a6df4; background: #f8fafd; padding: 6px 16px; border-radius: 40px; display: inline-block; margin: 6px 0; letter-spacing: 0.5px; word-break: break-all; }
-        .qr-container { background: white; padding: 10px; border-radius: 16px; display: inline-block; margin: 8px 0; border: 1px solid #e0e0e0; }
-        .qr-container canvas { width: 110px; height: 110px; }
-        .result-actions { display: flex; gap: 10px; justify-content: center; margin-top: 12px; flex-wrap: wrap; }
-        .result-actions .btn-secondary { width: auto; padding: 8px 16px; font-size: 12px; margin: 0; background: white; border: 1.5px solid #e0e0e0; }
-        .result-actions .btn-next { width: auto; padding: 8px 16px; font-size: 12px; margin: 0; }
-        .link { color: #2a6df4; text-decoration: none; display: inline-block; margin-top: 12px; font-size: 12px; }
+        .result-icon { font-size: 40px; color: #2a6df4; margin-bottom: 12px; }
+        .result-title { font-size: 18px; font-weight: 600; margin-bottom: 16px; color: #000; }
+        
+        /* ID Section */
+        .id-section { margin-bottom: 20px; }
+        .id-label { font-size: 11px; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 6px; }
+        .id-value { font-size: 26px; font-weight: 700; color: #2a6df4; background: #f8fafd; padding: 8px 16px; border-radius: 40px; display: inline-block; letter-spacing: 1px; }
+        
+        /* QR Section */
+        .qr-section { margin-bottom: 24px; }
+        .qr-container { background: white; padding: 12px; border-radius: 20px; display: inline-block; border: 1px solid #e0e0e0; }
+        .qr-container canvas { width: 120px; height: 120px; display: block; }
+        .qr-note { font-size: 10px; color: #999; margin-top: 8px; }
+        
+        /* Buttons Section */
+        .action-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
+        .action-btn { width: 100%; padding: 10px 16px; border-radius: 40px; font-size: 14px; font-weight: 500; cursor: pointer; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; border: none; }
+        .action-btn-primary { background: #000000; color: white; }
+        .action-btn-primary:hover { background: #2a6df4; }
+        .action-btn-secondary { background: white; color: #333; border: 1.5px solid #e0e0e0; }
+        .action-btn-secondary:hover { background: #f5f5f5; border-color: #2a6df4; }
+        
+        .login-link { text-align: center; margin-top: 16px; }
+        .login-link a { color: #2a6df4; font-size: 12px; text-decoration: none; }
+        .login-link a:hover { text-decoration: underline; }
+        
         .hidden { display: none; }
         .loading-spinner { width: 16px; height: 16px; border: 2px solid white; border-top-color: #2a6df4; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        
-        /* زر رجوع صغير */
-        .back-link { text-align: center; margin-top: 12px; }
-        .back-link a { color: #999; font-size: 12px; text-decoration: none; }
     </style>
 </head>
 <body translate="no">
@@ -154,22 +166,40 @@
                 <button class="btn-secondary" onclick="prevStep(4)"><i class="fas fa-arrow-left"></i> Back</button>
             </div>
 
-            <!-- Result Step -->
+            <!-- Result Step - تنسيق عمودي نظيف -->
             <div class="step" id="stepResult">
                 <div class="result-box">
-                    <i class="fas fa-check-circle"></i>
-                    <h3>Account Created!</h3>
-                    <div class="user-id-label">YOUR ACCOUNT ID</div>
-                    <div class="user-id" id="displayId"></div>
-                    <div class="qr-container" id="qrcode"></div>
-                    <p style="font-size: 10px; color: #999; margin: 5px 0;">Scan to login instantly</p>
-                    <div class="result-actions">
-                        <button class="btn-secondary" id="saveQRBtn"><i class="fas fa-download"></i> Save QR</button>
-                        <button class="btn-next" id="loginBtn" style="margin:0;">Login <i class="fas fa-sign-in-alt"></i></button>
+                    <div class="result-icon">
+                        <i class="fas fa-check-circle"></i>
                     </div>
-                </div>
-                <div class="back-link">
-                    <a href="login.html">Already have an account? Sign in</a>
+                    <div class="result-title">Account Created!</div>
+                    
+                    <!-- ID Section -->
+                    <div class="id-section">
+                        <div class="id-label">YOUR ACCOUNT ID</div>
+                        <div class="id-value" id="displayId"></div>
+                    </div>
+                    
+                    <!-- QR Section -->
+                    <div class="qr-section">
+                        <div class="qr-container" id="qrcode"></div>
+                        <div class="qr-note">Scan to login instantly</div>
+                    </div>
+                    
+                    <!-- Buttons Section -->
+                    <div class="action-buttons">
+                        <button class="action-btn action-btn-secondary" id="saveQRBtn">
+                            <i class="fas fa-download"></i> Save QR Code
+                        </button>
+                        <button class="action-btn action-btn-primary" id="loginBtn">
+                            <i class="fas fa-sign-in-alt"></i> Go to Login
+                        </button>
+                    </div>
+                    
+                    <!-- Login Link -->
+                    <div class="login-link">
+                        <a href="login.html">Already have an account? Sign in</a>
+                    </div>
                 </div>
             </div>
         </div>
@@ -372,8 +402,8 @@
                     qrcodeDiv.innerHTML = '';
                     new QRCode(qrcodeDiv, {
                         text: qrText,
-                        width: 110,
-                        height: 110,
+                        width: 120,
+                        height: 120,
                         colorDark: "#000000",
                         colorLight: "#ffffff",
                         correctLevel: QRCode.CorrectLevel.H
