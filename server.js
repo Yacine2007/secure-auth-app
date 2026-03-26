@@ -7,11 +7,13 @@ const QRCode = require('qrcode');
 const axios = require('axios');
 const crypto = require('crypto');
 const nodemailer = require('nodemailer');
+const multer = require('multer');
+const FormData = require('form-data');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.3 (Admin Controls)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.4 (Avatar Support)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -29,6 +31,7 @@ const {
   BREVO_SMTP_KEY,
   INTERNAL_API_KEY = 'bypro-internal-key-2025',
   ALLOWED_ORIGINS = 'https://yacine2007.github.io,https://b-y-pro-acounts-login.onrender.com,http://localhost:5500,http://localhost:3000,http://localhost:5000,http://localhost:5001',
+  IMGBB_API_KEY,
   GITHUB_TOKEN
 } = process.env;
 
@@ -36,6 +39,13 @@ if (!MONGODB_URI) {
   console.error('❌ FATAL: MONGODB_URI is not set');
   process.exit(1);
 }
+
+if (!IMGBB_API_KEY) {
+  console.warn('⚠️ IMGBB_API_KEY not set – avatar uploads will not work');
+}
+
+// ==================== MULTER SETUP ====================
+const upload = multer({ storage: multer.memoryStorage() });
 
 // ==================== GOOGLE DRIVE SETUP ====================
 const ACCOUNTS_FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
@@ -96,7 +106,7 @@ async function connectMongoDB() {
   }
 }
 
-// ==================== GOOGLE DRIVE ACCOUNT FUNCTIONS ====================
+// ==================== GOOGLE DRIVE ACCOUNT FUNCTIONS (with avatar) ====================
 async function readCSV() {
   if (!driveService) throw new Error("Drive not ready");
   try {
@@ -105,7 +115,7 @@ async function readCSV() {
   } catch { return ''; }
 }
 
-// parseCSV now supports optional 'blocked' column
+// parseCSV now includes avatar column (7th column)
 function parseCSV(csv) {
   const lines = csv.split('\n').filter(l => l.trim());
   const accounts = [];
@@ -120,22 +130,23 @@ function parseCSV(csv) {
       else cur += ch;
     }
     vals.push(cur);
-    // Columns: id, ps, email, name, blocked (optional)
+    // Columns: id, ps, email, name, blocked, deleted, avatar
     accounts.push({
       id: vals[0],
       ps: vals[1],
       email: vals[2] || '',
       name: vals[3] || '',
       blocked: vals[4] === 'true' ? true : false,
-      deleted: vals[5] === 'true' ? true : false
+      deleted: vals[5] === 'true' ? true : false,
+      avatar: vals[6] || 'https://i.ibb.co/SDxkt40s/user.png'
     });
   }
   return accounts;
 }
 
-// saveCSV with full columns
+// saveCSV with avatar column
 async function saveCSV(accounts) {
-  const headers = ['id', 'ps', 'email', 'name', 'blocked', 'deleted'];
+  const headers = ['id', 'ps', 'email', 'name', 'blocked', 'deleted', 'avatar'];
   const lines = [headers.join(',')];
   for (const acc of accounts) {
     const row = [
@@ -144,7 +155,8 @@ async function saveCSV(accounts) {
       acc.email,
       acc.name,
       acc.blocked ? 'true' : 'false',
-      acc.deleted ? 'true' : 'false'
+      acc.deleted ? 'true' : 'false',
+      acc.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
     ];
     lines.push(row.map(v => `"${v.toString().replace(/"/g, '""')}"`).join(','));
   }
@@ -180,7 +192,8 @@ async function addAuthAccount(account) {
     const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
     account.id = ids.length ? (Math.max(...ids) + 1).toString() : "1001";
   }
-  // Set default status
+  // Set default avatar
+  account.avatar = account.avatar || 'https://i.ibb.co/SDxkt40s/user.png';
   account.blocked = false;
   account.deleted = false;
   accounts.push(account);
@@ -204,6 +217,47 @@ async function getNextId() {
   const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
   return ids.length ? (Math.max(...ids) + 1).toString() : "1001";
 }
+
+// ==================== AVATAR UPLOAD ====================
+async function uploadToImgBB(buffer, filename) {
+  if (!IMGBB_API_KEY) throw new Error('IMGBB_API_KEY not configured');
+  const formData = new FormData();
+  formData.append('key', IMGBB_API_KEY);
+  formData.append('image', buffer.toString('base64'));
+  formData.append('name', filename);
+  const response = await axios.post('https://api.imgbb.com/1/upload', formData, {
+    headers: formData.getHeaders(),
+    timeout: 30000
+  });
+  if (response.data && response.data.success && response.data.data && response.data.data.url) {
+    return response.data.data.url;
+  } else {
+    throw new Error('ImgBB upload failed');
+  }
+}
+
+app.post('/api/accounts/:id/avatar', upload.single('avatar'), async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'] || req.query.api_key;
+    if (apiKey !== INTERNAL_API_KEY) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+    const accountId = req.params.id;
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: "No file uploaded" });
+    }
+    const account = await getAuthAccountById(accountId);
+    if (!account) {
+      return res.status(404).json({ success: false, error: "Account not found" });
+    }
+    const imageUrl = await uploadToImgBB(req.file.buffer, `avatar_${accountId}_${Date.now()}.jpg`);
+    await updateAuthAccount(accountId, { avatar: imageUrl });
+    res.json({ success: true, avatarUrl: imageUrl });
+  } catch (error) {
+    console.error('Avatar upload error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
 
 // ==================== MONGODB FINANCIAL FUNCTIONS ====================
 function generateUniqueCardCode() {
@@ -256,27 +310,11 @@ async function updateUserCard(userId, cardCode) {
   );
 }
 
-async function updateUserName(userId, name) {
-  return await financialUsersCollection.updateOne(
-    { id: userId },
-    { $set: { name: name } }
-  );
-}
-
-async function updateUserEmail(userId, email) {
-  return await financialUsersCollection.updateOne(
-    { id: userId },
-    { $set: { email: email } }
-  );
-}
-
 async function syncExistingAccounts() {
   console.log('🔄 Syncing existing auth accounts with financial data...');
-  
   const authAccounts = await getAllAuthAccounts();
   const financialUsers = await getAllFinancialUsers();
   const existingIds = new Set(financialUsers.map(u => u.id));
-  
   let created = 0;
   for (const authAcc of authAccounts) {
     if (!existingIds.has(authAcc.id)) {
@@ -284,12 +322,8 @@ async function syncExistingAccounts() {
       created++;
     }
   }
-  
-  if (created > 0) {
-    console.log(`✅ Created ${created} new financial accounts`);
-  } else {
-    console.log('✅ All auth accounts already have financial data');
-  }
+  if (created > 0) console.log(`✅ Created ${created} new financial accounts`);
+  else console.log('✅ All auth accounts already have financial data');
 }
 
 // ==================== OTP FUNCTIONS ====================
@@ -421,7 +455,6 @@ app.use((req, res, next) => {
 });
 
 // ==================== AUTH ENDPOINTS ====================
-
 app.get('/api/get-all-accounts', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -429,7 +462,6 @@ app.get('/api/get-all-accounts', async (req, res) => {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
     const accounts = await getAllAuthAccounts();
-    // Filter out deleted accounts for normal listing
     const activeAccounts = accounts.filter(a => !a.deleted);
     res.json({
       success: true,
@@ -439,7 +471,8 @@ app.get('/api/get-all-accounts', async (req, res) => {
         name: acc.name || `User ${acc.id}`,
         email: acc.email || `${acc.id}@bypro.com`,
         hasPassword: !!acc.ps,
-        blocked: acc.blocked || false
+        blocked: acc.blocked || false,
+        avatar: acc.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }))
     });
   } catch (error) {
@@ -447,7 +480,6 @@ app.get('/api/get-all-accounts', async (req, res) => {
   }
 });
 
-// Get single account details
 app.get('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -464,7 +496,8 @@ app.get('/api/accounts/:id', async (req, res) => {
         id: account.id,
         name: account.name,
         email: account.email,
-        blocked: account.blocked || false
+        blocked: account.blocked || false,
+        avatar: account.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }
     });
   } catch (error) {
@@ -472,7 +505,6 @@ app.get('/api/accounts/:id', async (req, res) => {
   }
 });
 
-// Update account (name, email, password)
 app.put('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -492,7 +524,8 @@ app.put('/api/accounts/:id', async (req, res) => {
         id: updated.id,
         name: updated.name,
         email: updated.email,
-        blocked: updated.blocked || false
+        blocked: updated.blocked || false,
+        avatar: updated.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }
     });
   } catch (error) {
@@ -500,7 +533,6 @@ app.put('/api/accounts/:id', async (req, res) => {
   }
 });
 
-// Soft delete account
 app.delete('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -514,14 +546,13 @@ app.delete('/api/accounts/:id', async (req, res) => {
   }
 });
 
-// Block/unblock account
 app.post('/api/accounts/:id/block', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    const { blocked } = req.body; // true or false
+    const { blocked } = req.body;
     if (typeof blocked !== 'boolean') {
       return res.status(400).json({ success: false, error: "blocked must be boolean" });
     }
@@ -532,26 +563,20 @@ app.post('/api/accounts/:id/block', async (req, res) => {
   }
 });
 
-// Verify account (login) - now checks blocked/deleted status
 app.post('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.body;
     const account = await getAuthAccount(id, password);
-    if (!account) {
-      return res.json({ success: false, error: "Invalid credentials" });
-    }
-    if (account.deleted) {
-      return res.json({ success: false, error: "Account deleted" });
-    }
-    if (account.blocked) {
-      return res.json({ success: false, error: "Account blocked" });
-    }
+    if (!account) return res.json({ success: false, error: "Invalid credentials" });
+    if (account.deleted) return res.json({ success: false, error: "Account deleted" });
+    if (account.blocked) return res.json({ success: false, error: "Account blocked" });
     res.json({
       success: true,
       account: {
         id: account.id,
         name: account.name || `User ${account.id}`,
-        email: account.email || `${account.id}@bypro.com`
+        email: account.email || `${account.id}@bypro.com`,
+        avatar: account.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }
     });
   } catch (error) {
@@ -591,32 +616,33 @@ app.post('/api/verify-otp', async (req, res) => {
 
 app.post('/api/create-account', async (req, res) => {
   try {
-    const { id, name, email, password, otpCode } = req.body;
-    
+    const { id, name, email, password, otpCode, avatar } = req.body;
     if (!id || !name || !email || !password || !otpCode) {
       return res.status(400).json({ success: false, error: "All fields required" });
     }
-    
     const otpResult = await verifyOTP(email, otpCode);
     if (!otpResult.success) {
       return res.status(400).json({ success: false, error: otpResult.error });
     }
-    
-    const finalId = await addAuthAccount({ id: id.toString(), ps: password, email, name });
+    const finalId = await addAuthAccount({
+      id: id.toString(),
+      ps: password,
+      email,
+      name,
+      avatar: avatar || 'https://i.ibb.co/SDxkt40s/user.png'
+    });
     const financialAccount = await createFinancialUser(finalId, name, email);
     const qrResult = await generateQR(`BYPRO:${finalId}:${password}`);
-    
     res.json({
       success: true,
       message: "Account created successfully",
-      account: { id: finalId, name, email },
+      account: { id: finalId, name, email, avatar: avatar || 'https://i.ibb.co/SDxkt40s/user.png' },
       financialAccount: {
         cardCode: financialAccount.cardCode,
         balance: financialAccount.balance
       },
       qrCode: qrResult.qrCode
     });
-    
   } catch (error) {
     console.error('❌ Error creating account:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -637,18 +663,13 @@ app.get('/api/next-id', async (req, res) => {
 });
 
 // ==================== FINANCIAL ENDPOINTS (unchanged) ====================
-
 app.post('/api/financial/sync', async (req, res) => {
   try {
     const { userId, name, email } = req.body;
     const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) {
-      return res.status(403).json({ success: false, error: "Access denied" });
-    }
+    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
     let user = await getFinancialUser(userId);
-    if (!user) {
-      user = await createFinancialUser(userId, name || `User ${userId}`, email || `${userId}@bypro.com`);
-    }
+    if (!user) user = await createFinancialUser(userId, name || `User ${userId}`, email || `${userId}@bypro.com`);
     res.json({
       success: true,
       data: {
@@ -670,9 +691,7 @@ app.get('/api/financial/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const user = await getFinancialUser(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
     res.json({
       success: true,
       data: {
@@ -694,13 +713,9 @@ app.post('/api/financial/add-balance', async (req, res) => {
   try {
     const { userId, amount, description } = req.body;
     const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) {
-      return res.status(403).json({ success: false, error: "Access denied" });
-    }
+    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
     const user = await getFinancialUser(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
     const amountNum = parseFloat(amount);
     const newBalance = user.balance + amountNum;
     const transaction = {
@@ -710,11 +725,7 @@ app.post('/api/financial/add-balance', async (req, res) => {
       date: new Date().toISOString()
     };
     await updateUserBalance(userId, newBalance, transaction);
-    res.json({
-      success: true,
-      newBalance: newBalance,
-      transaction: transaction
-    });
+    res.json({ success: true, newBalance: newBalance, transaction });
   } catch (error) {
     console.error('❌ Error adding balance:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -725,21 +736,17 @@ app.post('/api/financial/update-card', async (req, res) => {
   try {
     const { userId, cardCode } = req.body;
     const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) {
-      return res.status(403).json({ success: false, error: "Access denied" });
-    }
+    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
     const user = await getFinancialUser(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
     if (!cardCode || !cardCode.startsWith('byppcn-')) {
-      return res.status(400).json({ success: false, error: "Invalid card code format" });
+      return res.status(400).json({ success: false, error: "Invalid card code" });
     }
     await updateUserCard(userId, cardCode);
     const updated = await getFinancialUser(userId);
     res.json({
       success: true,
-      message: "Card updated successfully",
+      message: "Card updated",
       data: {
         id: updated.id,
         name: updated.name,
@@ -758,26 +765,12 @@ app.post('/api/financial/update-name', async (req, res) => {
   try {
     const { userId, name } = req.body;
     const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) {
-      return res.status(403).json({ success: false, error: "Access denied" });
-    }
+    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
     const user = await getFinancialUser(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
-    await updateUserName(userId, name);
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
+    await financialUsersCollection.updateOne({ id: userId }, { $set: { name } });
     const updated = await getFinancialUser(userId);
-    res.json({
-      success: true,
-      message: "Name updated successfully",
-      data: {
-        id: updated.id,
-        name: updated.name,
-        email: updated.email,
-        balance: updated.balance,
-        cardCode: updated.cardCode
-      }
-    });
+    res.json({ success: true, data: updated });
   } catch (error) {
     console.error('❌ Error updating name:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -788,26 +781,12 @@ app.post('/api/financial/update-email', async (req, res) => {
   try {
     const { userId, email } = req.body;
     const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) {
-      return res.status(403).json({ success: false, error: "Access denied" });
-    }
+    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
     const user = await getFinancialUser(userId);
-    if (!user) {
-      return res.status(404).json({ success: false, error: "User not found" });
-    }
-    await updateUserEmail(userId, email);
+    if (!user) return res.status(404).json({ success: false, error: "User not found" });
+    await financialUsersCollection.updateOne({ id: userId }, { $set: { email } });
     const updated = await getFinancialUser(userId);
-    res.json({
-      success: true,
-      message: "Email updated successfully",
-      data: {
-        id: updated.id,
-        name: updated.name,
-        email: updated.email,
-        balance: updated.balance,
-        cardCode: updated.cardCode
-      }
-    });
+    res.json({ success: true, data: updated });
   } catch (error) {
     console.error('❌ Error updating email:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -817,21 +796,9 @@ app.post('/api/financial/update-email', async (req, res) => {
 app.get('/api/financial/all-users', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) {
-      return res.status(403).json({ success: false, error: "Access denied" });
-    }
+    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
     const users = await getAllFinancialUsers();
-    res.json({
-      success: true,
-      count: users.length,
-      users: users.map(u => ({
-        id: u.id,
-        name: u.name,
-        email: u.email,
-        balance: u.balance,
-        cardCode: u.cardCode
-      }))
-    });
+    res.json({ success: true, count: users.length, users });
   } catch (error) {
     console.error('❌ Error fetching all users:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -876,8 +843,7 @@ app.post('/api/verify-password', async (req, res) => {
   }
 });
 
-// ==================== PAYMENT ENDPOINTS ====================
-// (unchanged, left as in previous version)
+// ==================== PAYMENT ENDPOINTS (unchanged) ====================
 app.post('/api/create-payment', async (req, res) => {
   try {
     const { appName, amount, callbackUrl, description } = req.body;
@@ -891,18 +857,18 @@ app.post('/api/create-payment', async (req, res) => {
     const paymentId = crypto.randomBytes(16).toString('hex');
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
     await paymentsCollection.insertOne({
-      paymentId: paymentId,
-      appName: appName,
+      paymentId,
+      appName,
       amount: amountNum,
-      callbackUrl: callbackUrl,
+      callbackUrl,
       description: description || '',
       status: 'pending',
       createdAt: new Date().toISOString(),
-      expiresAt: expiresAt
+      expiresAt
     });
     res.json({
       success: true,
-      paymentId: paymentId,
+      paymentId,
       gatewayUrl: `https://b-y-pro-acounts-login.onrender.com/Payment%20gateway.html?payment_id=${paymentId}`,
       amount: amountNum,
       expiresIn: 1800
@@ -916,7 +882,7 @@ app.post('/api/create-payment', async (req, res) => {
 app.post('/api/get-payment-info', async (req, res) => {
   try {
     const { paymentId } = req.body;
-    const payment = await paymentsCollection.findOne({ paymentId: paymentId });
+    const payment = await paymentsCollection.findOne({ paymentId });
     if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
     if (new Date(payment.expiresAt) < new Date()) {
       return res.status(410).json({ success: false, error: "Payment expired" });
@@ -938,7 +904,7 @@ app.post('/api/get-payment-info', async (req, res) => {
 app.post('/api/process-payment', async (req, res) => {
   try {
     const { accountId, cardCode, amount, paymentId, appName, description } = req.body;
-    const payment = await paymentsCollection.findOne({ paymentId: paymentId });
+    const payment = await paymentsCollection.findOne({ paymentId });
     if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
     if (payment.status !== 'pending') {
       return res.status(400).json({ success: false, error: "Payment already processed" });
@@ -958,21 +924,21 @@ app.post('/api/process-payment', async (req, res) => {
     const transaction = {
       type: 'payment',
       amount: amountNum,
-      appName: appName,
-      paymentId: paymentId,
+      appName,
+      paymentId,
       date: new Date().toISOString(),
       description: description || payment.description || `Payment to ${appName}`
     };
     await updateUserBalance(accountId, newBalance, transaction);
     await paymentsCollection.updateOne(
-      { paymentId: paymentId },
-      { $set: { status: 'completed', completedAt: new Date().toISOString(), accountId: accountId } }
+      { paymentId },
+      { $set: { status: 'completed', completedAt: new Date().toISOString(), accountId } }
     );
     if (payment.callbackUrl) {
       const callbackData = { paymentId, success: true, accountId, amount: amountNum, transactionId: `txn_${Date.now()}`, timestamp: new Date().toISOString() };
       axios.post(payment.callbackUrl, callbackData, { timeout: 5000 }).catch(e => console.log('Callback failed:', e.message));
     }
-    res.json({ success: true, newBalance: newBalance, transactionId: `txn_${Date.now()}`, transaction });
+    res.json({ success: true, newBalance, transactionId: `txn_${Date.now()}`, transaction });
   } catch (error) {
     console.error('❌ process-payment error:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -987,17 +953,13 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.3',
+    service: 'B.Y PRO v9.4',
     auth_storage: 'Google Drive',
     financial_storage: 'MongoDB',
     email_provider: 'Brevo SMTP',
     payment_gateway: 'active',
     admin_controls: 'active',
-    endpoints: {
-      auth: ['/api/verify-account', '/api/create-account', '/api/send-otp', '/api/verify-otp', '/api/accounts/:id', '/api/accounts/:id/block'],
-      financial: ['/api/financial/:userId', '/api/financial/add-balance', '/api/financial/update-card', '/api/financial/update-name', '/api/financial/update-email', '/api/financial/all-users'],
-      payment: ['/api/create-payment', '/api/get-payment-info', '/api/process-payment', '/api/find-card', '/api/verify-password']
-    },
+    avatar_support: !!IMGBB_API_KEY,
     timestamp: new Date().toISOString()
   });
 });
@@ -1030,12 +992,12 @@ async function startServer() {
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.3');
+    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.4');
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
     console.log('✅ Payment Gateway: ACTIVE');
-    console.log('✅ Admin Controls: Block/Delete/Edit');
+    console.log('✅ Avatar Support: ' + (IMGBB_API_KEY ? 'ENABLED' : 'DISABLED'));
     console.log(`✅ Server: http://localhost:${PORT}`);
     console.log('🎉 =================================\n');
   });
