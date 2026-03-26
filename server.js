@@ -13,7 +13,7 @@ const FormData = require('form-data');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.5 (Full API)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.6 (No OTP, Hard Delete)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -203,6 +203,17 @@ async function updateAuthAccount(id, updates) {
   return accounts[index];
 }
 
+// حذف حقيقي من Google Drive
+async function deleteAuthAccountPermanently(id) {
+  const csv = await readCSV();
+  let accounts = parseCSV(csv);
+  const index = accounts.findIndex(a => a.id === id);
+  if (index === -1) throw new Error("Account not found");
+  accounts.splice(index, 1);
+  await saveCSV(accounts);
+  return true;
+}
+
 async function getNextId() {
   const csv = await readCSV();
   const accounts = parseCSV(csv);
@@ -297,6 +308,11 @@ async function createFinancialUser(userId, name, email) {
   return newUser;
 }
 
+async function deleteFinancialUser(userId) {
+  await financialUsersCollection.deleteOne({ id: userId });
+  console.log(`✅ Financial account deleted for ${userId}`);
+}
+
 async function updateUserBalance(userId, newBalance, transaction) {
   return await financialUsersCollection.updateOne(
     { id: userId },
@@ -328,98 +344,6 @@ async function syncExistingAccounts() {
   }
   if (created > 0) console.log(`✅ Created ${created} new financial accounts`);
   else console.log('✅ All auth accounts already have financial data');
-}
-
-// ==================== OTP FUNCTIONS ====================
-const otpStorage = new Map();
-
-function generateOTP() {
-  return Math.floor(100000 + Math.random() * 900000).toString();
-}
-
-async function storeOTP(email, otp) {
-  otpStorage.set(email, {
-    otp: otp,
-    expires: Date.now() + 10 * 60 * 1000,
-    attempts: 0
-  });
-  return true;
-}
-
-async function verifyOTP(email, code) {
-  const record = otpStorage.get(email);
-  if (!record) return { success: false, error: "No code found" };
-  if (Date.now() > record.expires) {
-    otpStorage.delete(email);
-    return { success: false, error: "Code expired" };
-  }
-  if (record.otp === code) {
-    otpStorage.delete(email);
-    return { success: true };
-  }
-  return { success: false, error: "Invalid code" };
-}
-
-// ==================== BREVO SMTP ====================
-let brevoTransporter = null;
-
-function createBrevoTransporter() {
-  return nodemailer.createTransport({
-    host: BREVO_SMTP_HOST,
-    port: parseInt(BREVO_SMTP_PORT),
-    secure: false,
-    auth: { user: BREVO_SMTP_USER, pass: BREVO_SMTP_KEY },
-    tls: { rejectUnauthorized: false }
-  });
-}
-
-function initializeBrevo() {
-  try {
-    brevoTransporter = createBrevoTransporter();
-    brevoTransporter.verify((error) => {
-      if (error) console.log('⚠️ Brevo error:', error.message);
-      else console.log('✅ Brevo SMTP ready');
-    });
-  } catch (error) {
-    console.error('❌ Brevo init error:', error.message);
-  }
-}
-initializeBrevo();
-
-async function sendOTPviaBrevo(email, otpCode) {
-  try {
-    if (!brevoTransporter) brevoTransporter = createBrevoTransporter();
-    const mailOptions = {
-      from: `"B.Y PRO" <${BREVO_SMTP_USER}>`,
-      to: email,
-      subject: 'B.Y PRO - Verification Code',
-      html: `<div style="font-family:Arial;max-width:600px;margin:0 auto;background:#f5f5f5;padding:20px;">
-        <div style="background:linear-gradient(135deg,#3498db,#2980b9);padding:30px;text-align:center;color:white;border-radius:10px 10px 0 0;">
-          <h1>B.Y PRO Accounts</h1>
-        </div>
-        <div style="background:white;padding:30px;border-radius:0 0 10px 10px;">
-          <h2>Verification Code</h2>
-          <div style="background:linear-gradient(135deg,#3498db,#2980b9);color:white;padding:20px;text-align:center;font-size:32px;font-weight:bold;letter-spacing:8px;margin:25px 0;border-radius:8px;">${otpCode}</div>
-          <p>This code expires in 10 minutes.</p>
-        </div>
-      </div>`,
-      text: `Your B.Y PRO verification code is: ${otpCode}. Expires in 10 minutes.`
-    };
-    await brevoTransporter.sendMail(mailOptions);
-    console.log(`✅ Email sent to: ${email}`);
-    return { success: true };
-  } catch (error) {
-    console.error('❌ Email failed:', error.message);
-    return { success: false, error: error.message };
-  }
-}
-
-// ==================== QR CODE ====================
-async function generateQR(data) {
-  try {
-    const qr = await QRCode.toDataURL(data, { width: 200, margin: 2, errorCorrectionLevel: 'H' });
-    return { success: true, qrCode: qr };
-  } catch { return { success: false }; }
 }
 
 // ==================== CORS ====================
@@ -458,7 +382,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ==================== AUTH ENDPOINTS ====================
+// ==================== AUTH ENDPOINTS (NO OTP) ====================
 
 app.get('/api/get-all-accounts', async (req, res) => {
   try {
@@ -501,7 +425,7 @@ app.get('/api/accounts/:id', async (req, res) => {
         id: account.id,
         name: account.name,
         email: account.email,
-        password: account.ps,  // كلمة المرور الحقيقية
+        password: account.ps,
         blocked: account.blocked || false,
         avatar: account.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }
@@ -540,14 +464,18 @@ app.put('/api/accounts/:id', async (req, res) => {
   }
 });
 
+// حذف حقيقي (من Google Drive و MongoDB)
 app.delete('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    await updateAuthAccount(req.params.id, { deleted: true });
-    res.json({ success: true, message: "Account deleted" });
+    // حذف من Google Drive
+    await deleteAuthAccountPermanently(req.params.id);
+    // حذف من MongoDB
+    await deleteFinancialUser(req.params.id);
+    res.json({ success: true, message: "Account permanently deleted" });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -591,63 +519,42 @@ app.post('/api/verify-account', async (req, res) => {
   }
 });
 
-app.post('/api/send-otp', async (req, res) => {
-  try {
-    const { email } = req.body;
-    if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-      return res.status(400).json({ success: false, error: "Valid email required" });
-    }
-    const otp = generateOTP();
-    await storeOTP(email, otp);
-    const result = await sendOTPviaBrevo(email, otp);
-    if (result.success) {
-      res.json({ success: true, message: "Code sent", expiresIn: "10 minutes" });
-    } else {
-      res.status(500).json({ success: false, error: "Email service unavailable" });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, error: "Server error" });
-  }
-});
-
-app.post('/api/verify-otp', async (req, res) => {
-  try {
-    const { email, otp } = req.body;
-    if (!email || !otp) return res.status(400).json({ success: false, error: "Email and code required" });
-    const result = await verifyOTP(email, otp);
-    result.success ? res.json({ success: true }) : res.status(400).json(result);
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
+// إنشاء حساب بدون OTP
 app.post('/api/create-account', async (req, res) => {
   try {
-    const { id, name, email, password, otpCode, avatar } = req.body;
-    if (!id || !name || !email || !password || !otpCode) {
-      return res.status(400).json({ success: false, error: "All fields required" });
+    const { name, email, password, avatar } = req.body;
+    
+    if (!name || !email || !password) {
+      return res.status(400).json({ success: false, error: "Name, email and password are required" });
     }
-    const otpResult = await verifyOTP(email, otpCode);
-    if (!otpResult.success) {
-      return res.status(400).json({ success: false, error: otpResult.error });
+    
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ success: false, error: "Invalid email format" });
     }
-    const finalId = await addAuthAccount({
-      id: id.toString(),
+    
+    const nextId = await getNextId();
+    const finalId = nextId;
+    
+    const newAccount = {
+      id: finalId,
       ps: password,
       email,
       name,
       avatar: avatar || 'https://i.ibb.co/SDxkt40s/user.png'
-    });
-    const financialAccount = await createFinancialUser(finalId, name, email);
-    const qrResult = await generateQR(`BYPRO:${finalId}:${password}`);
+    };
+    
+    const createdId = await addAuthAccount(newAccount);
+    const financialAccount = await createFinancialUser(createdId, name, email);
+    const qrResult = await generateQR(`BYPRO:${createdId}:${password}`);
+    
     res.json({
       success: true,
       message: "Account created successfully",
       account: {
-        id: finalId,
+        id: createdId,
         name,
         email,
-        password: password,
+        password,
         avatar: avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       },
       financialAccount: {
@@ -656,6 +563,7 @@ app.post('/api/create-account', async (req, res) => {
       },
       qrCode: qrResult.qrCode
     });
+    
   } catch (error) {
     console.error('❌ Error creating account:', error);
     res.status(500).json({ success: false, error: error.message });
@@ -675,8 +583,15 @@ app.get('/api/next-id', async (req, res) => {
   }
 });
 
-// ==================== FINANCIAL ENDPOINTS ====================
+// ==================== QR CODE ====================
+async function generateQR(data) {
+  try {
+    const qr = await QRCode.toDataURL(data, { width: 200, margin: 2, errorCorrectionLevel: 'H' });
+    return { success: true, qrCode: qr };
+  } catch { return { success: false }; }
+}
 
+// ==================== FINANCIAL ENDPOINTS ====================
 app.post('/api/financial/sync', async (req, res) => {
   try {
     const { userId, name, email } = req.body;
@@ -866,7 +781,6 @@ app.post('/api/verify-password', async (req, res) => {
 });
 
 // ==================== PAYMENT ENDPOINTS ====================
-
 app.post('/api/create-payment', async (req, res) => {
   try {
     const { appName, amount, callbackUrl, description } = req.body;
@@ -976,16 +890,17 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.5',
+    service: 'B.Y PRO v9.6',
     auth_storage: 'Google Drive',
     financial_storage: 'MongoDB',
     email_provider: 'Brevo SMTP',
     payment_gateway: 'active',
     admin_controls: 'active',
     avatar_support: !!IMGBB_API_KEY,
+    otp_required: false,
     endpoints: {
-      auth: ['/api/verify-account', '/api/create-account', '/api/send-otp', '/api/verify-otp', '/api/accounts/:id', '/api/accounts/:id/avatar', '/api/accounts/:id/avatar-url'],
-      financial: ['/api/financial/:userId', '/api/financial/add-balance', '/api/financial/update-card', '/api/financial/update-name', '/api/financial/update-email', '/api/financial/all-users'],
+      auth: ['/api/verify-account', '/api/create-account', '/api/accounts/:id', '/api/accounts/:id/avatar', '/api/accounts/:id/avatar-url'],
+      financial: ['/api/financial/:userId', '/api/financial/add-balance', '/api/financial/update-card'],
       payment: ['/api/create-payment', '/api/get-payment-info', '/api/process-payment', '/api/find-card', '/api/verify-password']
     },
     timestamp: new Date().toISOString()
@@ -1020,12 +935,14 @@ async function startServer() {
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.5');
+    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.6');
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
     console.log('✅ Payment Gateway: ACTIVE');
     console.log('✅ Avatar Support: ' + (IMGBB_API_KEY ? 'ENABLED' : 'DISABLED'));
+    console.log('✅ OTP: DISABLED (Direct Signup)');
+    console.log('✅ Delete: HARD DELETE (from Google Drive)');
     console.log(`✅ Server: http://localhost:${PORT}`);
     console.log('🎉 =================================\n');
   });
