@@ -13,7 +13,7 @@ const FormData = require('form-data');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.6 (No OTP, Hard Delete)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.7 (Random IDs, Avatar Fix)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -176,15 +176,30 @@ async function getAuthAccount(id, password) {
   return accounts.find(a => a.id === id && a.ps === password);
 }
 
+// توليد ID عشوائي فريد
+async function generateUniqueId() {
+  const existingAccounts = await getAllAuthAccounts();
+  const existingIds = new Set(existingAccounts.map(a => a.id));
+  let newId;
+  do {
+    newId = Math.floor(10000 + Math.random() * 90000).toString(); // 5 أرقام عشوائية
+  } while (existingIds.has(newId));
+  return newId;
+}
+
 async function addAuthAccount(account) {
   const csv = await readCSV();
   let accounts = parseCSV(csv);
-  if (accounts.find(a => a.email === account.email)) throw new Error("Email exists");
-  const existing = accounts.find(a => a.id === account.id);
-  if (existing) {
-    const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
-    account.id = ids.length ? (Math.max(...ids) + 1).toString() : "1001";
+  if (accounts.find(a => a.email === account.email)) throw new Error("Email already exists");
+  
+  // توليد ID فريد إذا لم يتم توفيره
+  if (!account.id) {
+    account.id = await generateUniqueId();
+  } else {
+    const existing = accounts.find(a => a.id === account.id);
+    if (existing) throw new Error("ID already exists");
   }
+  
   account.avatar = account.avatar || 'https://i.ibb.co/SDxkt40s/user.png';
   account.blocked = false;
   account.deleted = false;
@@ -203,7 +218,6 @@ async function updateAuthAccount(id, updates) {
   return accounts[index];
 }
 
-// حذف حقيقي من Google Drive
 async function deleteAuthAccountPermanently(id) {
   const csv = await readCSV();
   let accounts = parseCSV(csv);
@@ -214,28 +228,24 @@ async function deleteAuthAccountPermanently(id) {
   return true;
 }
 
-async function getNextId() {
-  const csv = await readCSV();
-  const accounts = parseCSV(csv);
-  const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
-  return ids.length ? (Math.max(...ids) + 1).toString() : "1001";
-}
-
-// ==================== AVATAR UPLOAD ====================
+// ==================== AVATAR UPLOAD (Fixed with correct ImgBB API) ====================
 async function uploadToImgBB(buffer, filename) {
   if (!IMGBB_API_KEY) throw new Error('IMGBB_API_KEY not configured');
+  
   const formData = new FormData();
   formData.append('key', IMGBB_API_KEY);
   formData.append('image', buffer.toString('base64'));
-  formData.append('name', filename);
+  if (filename) formData.append('name', filename);
+  
   const response = await axios.post('https://api.imgbb.com/1/upload', formData, {
     headers: formData.getHeaders(),
     timeout: 30000
   });
+  
   if (response.data && response.data.success && response.data.data && response.data.data.url) {
     return response.data.data.url;
   } else {
-    throw new Error('ImgBB upload failed');
+    throw new Error('ImgBB upload failed: ' + JSON.stringify(response.data));
   }
 }
 
@@ -382,7 +392,7 @@ app.use((req, res, next) => {
   next();
 });
 
-// ==================== AUTH ENDPOINTS (NO OTP) ====================
+// ==================== AUTH ENDPOINTS ====================
 
 app.get('/api/get-all-accounts', async (req, res) => {
   try {
@@ -464,16 +474,13 @@ app.put('/api/accounts/:id', async (req, res) => {
   }
 });
 
-// حذف حقيقي (من Google Drive و MongoDB)
 app.delete('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    // حذف من Google Drive
     await deleteAuthAccountPermanently(req.params.id);
-    // حذف من MongoDB
     await deleteFinancialUser(req.params.id);
     res.json({ success: true, message: "Account permanently deleted" });
   } catch (error) {
@@ -519,7 +526,6 @@ app.post('/api/verify-account', async (req, res) => {
   }
 });
 
-// إنشاء حساب بدون OTP
 app.post('/api/create-account', async (req, res) => {
   try {
     const { name, email, password, avatar } = req.body;
@@ -532,11 +538,10 @@ app.post('/api/create-account', async (req, res) => {
       return res.status(400).json({ success: false, error: "Invalid email format" });
     }
     
-    const nextId = await getNextId();
-    const finalId = nextId;
+    const newId = await generateUniqueId();
     
     const newAccount = {
-      id: finalId,
+      id: newId,
       ps: password,
       email,
       name,
@@ -570,19 +575,6 @@ app.post('/api/create-account', async (req, res) => {
   }
 });
 
-app.get('/api/next-id', async (req, res) => {
-  try {
-    const apiKey = req.headers['x-api-key'] || req.query.api_key;
-    if (apiKey !== INTERNAL_API_KEY) {
-      return res.status(403).json({ success: false, error: "Access denied" });
-    }
-    const nextId = await getNextId();
-    res.json({ success: true, nextId });
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
 // ==================== QR CODE ====================
 async function generateQR(data) {
   try {
@@ -591,7 +583,7 @@ async function generateQR(data) {
   } catch { return { success: false }; }
 }
 
-// ==================== FINANCIAL ENDPOINTS ====================
+// ==================== FINANCIAL ENDPOINTS (unchanged) ====================
 app.post('/api/financial/sync', async (req, res) => {
   try {
     const { userId, name, email } = req.body;
@@ -890,7 +882,7 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.6',
+    service: 'B.Y PRO v9.7',
     auth_storage: 'Google Drive',
     financial_storage: 'MongoDB',
     email_provider: 'Brevo SMTP',
@@ -898,6 +890,7 @@ app.get('/api/health', (req, res) => {
     admin_controls: 'active',
     avatar_support: !!IMGBB_API_KEY,
     otp_required: false,
+    id_generation: 'random (5-digit)',
     endpoints: {
       auth: ['/api/verify-account', '/api/create-account', '/api/accounts/:id', '/api/accounts/:id/avatar', '/api/accounts/:id/avatar-url'],
       financial: ['/api/financial/:userId', '/api/financial/add-balance', '/api/financial/update-card'],
@@ -935,13 +928,14 @@ async function startServer() {
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.6');
+    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.7');
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
     console.log('✅ Payment Gateway: ACTIVE');
     console.log('✅ Avatar Support: ' + (IMGBB_API_KEY ? 'ENABLED' : 'DISABLED'));
     console.log('✅ OTP: DISABLED (Direct Signup)');
+    console.log('✅ ID Generation: RANDOM (5 digits)');
     console.log('✅ Delete: HARD DELETE (from Google Drive)');
     console.log(`✅ Server: http://localhost:${PORT}`);
     console.log('🎉 =================================\n');
