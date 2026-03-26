@@ -11,7 +11,7 @@ const nodemailer = require('nodemailer');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.2 (Full API)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.3 (Admin Controls)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -105,6 +105,7 @@ async function readCSV() {
   } catch { return ''; }
 }
 
+// parseCSV now supports optional 'blocked' column
 function parseCSV(csv) {
   const lines = csv.split('\n').filter(l => l.trim());
   const accounts = [];
@@ -119,18 +120,33 @@ function parseCSV(csv) {
       else cur += ch;
     }
     vals.push(cur);
-    if (vals.length >= 2) {
-      accounts.push({ id: vals[0], ps: vals[1], email: vals[2] || '', name: vals[3] || '' });
-    }
+    // Columns: id, ps, email, name, blocked (optional)
+    accounts.push({
+      id: vals[0],
+      ps: vals[1],
+      email: vals[2] || '',
+      name: vals[3] || '',
+      blocked: vals[4] === 'true' ? true : false,
+      deleted: vals[5] === 'true' ? true : false
+    });
   }
   return accounts;
 }
 
+// saveCSV with full columns
 async function saveCSV(accounts) {
-  const headers = ['id', 'ps', 'email', 'name'];
+  const headers = ['id', 'ps', 'email', 'name', 'blocked', 'deleted'];
   const lines = [headers.join(',')];
   for (const acc of accounts) {
-    lines.push(headers.map(h => `"${(acc[h] || '').replace(/"/g, '""')}"`).join(','));
+    const row = [
+      acc.id,
+      acc.ps,
+      acc.email,
+      acc.name,
+      acc.blocked ? 'true' : 'false',
+      acc.deleted ? 'true' : 'false'
+    ];
+    lines.push(row.map(v => `"${v.toString().replace(/"/g, '""')}"`).join(','));
   }
   await driveService.files.update({
     fileId: ACCOUNTS_FILE_ID,
@@ -141,6 +157,12 @@ async function saveCSV(accounts) {
 async function getAllAuthAccounts() {
   const csv = await readCSV();
   return parseCSV(csv);
+}
+
+async function getAuthAccountById(id) {
+  const csv = await readCSV();
+  const accounts = parseCSV(csv);
+  return accounts.find(a => a.id === id);
 }
 
 async function getAuthAccount(id, password) {
@@ -158,9 +180,22 @@ async function addAuthAccount(account) {
     const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
     account.id = ids.length ? (Math.max(...ids) + 1).toString() : "1001";
   }
+  // Set default status
+  account.blocked = false;
+  account.deleted = false;
   accounts.push(account);
   await saveCSV(accounts);
   return account.id;
+}
+
+async function updateAuthAccount(id, updates) {
+  const csv = await readCSV();
+  let accounts = parseCSV(csv);
+  const index = accounts.findIndex(a => a.id === id);
+  if (index === -1) throw new Error("Account not found");
+  accounts[index] = { ...accounts[index], ...updates };
+  await saveCSV(accounts);
+  return accounts[index];
 }
 
 async function getNextId() {
@@ -394,14 +429,17 @@ app.get('/api/get-all-accounts', async (req, res) => {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
     const accounts = await getAllAuthAccounts();
+    // Filter out deleted accounts for normal listing
+    const activeAccounts = accounts.filter(a => !a.deleted);
     res.json({
       success: true,
-      count: accounts.length,
-      accounts: accounts.map(acc => ({
+      count: activeAccounts.length,
+      accounts: activeAccounts.map(acc => ({
         id: acc.id,
         name: acc.name || `User ${acc.id}`,
         email: acc.email || `${acc.id}@bypro.com`,
-        hasPassword: !!acc.ps
+        hasPassword: !!acc.ps,
+        blocked: acc.blocked || false
       }))
     });
   } catch (error) {
@@ -409,22 +447,113 @@ app.get('/api/get-all-accounts', async (req, res) => {
   }
 });
 
+// Get single account details
+app.get('/api/accounts/:id', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'] || req.query.api_key;
+    if (apiKey !== INTERNAL_API_KEY) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+    const account = await getAuthAccountById(req.params.id);
+    if (!account || account.deleted) {
+      return res.status(404).json({ success: false, error: "Account not found" });
+    }
+    res.json({
+      success: true,
+      account: {
+        id: account.id,
+        name: account.name,
+        email: account.email,
+        blocked: account.blocked || false
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Update account (name, email, password)
+app.put('/api/accounts/:id', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'] || req.query.api_key;
+    if (apiKey !== INTERNAL_API_KEY) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+    const { name, email, password } = req.body;
+    const updates = {};
+    if (name) updates.name = name;
+    if (email) updates.email = email;
+    if (password) updates.ps = password;
+    const updated = await updateAuthAccount(req.params.id, updates);
+    res.json({
+      success: true,
+      message: "Account updated",
+      account: {
+        id: updated.id,
+        name: updated.name,
+        email: updated.email,
+        blocked: updated.blocked || false
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Soft delete account
+app.delete('/api/accounts/:id', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'] || req.query.api_key;
+    if (apiKey !== INTERNAL_API_KEY) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+    await updateAuthAccount(req.params.id, { deleted: true });
+    res.json({ success: true, message: "Account deleted (soft)" });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Block/unblock account
+app.post('/api/accounts/:id/block', async (req, res) => {
+  try {
+    const apiKey = req.headers['x-api-key'] || req.query.api_key;
+    if (apiKey !== INTERNAL_API_KEY) {
+      return res.status(403).json({ success: false, error: "Access denied" });
+    }
+    const { blocked } = req.body; // true or false
+    if (typeof blocked !== 'boolean') {
+      return res.status(400).json({ success: false, error: "blocked must be boolean" });
+    }
+    await updateAuthAccount(req.params.id, { blocked });
+    res.json({ success: true, message: `Account ${blocked ? 'blocked' : 'unblocked'}` });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+// Verify account (login) - now checks blocked/deleted status
 app.post('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.body;
     const account = await getAuthAccount(id, password);
-    if (account) {
-      res.json({
-        success: true,
-        account: {
-          id: account.id,
-          name: account.name || `User ${account.id}`,
-          email: account.email || `${account.id}@bypro.com`
-        }
-      });
-    } else {
-      res.json({ success: false, error: "Invalid credentials" });
+    if (!account) {
+      return res.json({ success: false, error: "Invalid credentials" });
     }
+    if (account.deleted) {
+      return res.json({ success: false, error: "Account deleted" });
+    }
+    if (account.blocked) {
+      return res.json({ success: false, error: "Account blocked" });
+    }
+    res.json({
+      success: true,
+      account: {
+        id: account.id,
+        name: account.name || `User ${account.id}`,
+        email: account.email || `${account.id}@bypro.com`
+      }
+    });
   } catch (error) {
     res.json({ success: false, error: "Service unavailable" });
   }
@@ -507,23 +636,19 @@ app.get('/api/next-id', async (req, res) => {
   }
 });
 
-// ==================== FINANCIAL ENDPOINTS (COMPLETE) ====================
+// ==================== FINANCIAL ENDPOINTS (unchanged) ====================
 
-// مزامنة المستخدم
 app.post('/api/financial/sync', async (req, res) => {
   try {
     const { userId, name, email } = req.body;
     const apiKey = req.headers['x-api-key'];
-    
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    
     let user = await getFinancialUser(userId);
     if (!user) {
       user = await createFinancialUser(userId, name || `User ${userId}`, email || `${userId}@bypro.com`);
     }
-    
     res.json({
       success: true,
       data: {
@@ -541,16 +666,13 @@ app.post('/api/financial/sync', async (req, res) => {
   }
 });
 
-// جلب بيانات المستخدم
 app.get('/api/financial/:userId', async (req, res) => {
   try {
     const { userId } = req.params;
     const user = await getFinancialUser(userId);
-    
     if (!user) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
-    
     res.json({
       success: true,
       data: {
@@ -568,21 +690,17 @@ app.get('/api/financial/:userId', async (req, res) => {
   }
 });
 
-// إضافة رصيد
 app.post('/api/financial/add-balance', async (req, res) => {
   try {
     const { userId, amount, description } = req.body;
     const apiKey = req.headers['x-api-key'];
-    
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    
     const user = await getFinancialUser(userId);
     if (!user) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
-    
     const amountNum = parseFloat(amount);
     const newBalance = user.balance + amountNum;
     const transaction = {
@@ -591,9 +709,7 @@ app.post('/api/financial/add-balance', async (req, res) => {
       description: description || 'Admin deposit',
       date: new Date().toISOString()
     };
-    
     await updateUserBalance(userId, newBalance, transaction);
-    
     res.json({
       success: true,
       newBalance: newBalance,
@@ -605,28 +721,22 @@ app.post('/api/financial/add-balance', async (req, res) => {
   }
 });
 
-// تحديث بطاقة المستخدم
 app.post('/api/financial/update-card', async (req, res) => {
   try {
     const { userId, cardCode } = req.body;
     const apiKey = req.headers['x-api-key'];
-    
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    
     const user = await getFinancialUser(userId);
     if (!user) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
-    
     if (!cardCode || !cardCode.startsWith('byppcn-')) {
       return res.status(400).json({ success: false, error: "Invalid card code format" });
     }
-    
     await updateUserCard(userId, cardCode);
     const updated = await getFinancialUser(userId);
-    
     res.json({
       success: true,
       message: "Card updated successfully",
@@ -644,24 +754,19 @@ app.post('/api/financial/update-card', async (req, res) => {
   }
 });
 
-// تحديث اسم المستخدم
 app.post('/api/financial/update-name', async (req, res) => {
   try {
     const { userId, name } = req.body;
     const apiKey = req.headers['x-api-key'];
-    
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    
     const user = await getFinancialUser(userId);
     if (!user) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
-    
     await updateUserName(userId, name);
     const updated = await getFinancialUser(userId);
-    
     res.json({
       success: true,
       message: "Name updated successfully",
@@ -679,24 +784,19 @@ app.post('/api/financial/update-name', async (req, res) => {
   }
 });
 
-// تحديث بريد المستخدم
 app.post('/api/financial/update-email', async (req, res) => {
   try {
     const { userId, email } = req.body;
     const apiKey = req.headers['x-api-key'];
-    
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    
     const user = await getFinancialUser(userId);
     if (!user) {
       return res.status(404).json({ success: false, error: "User not found" });
     }
-    
     await updateUserEmail(userId, email);
     const updated = await getFinancialUser(userId);
-    
     res.json({
       success: true,
       message: "Email updated successfully",
@@ -714,14 +814,12 @@ app.post('/api/financial/update-email', async (req, res) => {
   }
 });
 
-// جلب جميع المستخدمين (محمي)
 app.get('/api/financial/all-users', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'];
     if (apiKey !== INTERNAL_API_KEY) {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
-    
     const users = await getAllFinancialUsers();
     res.json({
       success: true,
@@ -740,17 +838,14 @@ app.get('/api/financial/all-users', async (req, res) => {
   }
 });
 
-// البحث عن بطاقة
 app.post('/api/find-card', async (req, res) => {
   try {
     const { cardCode } = req.body;
     if (!cardCode || !cardCode.startsWith('byppcn-')) {
       return res.status(400).json({ success: false, error: "Invalid card code" });
     }
-    
     const user = await getFinancialUserByCard(cardCode);
     if (!user) return res.status(404).json({ success: false, error: "Card not found" });
-    
     res.json({
       success: true,
       accountId: user.id,
@@ -767,15 +862,14 @@ app.post('/api/find-card', async (req, res) => {
   }
 });
 
-// التحقق من كلمة المرور
 app.post('/api/verify-password', async (req, res) => {
   try {
     const { accountId, password } = req.body;
     const account = await getAuthAccount(accountId, password);
-    if (account) {
+    if (account && !account.deleted && !account.blocked) {
       res.json({ success: true, account: { id: account.id, name: account.name, email: account.email } });
     } else {
-      res.json({ success: false, error: "Invalid password" });
+      res.json({ success: false, error: "Invalid password or account disabled" });
     }
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
@@ -783,23 +877,19 @@ app.post('/api/verify-password', async (req, res) => {
 });
 
 // ==================== PAYMENT ENDPOINTS ====================
-
+// (unchanged, left as in previous version)
 app.post('/api/create-payment', async (req, res) => {
   try {
     const { appName, amount, callbackUrl, description } = req.body;
-    
     if (!appName || !appName.startsWith('@byproapp:')) {
       return res.status(400).json({ success: false, error: "Invalid appName" });
     }
-    
     const amountNum = parseFloat(amount);
     if (isNaN(amountNum) || amountNum <= 0 || amountNum > 1000) {
       return res.status(400).json({ success: false, error: "Invalid amount" });
     }
-    
     const paymentId = crypto.randomBytes(16).toString('hex');
     const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-    
     await paymentsCollection.insertOne({
       paymentId: paymentId,
       appName: appName,
@@ -810,7 +900,6 @@ app.post('/api/create-payment', async (req, res) => {
       createdAt: new Date().toISOString(),
       expiresAt: expiresAt
     });
-    
     res.json({
       success: true,
       paymentId: paymentId,
@@ -849,7 +938,6 @@ app.post('/api/get-payment-info', async (req, res) => {
 app.post('/api/process-payment', async (req, res) => {
   try {
     const { accountId, cardCode, amount, paymentId, appName, description } = req.body;
-    
     const payment = await paymentsCollection.findOne({ paymentId: paymentId });
     if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
     if (payment.status !== 'pending') {
@@ -858,17 +946,14 @@ app.post('/api/process-payment', async (req, res) => {
     if (new Date(payment.expiresAt) < new Date()) {
       return res.status(410).json({ success: false, error: "Payment expired" });
     }
-    
     const user = await getFinancialUserByCard(cardCode);
     if (!user || user.id !== accountId) {
       return res.status(400).json({ success: false, error: "Invalid account or card" });
     }
-    
     const amountNum = parseFloat(amount);
     if (user.balance < amountNum) {
       return res.status(402).json({ success: false, error: "Insufficient balance" });
     }
-    
     const newBalance = user.balance - amountNum;
     const transaction = {
       type: 'payment',
@@ -878,18 +963,15 @@ app.post('/api/process-payment', async (req, res) => {
       date: new Date().toISOString(),
       description: description || payment.description || `Payment to ${appName}`
     };
-    
     await updateUserBalance(accountId, newBalance, transaction);
     await paymentsCollection.updateOne(
       { paymentId: paymentId },
       { $set: { status: 'completed', completedAt: new Date().toISOString(), accountId: accountId } }
     );
-    
     if (payment.callbackUrl) {
       const callbackData = { paymentId, success: true, accountId, amount: amountNum, transactionId: `txn_${Date.now()}`, timestamp: new Date().toISOString() };
       axios.post(payment.callbackUrl, callbackData, { timeout: 5000 }).catch(e => console.log('Callback failed:', e.message));
     }
-    
     res.json({ success: true, newBalance: newBalance, transactionId: `txn_${Date.now()}`, transaction });
   } catch (error) {
     console.error('❌ process-payment error:', error);
@@ -905,13 +987,14 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.2',
+    service: 'B.Y PRO v9.3',
     auth_storage: 'Google Drive',
     financial_storage: 'MongoDB',
     email_provider: 'Brevo SMTP',
     payment_gateway: 'active',
+    admin_controls: 'active',
     endpoints: {
-      auth: ['/api/verify-account', '/api/create-account', '/api/send-otp', '/api/verify-otp'],
+      auth: ['/api/verify-account', '/api/create-account', '/api/send-otp', '/api/verify-otp', '/api/accounts/:id', '/api/accounts/:id/block'],
       financial: ['/api/financial/:userId', '/api/financial/add-balance', '/api/financial/update-card', '/api/financial/update-name', '/api/financial/update-email', '/api/financial/all-users'],
       payment: ['/api/create-payment', '/api/get-payment-info', '/api/process-payment', '/api/find-card', '/api/verify-password']
     },
@@ -947,16 +1030,12 @@ async function startServer() {
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.2');
+    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.3');
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
     console.log('✅ Payment Gateway: ACTIVE');
-    console.log('✅ Endpoints:');
-    console.log('   - Financial: GET/POST /api/financial/*');
-    console.log('   - Update Card: POST /api/financial/update-card');
-    console.log('   - Update Name: POST /api/financial/update-name');
-    console.log('   - Update Email: POST /api/financial/update-email');
+    console.log('✅ Admin Controls: Block/Delete/Edit');
     console.log(`✅ Server: http://localhost:${PORT}`);
     console.log('🎉 =================================\n');
   });
