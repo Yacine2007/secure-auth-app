@@ -13,7 +13,7 @@ const FormData = require('form-data');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.4 (Avatar Support)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.5 (Full API)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -38,10 +38,6 @@ const {
 if (!MONGODB_URI) {
   console.error('❌ FATAL: MONGODB_URI is not set');
   process.exit(1);
-}
-
-if (!IMGBB_API_KEY) {
-  console.warn('⚠️ IMGBB_API_KEY not set – avatar uploads will not work');
 }
 
 // ==================== MULTER SETUP ====================
@@ -106,7 +102,7 @@ async function connectMongoDB() {
   }
 }
 
-// ==================== GOOGLE DRIVE ACCOUNT FUNCTIONS (with avatar) ====================
+// ==================== GOOGLE DRIVE ACCOUNT FUNCTIONS ====================
 async function readCSV() {
   if (!driveService) throw new Error("Drive not ready");
   try {
@@ -115,7 +111,6 @@ async function readCSV() {
   } catch { return ''; }
 }
 
-// parseCSV now includes avatar column (7th column)
 function parseCSV(csv) {
   const lines = csv.split('\n').filter(l => l.trim());
   const accounts = [];
@@ -130,7 +125,6 @@ function parseCSV(csv) {
       else cur += ch;
     }
     vals.push(cur);
-    // Columns: id, ps, email, name, blocked, deleted, avatar
     accounts.push({
       id: vals[0],
       ps: vals[1],
@@ -144,7 +138,6 @@ function parseCSV(csv) {
   return accounts;
 }
 
-// saveCSV with avatar column
 async function saveCSV(accounts) {
   const headers = ['id', 'ps', 'email', 'name', 'blocked', 'deleted', 'avatar'];
   const lines = [headers.join(',')];
@@ -192,7 +185,6 @@ async function addAuthAccount(account) {
     const ids = accounts.map(a => parseInt(a.id)).filter(id => !isNaN(id));
     account.id = ids.length ? (Math.max(...ids) + 1).toString() : "1001";
   }
-  // Set default avatar
   account.avatar = account.avatar || 'https://i.ibb.co/SDxkt40s/user.png';
   account.blocked = false;
   account.deleted = false;
@@ -247,7 +239,7 @@ app.post('/api/accounts/:id/avatar', upload.single('avatar'), async (req, res) =
       return res.status(400).json({ success: false, error: "No file uploaded" });
     }
     const account = await getAuthAccountById(accountId);
-    if (!account) {
+    if (!account || account.deleted) {
       return res.status(404).json({ success: false, error: "Account not found" });
     }
     const imageUrl = await uploadToImgBB(req.file.buffer, `avatar_${accountId}_${Date.now()}.jpg`);
@@ -255,6 +247,18 @@ app.post('/api/accounts/:id/avatar', upload.single('avatar'), async (req, res) =
     res.json({ success: true, avatarUrl: imageUrl });
   } catch (error) {
     console.error('Avatar upload error:', error);
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/api/accounts/:id/avatar-url', async (req, res) => {
+  try {
+    const account = await getAuthAccountById(req.params.id);
+    if (!account || account.deleted) {
+      return res.status(404).json({ success: false, error: "Account not found" });
+    }
+    res.json({ success: true, avatarUrl: account.avatar || 'https://i.ibb.co/SDxkt40s/user.png' });
+  } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -455,6 +459,7 @@ app.use((req, res, next) => {
 });
 
 // ==================== AUTH ENDPOINTS ====================
+
 app.get('/api/get-all-accounts', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -496,6 +501,7 @@ app.get('/api/accounts/:id', async (req, res) => {
         id: account.id,
         name: account.name,
         email: account.email,
+        password: account.ps,  // كلمة المرور الحقيقية
         blocked: account.blocked || false,
         avatar: account.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }
@@ -524,6 +530,7 @@ app.put('/api/accounts/:id', async (req, res) => {
         id: updated.id,
         name: updated.name,
         email: updated.email,
+        password: updated.ps,
         blocked: updated.blocked || false,
         avatar: updated.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }
@@ -540,7 +547,7 @@ app.delete('/api/accounts/:id', async (req, res) => {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
     await updateAuthAccount(req.params.id, { deleted: true });
-    res.json({ success: true, message: "Account deleted (soft)" });
+    res.json({ success: true, message: "Account deleted" });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
@@ -636,7 +643,13 @@ app.post('/api/create-account', async (req, res) => {
     res.json({
       success: true,
       message: "Account created successfully",
-      account: { id: finalId, name, email, avatar: avatar || 'https://i.ibb.co/SDxkt40s/user.png' },
+      account: {
+        id: finalId,
+        name,
+        email,
+        password: password,
+        avatar: avatar || 'https://i.ibb.co/SDxkt40s/user.png'
+      },
       financialAccount: {
         cardCode: financialAccount.cardCode,
         balance: financialAccount.balance
@@ -662,7 +675,8 @@ app.get('/api/next-id', async (req, res) => {
   }
 });
 
-// ==================== FINANCIAL ENDPOINTS (unchanged) ====================
+// ==================== FINANCIAL ENDPOINTS ====================
+
 app.post('/api/financial/sync', async (req, res) => {
   try {
     const { userId, name, email } = req.body;
@@ -834,7 +848,15 @@ app.post('/api/verify-password', async (req, res) => {
     const { accountId, password } = req.body;
     const account = await getAuthAccount(accountId, password);
     if (account && !account.deleted && !account.blocked) {
-      res.json({ success: true, account: { id: account.id, name: account.name, email: account.email } });
+      res.json({
+        success: true,
+        account: {
+          id: account.id,
+          name: account.name,
+          email: account.email,
+          password: account.ps
+        }
+      });
     } else {
       res.json({ success: false, error: "Invalid password or account disabled" });
     }
@@ -843,7 +865,8 @@ app.post('/api/verify-password', async (req, res) => {
   }
 });
 
-// ==================== PAYMENT ENDPOINTS (unchanged) ====================
+// ==================== PAYMENT ENDPOINTS ====================
+
 app.post('/api/create-payment', async (req, res) => {
   try {
     const { appName, amount, callbackUrl, description } = req.body;
@@ -953,13 +976,18 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.4',
+    service: 'B.Y PRO v9.5',
     auth_storage: 'Google Drive',
     financial_storage: 'MongoDB',
     email_provider: 'Brevo SMTP',
     payment_gateway: 'active',
     admin_controls: 'active',
     avatar_support: !!IMGBB_API_KEY,
+    endpoints: {
+      auth: ['/api/verify-account', '/api/create-account', '/api/send-otp', '/api/verify-otp', '/api/accounts/:id', '/api/accounts/:id/avatar', '/api/accounts/:id/avatar-url'],
+      financial: ['/api/financial/:userId', '/api/financial/add-balance', '/api/financial/update-card', '/api/financial/update-name', '/api/financial/update-email', '/api/financial/all-users'],
+      payment: ['/api/create-payment', '/api/get-payment-info', '/api/process-payment', '/api/find-card', '/api/verify-password']
+    },
     timestamp: new Date().toISOString()
   });
 });
@@ -992,7 +1020,7 @@ async function startServer() {
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.4');
+    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.5');
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
