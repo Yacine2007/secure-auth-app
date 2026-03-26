@@ -2,63 +2,76 @@
 <html lang="en" translate="no">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
     <meta name="google" content="notranslate">
     <title>B.Y PRO - Sign Up</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; }
-        body { background: #000000; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 12px; }
+        body { background: #000000; min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
         .container { width: 100%; max-width: 400px; }
-        .card { background: #ffffff; border-radius: 28px; padding: 30px 24px; box-shadow: 0 15px 30px rgba(255, 255, 255, 0.03); border: 1px solid #e0e0e0; }
-        .header { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
-        .logo-img { width: 32px; height: 32px; object-fit: contain; }
-        .brand { display: flex; align-items: center; flex-wrap: wrap; }
-        .brand-black { font-size: 24px; font-weight: 600; color: #000000; letter-spacing: -0.3px; }
-        .brand-account { font-size: 24px; font-weight: 600; color: #2a6df4; letter-spacing: -0.3px; margin-left: 4px; }
-        .subtitle { color: #4a4a4a; font-size: 14px; margin-bottom: 24px; margin-left: 42px; }
+        .card { background: #ffffff; border-radius: 32px; padding: 32px 24px; box-shadow: 0 20px 40px rgba(255, 255, 255, 0.03); border: 1px solid #e0e0e0; }
+        .header { text-align: center; margin-bottom: 24px; }
+        .logo-img { width: 50px; height: 50px; margin-bottom: 10px; }
+        .brand-black { font-size: 24px; font-weight: 600; color: #000000; }
+        .brand-account { font-size: 24px; font-weight: 600; color: #2a6df4; margin-left: 4px; }
+        .subtitle { color: #4a4a4a; font-size: 14px; margin-top: 5px; }
         
-        .step-indicator { display: flex; gap: 6px; margin-bottom: 24px; }
-        .step-dot { height: 6px; flex: 1; background: #e0e0e0; border-radius: 20px; }
-        .step-dot.active { background: #2a6df4; }
-        .step-dot.completed { background: #000000; }
+        /* Progress Bar */
+        .progress-container { margin: 20px 0 30px; }
+        .progress-steps { display: flex; justify-content: space-between; position: relative; }
+        .progress-step { width: 40px; height: 40px; background: #e0e0e0; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; color: #666; z-index: 2; transition: all 0.3s; }
+        .progress-step.active { background: #2a6df4; color: white; box-shadow: 0 0 0 4px rgba(42,109,244,0.2); }
+        .progress-step.completed { background: #000000; color: white; }
+        .progress-line { position: absolute; top: 20px; left: 20px; right: 20px; height: 3px; background: #e0e0e0; z-index: 1; }
         
-        .input-group { margin-bottom: 20px; }
-        label { display: block; font-size: 13px; font-weight: 500; color: #333333; margin-bottom: 6px; }
-        label i { color: #2a6df4; margin-right: 5px; }
-        input { width: 100%; padding: 14px 18px; border: 1.5px solid #cccccc; border-radius: 30px; font-size: 15px; background: white; }
-        input:focus { outline: none; border-color: #2a6df4; }
+        /* Step Content */
+        .step { display: none; animation: fadeIn 0.3s ease; }
+        .step.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         
-        .btn-primary { width: 100%; padding: 14px; background: #000000; color: white; border: none; border-radius: 40px; font-size: 15px; font-weight: 600; cursor: pointer; margin: 8px 0; display: flex; align-items: center; justify-content: center; gap: 8px; }
-        .btn-primary:hover { background: #2a6df4; }
-        
-        .avatar-upload { border: 2px dashed #cccccc; border-radius: 30px; padding: 15px; text-align: center; cursor: pointer; margin: 15px 0; transition: all 0.2s; }
-        .avatar-upload:hover { border-color: #2a6df4; background: #f5f5f5; }
-        .avatar-upload i { font-size: 32px; color: #2a6df4; margin-bottom: 8px; }
-        .avatar-upload p { font-size: 12px; color: #666; }
-        .avatar-preview { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; margin: 10px auto; display: none; border: 2px solid #2a6df4; }
-        
-        .result-box { background: #f8fafd; border-radius: 20px; padding: 16px 12px; margin: 10px 0 5px; border: 1.5px dashed #2a6df4; animation: fadeIn 0.3s ease; max-width: 100%; text-align: center; }
-        .result-box i { font-size: 28px; color: #2a6df4; margin-bottom: 5px; }
-        .result-box h3 { font-size: 16px; font-weight: 500; color: #000; margin-bottom: 10px; }
-        .user-id-label { font-size: 11px; font-weight: 400; color: #666; text-transform: uppercase; }
-        .user-id { font-size: 20px; font-weight: 500; color: #000000; background: white; padding: 6px 16px; border-radius: 40px; border: 1.5px solid #2a6df4; display: inline-block; margin: 5px 0; letter-spacing: 0.5px; word-break: break-all; }
-        .qr-container { display: flex; justify-content: center; margin: 8px 0 5px; padding: 8px; background: white; border-radius: 12px; }
-        .qr-container canvas { max-width: 130px; height: auto; }
-        .result-actions { display: flex; gap: 6px; margin: 8px 0 3px; justify-content: center; flex-wrap: wrap; }
-        .result-actions .btn-primary { min-width: 100px; padding: 8px 12px; margin: 0; font-size: 12px; font-weight: 500; border-radius: 30px; background: white; color: #000000; border: 1.5px solid #000000; }
-        .result-actions .btn-success { color: #2a6df4; border-color: #2a6df4; }
-        .result-actions .btn-success:hover { background: #2a6df4; color: white; }
+        .form-group { margin-bottom: 24px; }
+        label { display: block; font-size: 14px; font-weight: 500; color: #333; margin-bottom: 8px; }
+        label i { color: #2a6df4; margin-right: 6px; }
+        input { width: 100%; padding: 14px 18px; border: 1.5px solid #e0e0e0; border-radius: 30px; font-size: 15px; background: white; transition: 0.2s; }
+        input:focus { outline: none; border-color: #2a6df4; box-shadow: 0 0 0 3px rgba(42,109,244,0.1); }
         
         .password-wrapper { position: relative; }
-        .eye-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #777; font-size: 16px; }
-        .error { color: #e53e3e; font-size: 12px; margin-top: 4px; }
-        .link { color: #2a6df4; text-decoration: none; font-weight: 500; font-size: 13px; margin-top: 16px; display: inline-block; }
+        .eye-icon { position: absolute; right: 18px; top: 50%; transform: translateY(-50%); cursor: pointer; color: #999; }
+        
+        /* Avatar Upload - Circular */
+        .avatar-container { display: flex; flex-direction: column; align-items: center; margin: 20px 0; }
+        .avatar-circle { width: 120px; height: 120px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; cursor: pointer; overflow: hidden; border: 3px dashed #ccc; transition: all 0.2s; margin-bottom: 12px; }
+        .avatar-circle:hover { border-color: #2a6df4; background: #f5f5f5; }
+        .avatar-circle i { font-size: 48px; color: #999; }
+        .avatar-circle img { width: 100%; height: 100%; object-fit: cover; }
+        .avatar-circle.has-image { border: 3px solid #2a6df4; }
+        .avatar-label { font-size: 13px; color: #666; cursor: pointer; }
+        .avatar-label i { color: #2a6df4; }
+        .skip-avatar { font-size: 12px; color: #999; margin-top: 8px; cursor: pointer; text-decoration: underline; }
+        
+        .btn-next { width: 100%; padding: 14px; background: #000000; color: white; border: none; border-radius: 40px; font-size: 16px; font-weight: 600; cursor: pointer; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 8px; transition: 0.2s; }
+        .btn-next:hover { background: #2a6df4; }
+        .btn-next:disabled { background: #ccc; cursor: not-allowed; }
+        
+        .error { color: #e74c3c; font-size: 13px; margin-top: 8px; text-align: center; }
+        
+        /* Result Box */
+        .result-box { text-align: center; }
+        .result-box i { font-size: 48px; color: #2a6df4; margin-bottom: 16px; }
+        .result-box h3 { font-size: 20px; margin-bottom: 20px; }
+        .user-id-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 1px; }
+        .user-id { font-size: 28px; font-weight: 700; color: #2a6df4; background: #f8fafd; padding: 8px 20px; border-radius: 40px; display: inline-block; margin: 10px 0; }
+        .qr-container { background: white; padding: 15px; border-radius: 20px; display: inline-block; margin: 15px 0; border: 1px solid #e0e0e0; }
+        .qr-container canvas { width: 150px; height: 150px; }
+        .result-actions { display: flex; gap: 12px; justify-content: center; margin-top: 20px; flex-wrap: wrap; }
+        .btn-secondary { background: white; color: #000; border: 1.5px solid #000; padding: 10px 20px; border-radius: 40px; cursor: pointer; font-weight: 500; transition: 0.2s; }
+        .btn-secondary:hover { background: #f5f5f5; }
+        .link { color: #2a6df4; text-decoration: none; display: inline-block; margin-top: 20px; font-size: 14px; }
+        .hidden { display: none; }
         .loading-spinner { width: 20px; height: 20px; border: 2px solid white; border-top-color: #2a6df4; border-radius: 50%; animation: spin 1s linear infinite; display: inline-block; }
         @keyframes spin { to { transform: rotate(360deg); } }
-        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        [translate="no"] { -webkit-user-select: none; user-select: none; }
     </style>
 </head>
 <body translate="no">
@@ -66,69 +79,89 @@
         <div class="card">
             <div class="header">
                 <img src="https://by-pro.kesug.com/B.Y%20PRO.png" class="logo-img" onerror="this.style.display='none'">
-                <div class="brand">
-                    <span class="brand-black">B.Y PRO</span>
-                    <span class="brand-account">Account</span>
+                <div><span class="brand-black">B.Y PRO</span><span class="brand-account">Account</span></div>
+                <div class="subtitle">Create your account</div>
+            </div>
+
+            <!-- Progress Steps -->
+            <div class="progress-container">
+                <div class="progress-steps">
+                    <div class="progress-step" id="step1Indicator">1</div>
+                    <div class="progress-step" id="step2Indicator">2</div>
+                    <div class="progress-step" id="step3Indicator">3</div>
+                    <div class="progress-step" id="step4Indicator">4</div>
+                    <div class="progress-line"></div>
                 </div>
             </div>
-            <div class="subtitle">Create your account</div>
 
-            <div class="step-indicator">
-                <div class="step-dot active" id="step1Dot"></div>
-                <div class="step-dot" id="step2Dot"></div>
-            </div>
-
-            <!-- Step 1: User Details -->
-            <div id="step1">
-                <div class="input-group">
+            <!-- Step 1: Username -->
+            <div class="step active" id="step1">
+                <div class="form-group">
                     <label><i class="fas fa-user"></i> Username</label>
                     <input type="text" id="username" placeholder="e.g. john_doe" autocomplete="off">
                 </div>
-                <div class="input-group">
-                    <label><i class="fas fa-envelope"></i> Email</label>
+                <div id="error1" class="error"></div>
+                <button class="btn-next" onclick="nextStep(1)">Next <i class="fas fa-arrow-right"></i></button>
+            </div>
+
+            <!-- Step 2: Email -->
+            <div class="step" id="step2">
+                <div class="form-group">
+                    <label><i class="fas fa-envelope"></i> Email Address</label>
                     <input type="email" id="email" placeholder="you@example.com" autocomplete="off">
                 </div>
-                <div class="input-group">
+                <div id="error2" class="error"></div>
+                <button class="btn-next" onclick="nextStep(2)">Next <i class="fas fa-arrow-right"></i></button>
+                <button class="btn-secondary" onclick="prevStep(2)" style="margin-top: 10px;"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+
+            <!-- Step 3: Password -->
+            <div class="step" id="step3">
+                <div class="form-group">
                     <label><i class="fas fa-key"></i> Password</label>
                     <div class="password-wrapper">
                         <input type="password" id="password" placeholder="Create a strong password" autocomplete="new-password">
                         <i class="fas fa-eye-slash eye-icon" id="togglePassword"></i>
                     </div>
                 </div>
-                
-                <div class="avatar-upload" id="avatarUpload">
-                    <i class="fas fa-cloud-upload-alt"></i>
-                    <p>Click to upload profile picture (optional)</p>
-                    <input type="file" id="avatarInput" accept="image/*" style="display:none">
-                </div>
-                <img id="avatarPreview" class="avatar-preview">
-                
-                <button class="btn-primary" id="createAccountBtn">
-                    <i class="fas fa-user-plus"></i> Create Account
-                </button>
-                <div id="step1Error" class="error"></div>
+                <div id="error3" class="error"></div>
+                <button class="btn-next" onclick="nextStep(3)">Next <i class="fas fa-arrow-right"></i></button>
+                <button class="btn-secondary" onclick="prevStep(3)" style="margin-top: 10px;"><i class="fas fa-arrow-left"></i> Back</button>
             </div>
 
-            <!-- Step 2: Success -->
-            <div id="step2" style="display: none;">
+            <!-- Step 4: Avatar (Circular) -->
+            <div class="step" id="step4">
+                <div class="avatar-container">
+                    <div class="avatar-circle" id="avatarCircle" onclick="document.getElementById('avatarInput').click()">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <input type="file" id="avatarInput" accept="image/*" style="display:none">
+                    <div class="avatar-label"><i class="fas fa-cloud-upload-alt"></i> Click to upload photo</div>
+                    <div class="skip-avatar" id="skipAvatar">Skip (use default)</div>
+                </div>
+                <div id="error4" class="error"></div>
+                <button class="btn-next" id="createAccountBtn">Create Account <i class="fas fa-user-plus"></i></button>
+                <button class="btn-secondary" onclick="prevStep(4)" style="margin-top: 10px;"><i class="fas fa-arrow-left"></i> Back</button>
+            </div>
+
+            <!-- Result Step -->
+            <div class="step" id="stepResult">
                 <div class="result-box">
                     <i class="fas fa-check-circle"></i>
                     <h3>Account Created!</h3>
-                    <div class="user-id-label">YOUR ID</div>
+                    <div class="user-id-label">YOUR ACCOUNT ID</div>
                     <div class="user-id" id="displayId"></div>
-                    <div class="qr-note"><i class="fas fa-qrcode"></i> Scan to login</div>
-                    <div id="qrcode" class="qr-container"></div>
-                    <p>Save this QR code for quick login</p>
+                    <div class="qr-container" id="qrcode"></div>
+                    <p style="font-size: 12px; color: #666;">Scan this QR code to login instantly</p>
                     <div class="result-actions">
-                        <button class="btn-primary" id="saveQRBtn"><i class="fas fa-download"></i> Save QR</button>
-                        <button class="btn-primary btn-success" id="confirmLoginBtn"><i class="fas fa-sign-in-alt"></i> Go to Login</button>
+                        <button class="btn-secondary" id="saveQRBtn"><i class="fas fa-download"></i> Save QR</button>
+                        <button class="btn-next" id="loginBtn" style="margin:0;"><i class="fas fa-sign-in-alt"></i> Go to Login</button>
                     </div>
                 </div>
+                <p style="text-align: center; margin-top: 20px;">
+                    <a href="login.html" class="link">Already have an account?</a>
+                </p>
             </div>
-
-            <p id="loginLink" style="text-align: center; margin-top: 16px;">
-                <a href="login.html" class="link">Already have an account?</a>
-            </p>
         </div>
     </div>
 
@@ -136,56 +169,168 @@
         const API_BASE = 'https://b-y-pro-acounts-login.onrender.com';
         const INTERNAL_KEY = 'bypro-internal-key-2025';
         
+        let currentStep = 1;
+        let userData = { username: '', email: '', password: '' };
         let avatarFile = null;
+        let avatarPreview = null;
         
+        // DOM Elements
         const step1 = document.getElementById('step1');
         const step2 = document.getElementById('step2');
-        const step1Dot = document.getElementById('step1Dot');
-        const step2Dot = document.getElementById('step2Dot');
-        const loginLink = document.getElementById('loginLink');
+        const step3 = document.getElementById('step3');
+        const step4 = document.getElementById('step4');
+        const stepResult = document.getElementById('stepResult');
+        const indicators = {
+            1: document.getElementById('step1Indicator'),
+            2: document.getElementById('step2Indicator'),
+            3: document.getElementById('step3Indicator'),
+            4: document.getElementById('step4Indicator')
+        };
         
-        const username = document.getElementById('username');
-        const email = document.getElementById('email');
-        const password = document.getElementById('password');
+        const usernameInput = document.getElementById('username');
+        const emailInput = document.getElementById('email');
+        const passwordInput = document.getElementById('password');
         const togglePassword = document.getElementById('togglePassword');
-        const avatarUpload = document.getElementById('avatarUpload');
+        const avatarCircle = document.getElementById('avatarCircle');
         const avatarInput = document.getElementById('avatarInput');
-        const avatarPreview = document.getElementById('avatarPreview');
-        const createAccountBtn = document.getElementById('createAccountBtn');
-        const step1Error = document.getElementById('step1Error');
-        const displayId = document.getElementById('displayId');
-        const qrcode = document.getElementById('qrcode');
+        const skipAvatar = document.getElementById('skipAvatar');
+        const createBtn = document.getElementById('createAccountBtn');
+        const displayIdSpan = document.getElementById('displayId');
+        const qrcodeDiv = document.getElementById('qrcode');
         const saveQRBtn = document.getElementById('saveQRBtn');
-        const confirmLoginBtn = document.getElementById('confirmLoginBtn');
+        const loginBtn = document.getElementById('loginBtn');
         
+        // Error elements
+        const error1 = document.getElementById('error1');
+        const error2 = document.getElementById('error2');
+        const error3 = document.getElementById('error3');
+        const error4 = document.getElementById('error4');
+        
+        // Toggle Password
         togglePassword.addEventListener('click', function() {
-            const type = password.type === 'password' ? 'text' : 'password';
-            password.type = type;
+            const type = passwordInput.type === 'password' ? 'text' : 'password';
+            passwordInput.type = type;
             this.classList.toggle('fa-eye');
             this.classList.toggle('fa-eye-slash');
         });
         
-        avatarUpload.addEventListener('click', () => avatarInput.click());
-        
+        // Avatar upload
         avatarInput.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (!file) return;
             if (!file.type.match('image.*')) {
-                step1Error.textContent = 'Please select a valid image file';
+                error4.textContent = 'Please select a valid image file';
                 return;
             }
             if (file.size > 5 * 1024 * 1024) {
-                step1Error.textContent = 'Image size should be less than 5MB';
+                error4.textContent = 'Image size should be less than 5MB';
                 return;
             }
             avatarFile = file;
             const reader = new FileReader();
             reader.onload = (ev) => {
-                avatarPreview.src = ev.target.result;
-                avatarPreview.style.display = 'block';
+                avatarCircle.innerHTML = `<img src="${ev.target.result}" style="width:100%;height:100%;object-fit:cover;">`;
+                avatarCircle.classList.add('has-image');
             };
             reader.readAsDataURL(file);
         });
+        
+        skipAvatar.addEventListener('click', () => {
+            avatarFile = null;
+            avatarCircle.innerHTML = '<i class="fas fa-camera"></i>';
+            avatarCircle.classList.remove('has-image');
+            error4.textContent = '';
+        });
+        
+        function updateProgress(step) {
+            for (let i = 1; i <= 4; i++) {
+                if (i < step) {
+                    indicators[i].classList.add('completed');
+                    indicators[i].classList.remove('active');
+                } else if (i === step) {
+                    indicators[i].classList.add('active');
+                    indicators[i].classList.remove('completed');
+                } else {
+                    indicators[i].classList.remove('active', 'completed');
+                }
+            }
+        }
+        
+        function showStep(step) {
+            step1.classList.remove('active');
+            step2.classList.remove('active');
+            step3.classList.remove('active');
+            step4.classList.remove('active');
+            stepResult.classList.remove('active');
+            
+            if (step === 1) step1.classList.add('active');
+            else if (step === 2) step2.classList.add('active');
+            else if (step === 3) step3.classList.add('active');
+            else if (step === 4) step4.classList.add('active');
+            else if (step === 5) stepResult.classList.add('active');
+            
+            updateProgress(step);
+            currentStep = step;
+        }
+        
+        function validateStep(step) {
+            if (step === 1) {
+                const val = usernameInput.value.trim();
+                if (!val) {
+                    error1.textContent = 'Username is required';
+                    return false;
+                }
+                if (val.length < 3) {
+                    error1.textContent = 'Username must be at least 3 characters';
+                    return false;
+                }
+                userData.username = val;
+                error1.textContent = '';
+                return true;
+            }
+            if (step === 2) {
+                const val = emailInput.value.trim();
+                if (!val) {
+                    error2.textContent = 'Email is required';
+                    return false;
+                }
+                if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val)) {
+                    error2.textContent = 'Invalid email format';
+                    return false;
+                }
+                userData.email = val;
+                error2.textContent = '';
+                return true;
+            }
+            if (step === 3) {
+                const val = passwordInput.value.trim();
+                if (!val) {
+                    error3.textContent = 'Password is required';
+                    return false;
+                }
+                if (val.length < 6) {
+                    error3.textContent = 'Password must be at least 6 characters';
+                    return false;
+                }
+                userData.password = val;
+                error3.textContent = '';
+                return true;
+            }
+            return true;
+        }
+        
+        function nextStep(step) {
+            if (validateStep(step)) {
+                showStep(step + 1);
+                if (step + 1 === 4) {
+                    // Focus on avatar step
+                }
+            }
+        }
+        
+        function prevStep(step) {
+            showStep(step - 1);
+        }
         
         async function uploadAvatar(accountId) {
             if (!avatarFile) return null;
@@ -206,40 +351,24 @@
             }
         }
         
-        function showStep(step) {
-            step1.style.display = step === 1 ? 'block' : 'none';
-            step2.style.display = step === 2 ? 'block' : 'none';
-            loginLink.style.display = step === 1 ? 'block' : 'none';
-            step1Dot.className = 'step-dot' + (step >= 1 ? ' completed' : '') + (step === 1 ? ' active' : '');
-            step2Dot.className = 'step-dot' + (step >= 2 ? ' completed' : '') + (step === 2 ? ' active' : '');
-        }
-        
-        createAccountBtn.addEventListener('click', async () => {
-            const name = username.value.trim();
-            const emailValue = email.value.trim();
-            const pass = password.value.trim();
-            
-            if (!name || !emailValue || !pass) {
-                step1Error.textContent = 'All fields are required';
-                return;
-            }
-            if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailValue)) {
-                step1Error.textContent = 'Invalid email format';
-                return;
-            }
-            if (pass.length < 6) {
-                step1Error.textContent = 'Password must be at least 6 characters';
+        async function createAccount() {
+            if (!validateStep(3)) {
+                showStep(3);
                 return;
             }
             
-            createAccountBtn.innerHTML = '<div class="loading-spinner"></div> Creating...';
-            createAccountBtn.disabled = true;
+            createBtn.innerHTML = '<div class="loading-spinner"></div> Creating...';
+            createBtn.disabled = true;
             
             try {
                 const response = await fetch(`${API_BASE}/api/create-account`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ name, email: emailValue, password: pass })
+                    body: JSON.stringify({
+                        name: userData.username,
+                        email: userData.email,
+                        password: userData.password
+                    })
                 });
                 
                 const result = await response.json();
@@ -251,55 +380,60 @@
                         await uploadAvatar(userId);
                     }
                     
-                    displayId.textContent = userId;
-                    const qrData = `BYPRO:${userId}:${pass}`;
-                    qrcode.innerHTML = '';
-                    new QRCode(qrcode, {
-                        text: qrData,
-                        width: 130,
-                        height: 130,
+                    displayIdSpan.textContent = userId;
+                    const qrText = `BYPRO:${userId}:${userData.password}`;
+                    qrcodeDiv.innerHTML = '';
+                    new QRCode(qrcodeDiv, {
+                        text: qrText,
+                        width: 150,
+                        height: 150,
                         colorDark: "#000000",
-                        colorLight: "#ffffff"
+                        colorLight: "#ffffff",
+                        correctLevel: QRCode.CorrectLevel.H
                     });
                     
-                    showStep(2);
+                    showStep(5);
                 } else {
-                    step1Error.textContent = result.error || 'Failed to create account';
+                    error4.textContent = result.error || 'Failed to create account';
                 }
             } catch (error) {
                 console.error('Create account error:', error);
-                step1Error.textContent = 'Server error. Please try again.';
+                error4.textContent = 'Server error. Please try again.';
             } finally {
-                createAccountBtn.innerHTML = '<i class="fas fa-user-plus"></i> Create Account';
-                createAccountBtn.disabled = false;
+                createBtn.innerHTML = 'Create Account <i class="fas fa-user-plus"></i>';
+                createBtn.disabled = false;
             }
-        });
+        }
+        
+        createBtn.addEventListener('click', createAccount);
         
         saveQRBtn.addEventListener('click', () => {
-            const canvas = qrcode.querySelector('canvas');
+            const canvas = qrcodeDiv.querySelector('canvas');
             if (canvas) {
                 const link = document.createElement('a');
-                link.download = `BYPRO-${displayId.textContent}.png`;
+                link.download = `BYPRO-${displayIdSpan.textContent}.png`;
                 link.href = canvas.toDataURL();
                 link.click();
             }
         });
         
-        confirmLoginBtn.addEventListener('click', () => {
+        loginBtn.addEventListener('click', () => {
             window.location.href = 'login.html';
         });
         
+        // Enter key support
+        usernameInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') nextStep(1); });
+        emailInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') nextStep(2); });
+        passwordInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') nextStep(3); });
+        
         showStep(1);
         
+        // Clear on load
         setTimeout(() => {
-            username.value = '';
-            email.value = '';
-            password.value = '';
+            usernameInput.value = '';
+            emailInput.value = '';
+            passwordInput.value = '';
         }, 100);
-        
-        const style = document.createElement('style');
-        style.textContent = `@keyframes spin { to { transform: rotate(360deg); } }`;
-        document.head.appendChild(style);
     </script>
 </body>
 </html>
