@@ -13,7 +13,7 @@ const FormData = require('form-data');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.7 (Random IDs, Avatar Fix)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.8 (Fixed Create Account)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -182,7 +182,7 @@ async function generateUniqueId() {
   const existingIds = new Set(existingAccounts.map(a => a.id));
   let newId;
   do {
-    newId = Math.floor(10000 + Math.random() * 90000).toString(); // 5 أرقام عشوائية
+    newId = Math.floor(10000 + Math.random() * 90000).toString();
   } while (existingIds.has(newId));
   return newId;
 }
@@ -192,7 +192,6 @@ async function addAuthAccount(account) {
   let accounts = parseCSV(csv);
   if (accounts.find(a => a.email === account.email)) throw new Error("Email already exists");
   
-  // توليد ID فريد إذا لم يتم توفيره
   if (!account.id) {
     account.id = await generateUniqueId();
   } else {
@@ -228,7 +227,7 @@ async function deleteAuthAccountPermanently(id) {
   return true;
 }
 
-// ==================== AVATAR UPLOAD (Fixed with correct ImgBB API) ====================
+// ==================== AVATAR UPLOAD ====================
 async function uploadToImgBB(buffer, filename) {
   if (!IMGBB_API_KEY) throw new Error('IMGBB_API_KEY not configured');
   
@@ -526,6 +525,7 @@ app.post('/api/verify-account', async (req, res) => {
   }
 });
 
+// ==================== CREATE ACCOUNT ENDPOINT (FIXED) ====================
 app.post('/api/create-account', async (req, res) => {
   try {
     const { name, email, password, avatar } = req.body;
@@ -583,7 +583,7 @@ async function generateQR(data) {
   } catch { return { success: false }; }
 }
 
-// ==================== FINANCIAL ENDPOINTS (unchanged) ====================
+// ==================== FINANCIAL ENDPOINTS ====================
 app.post('/api/financial/sync', async (req, res) => {
   try {
     const { userId, name, email } = req.body;
@@ -882,7 +882,7 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.7',
+    service: 'B.Y PRO v9.8',
     auth_storage: 'Google Drive',
     financial_storage: 'MongoDB',
     email_provider: 'Brevo SMTP',
@@ -928,7 +928,7 @@ async function startServer() {
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.7');
+    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.8');
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
@@ -937,6 +937,7 @@ async function startServer() {
     console.log('✅ OTP: DISABLED (Direct Signup)');
     console.log('✅ ID Generation: RANDOM (5 digits)');
     console.log('✅ Delete: HARD DELETE (from Google Drive)');
+    console.log('✅ Create Account: FIXED');
     console.log(`✅ Server: http://localhost:${PORT}`);
     console.log('🎉 =================================\n');
   });
