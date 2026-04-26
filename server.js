@@ -13,7 +13,7 @@ const FormData = require('form-data');
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.8 (Fixed Create Account)');
+console.log('🚀 Starting B.Y PRO Integrated Server v9.8 (Fixed CORS)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
@@ -355,39 +355,41 @@ async function syncExistingAccounts() {
   else console.log('✅ All auth accounts already have financial data');
 }
 
-// ==================== CORS ====================
+// ==================== CORS (FIXED) ====================
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim());
 
-app.use((req, res, next) => {
-  const origin = req.headers.origin;
-  if (allowedOrigins.includes(origin) || origin?.startsWith('http://localhost')) {
-    res.header('Access-Control-Allow-Origin', origin);
-    res.header('Access-Control-Allow-Credentials', 'true');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, x-api-key');
-    if (req.method === 'OPTIONS') return res.sendStatus(200);
-  }
-  next();
-});
-
+// إعدادات CORS موحدة باستخدام middleware واحد
 app.use(cors({
   origin: function(origin, callback) {
+    // السماح للطلبات التي ليس لها origin (مثل تطبيقات الهاتف أو أدوات الاختبار)
     if (!origin) return callback(null, true);
+    
+    // السماح إذا كان origin في القائمة المسموحة أو localhost
     if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost')) {
       callback(null, true);
     } else {
-      callback(new Error('CORS blocked'));
+      console.warn(`❌ CORS blocked for origin: ${origin}`);
+      callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true
+  credentials: true,  // السماح بإرسال الكوكيز والرؤوس المصادقة
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key'],
+  preflightContinue: false,
+  optionsSuccessStatus: 200
 }));
 
+// تأكيد معالجة طلبات OPTIONS بشكل صريح لجميع المسارات
+app.options('*', cors());
+
+// باقي وسطاء (Middleware) Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
+// تسجيل الطلبات (اختياري)
 app.use((req, res, next) => {
-  console.log(`📥 ${req.method} ${req.url}`);
+  console.log(`📥 ${req.method} ${req.url} - Origin: ${req.headers.origin || 'no origin'}`);
   next();
 });
 
@@ -929,6 +931,7 @@ async function startServer() {
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
     console.log('🚀 B.Y PRO INTEGRATED SERVER v9.8');
+    console.log('✅ CORS: FIXED - Allowed origins:', allowedOrigins);
     console.log('✅ Auth Storage: Google Drive');
     console.log('✅ Financial Storage: MongoDB');
     console.log('✅ Email: BREVO SMTP');
