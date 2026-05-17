@@ -361,8 +361,8 @@ const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim());
 // إعدادات CORS موحدة باستخدام middleware واحد
 app.use(cors({
   origin: function(origin, callback) {
-    // السماح للطلبات التي ليس لها origin (مثل تطبيقات الهاتف أو أدوات الاختبار)
-    if (!origin) return callback(null, true);
+    // السماح للطلبات التي ليس لها origin (تطبيقات الهاتف، أدوات الاختبار، وملفات file://)
+    if (!origin || origin === 'null') return callback(null, true);
     
     // السماح إذا كان origin في القائمة المسموحة أو localhost
     if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost')) {
@@ -612,6 +612,9 @@ app.post('/api/financial/sync', async (req, res) => {
 
 app.get('/api/financial/:userId', async (req, res) => {
   try {
+    if (!financialUsersCollection) {
+      return res.status(503).json({ success: false, error: "Database not ready, please retry" });
+    }
     const { userId } = req.params;
     const user = await getFinancialUser(userId);
     if (!user) return res.status(404).json({ success: false, error: "User not found" });
@@ -634,6 +637,9 @@ app.get('/api/financial/:userId', async (req, res) => {
 
 app.post('/api/financial/add-balance', async (req, res) => {
   try {
+    if (!financialUsersCollection) {
+      return res.status(503).json({ success: false, error: "Database not ready, please retry" });
+    }
     const { userId, amount, description } = req.body;
     const apiKey = req.headers['x-api-key'];
     if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
