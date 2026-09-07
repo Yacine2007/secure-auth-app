@@ -21,7 +21,7 @@ const {
   GOOGLE_PROJECT_ID,
   GOOGLE_CLIENT_CERT_URL,
   INTERNAL_API_KEY = 'bypro-internal-key-2025',
-  ALLOWED_ORIGINS = 'https://yacine2007.github.io,https://b-y-pro-acounts-login.onrender.com,http://localhost:5500,http://localhost:3000,http://localhost:5000,http://localhost:5001',
+  ALLOWED_ORIGINS = 'https://yacine2007.github.io,https://b-y-pro-acounts-login.onrender.com,http://localhost:5500,http://localhost:3000,http://localhost:5000,http://localhost:5001,http://127.0.0.1:5000',
   IMGBB_API_KEY
 } = process.env;
 
@@ -297,7 +297,7 @@ app.get('/api/accounts', async (req, res) => {
         id: acc.id,
         name: acc.name || `User ${acc.id}`,
         email: acc.email || `${acc.id}@bypro.com`,
-        password: acc.ps,  // include password for editing
+        password: acc.ps,
         blocked: acc.blocked || false,
         avatar: acc.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }))
