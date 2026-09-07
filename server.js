@@ -1,51 +1,35 @@
 const express = require('express');
-const { MongoClient } = require('mongodb');
 const { google } = require('googleapis');
 const cors = require('cors');
 const path = require('path');
 const QRCode = require('qrcode');
-const axios = require('axios');
-const crypto = require('crypto');
-const nodemailer = require('nodemailer');
 const multer = require('multer');
 const FormData = require('form-data');
+const axios = require('axios');
 
 const app = express();
 const PORT = process.env.PORT || 10000;
 
-console.log('🚀 Starting B.Y PRO Integrated Server v9.8 (Fixed CORS)');
+console.log('🚀 Starting B.Y PRO Accounts Server (Financial removed)');
 
 // ==================== ENVIRONMENT VARIABLES ====================
 const {
-  MONGODB_URI,
-  MONGODB_DB = 'bypro',
   GOOGLE_PRIVATE_KEY,
   GOOGLE_CLIENT_EMAIL,
   GOOGLE_CLIENT_ID,
   GOOGLE_PRIVATE_KEY_ID,
   GOOGLE_PROJECT_ID,
   GOOGLE_CLIENT_CERT_URL,
-  BREVO_SMTP_HOST = 'smtp-relay.brevo.com',
-  BREVO_SMTP_PORT = 587,
-  BREVO_SMTP_USER,
-  BREVO_SMTP_KEY,
   INTERNAL_API_KEY = 'bypro-internal-key-2025',
   ALLOWED_ORIGINS = 'https://yacine2007.github.io,https://b-y-pro-acounts-login.onrender.com,http://localhost:5500,http://localhost:3000,http://localhost:5000,http://localhost:5001',
-  IMGBB_API_KEY,
-  GITHUB_TOKEN
+  IMGBB_API_KEY
 } = process.env;
-
-if (!MONGODB_URI) {
-  console.error('❌ FATAL: MONGODB_URI is not set');
-  process.exit(1);
-}
 
 // ==================== MULTER SETUP ====================
 const upload = multer({ storage: multer.memoryStorage() });
 
 // ==================== GOOGLE DRIVE SETUP ====================
 const ACCOUNTS_FILE_ID = "1FzUsScN20SvJjWWJQ50HrKrd2bHlTxUL";
-const OTP_FILE_ID = "10gOdT98Pk5nhk-cfDA0B24rk8xqsKWE1";
 
 let driveService = null;
 
@@ -75,32 +59,6 @@ async function initDrive() {
   }
 }
 initDrive();
-
-// ==================== MONGODB SETUP ====================
-let db = null;
-let financialUsersCollection = null;
-let paymentsCollection = null;
-
-async function connectMongoDB() {
-  try {
-    const client = new MongoClient(MONGODB_URI);
-    await client.connect();
-    db = client.db(MONGODB_DB);
-    financialUsersCollection = db.collection('financial_users');
-    paymentsCollection = db.collection('payments');
-    
-    await financialUsersCollection.createIndex({ id: 1 }, { unique: true });
-    await financialUsersCollection.createIndex({ cardCode: 1 });
-    await paymentsCollection.createIndex({ paymentId: 1 });
-    
-    console.log('✅ MongoDB connected');
-    await syncExistingAccounts();
-    
-  } catch (error) {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
-  }
-}
 
 // ==================== GOOGLE DRIVE ACCOUNT FUNCTIONS ====================
 async function readCSV() {
@@ -176,7 +134,6 @@ async function getAuthAccount(id, password) {
   return accounts.find(a => a.id === id && a.ps === password);
 }
 
-// توليد ID عشوائي فريد
 async function generateUniqueId() {
   const existingAccounts = await getAllAuthAccounts();
   const existingIds = new Set(existingAccounts.map(a => a.id));
@@ -283,88 +240,20 @@ app.get('/api/accounts/:id/avatar-url', async (req, res) => {
   }
 });
 
-// ==================== MONGODB FINANCIAL FUNCTIONS ====================
-function generateUniqueCardCode() {
-  const randomDigits = Math.floor(100000000000000 + Math.random() * 900000000000000).toString();
-  return `byppcn-${randomDigits}`;
+// ==================== QR CODE ====================
+async function generateQR(data) {
+  try {
+    const qr = await QRCode.toDataURL(data, { width: 200, margin: 2, errorCorrectionLevel: 'H' });
+    return { success: true, qrCode: qr };
+  } catch { return { success: false }; }
 }
 
-async function getFinancialUser(userId) {
-  return await financialUsersCollection.findOne({ id: userId });
-}
-
-async function getFinancialUserByCard(cardCode) {
-  return await financialUsersCollection.findOne({ cardCode: cardCode });
-}
-
-async function getAllFinancialUsers() {
-  return await financialUsersCollection.find({}).toArray();
-}
-
-async function createFinancialUser(userId, name, email) {
-  const cardCode = generateUniqueCardCode();
-  const newUser = {
-    id: userId,
-    name: name,
-    email: email,
-    balance: 0,
-    cardCode: cardCode,
-    transactions: [],
-    createdAt: new Date().toISOString()
-  };
-  await financialUsersCollection.insertOne(newUser);
-  console.log(`✅ Financial account created for ${userId} with card: ${cardCode}`);
-  return newUser;
-}
-
-async function deleteFinancialUser(userId) {
-  await financialUsersCollection.deleteOne({ id: userId });
-  console.log(`✅ Financial account deleted for ${userId}`);
-}
-
-async function updateUserBalance(userId, newBalance, transaction) {
-  return await financialUsersCollection.updateOne(
-    { id: userId },
-    {
-      $set: { balance: newBalance },
-      $push: { transactions: { $each: [transaction], $position: 0 } }
-    }
-  );
-}
-
-async function updateUserCard(userId, cardCode) {
-  return await financialUsersCollection.updateOne(
-    { id: userId },
-    { $set: { cardCode: cardCode } }
-  );
-}
-
-async function syncExistingAccounts() {
-  console.log('🔄 Syncing existing auth accounts with financial data...');
-  const authAccounts = await getAllAuthAccounts();
-  const financialUsers = await getAllFinancialUsers();
-  const existingIds = new Set(financialUsers.map(u => u.id));
-  let created = 0;
-  for (const authAcc of authAccounts) {
-    if (!existingIds.has(authAcc.id)) {
-      await createFinancialUser(authAcc.id, authAcc.name || `User ${authAcc.id}`, authAcc.email || `${authAcc.id}@bypro.com`);
-      created++;
-    }
-  }
-  if (created > 0) console.log(`✅ Created ${created} new financial accounts`);
-  else console.log('✅ All auth accounts already have financial data');
-}
-
-// ==================== CORS (FIXED) ====================
+// ==================== CORS ====================
 const allowedOrigins = ALLOWED_ORIGINS.split(',').map(o => o.trim());
 
-// إعدادات CORS موحدة باستخدام middleware واحد
 app.use(cors({
   origin: function(origin, callback) {
-    // السماح للطلبات التي ليس لها origin (تطبيقات الهاتف، أدوات الاختبار، وملفات file://)
     if (!origin || origin === 'null') return callback(null, true);
-    
-    // السماح إذا كان origin في القائمة المسموحة أو localhost
     if (allowedOrigins.includes(origin) || origin.startsWith('http://localhost')) {
       callback(null, true);
     } else {
@@ -372,22 +261,19 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'));
     }
   },
-  credentials: true,  // السماح بإرسال الكوكيز والرؤوس المصادقة
+  credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'x-api-key'],
   preflightContinue: false,
   optionsSuccessStatus: 200
 }));
 
-// تأكيد معالجة طلبات OPTIONS بشكل صريح لجميع المسارات
 app.options('*', cors());
 
-// باقي وسطاء (Middleware) Express
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static(__dirname));
 
-// تسجيل الطلبات (اختياري)
 app.use((req, res, next) => {
   console.log(`📥 ${req.method} ${req.url} - Origin: ${req.headers.origin || 'no origin'}`);
   next();
@@ -395,7 +281,8 @@ app.use((req, res, next) => {
 
 // ==================== AUTH ENDPOINTS ====================
 
-app.get('/api/get-all-accounts', async (req, res) => {
+// Get all accounts (requires API-Key)
+app.get('/api/accounts', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
     if (apiKey !== INTERNAL_API_KEY) {
@@ -410,7 +297,7 @@ app.get('/api/get-all-accounts', async (req, res) => {
         id: acc.id,
         name: acc.name || `User ${acc.id}`,
         email: acc.email || `${acc.id}@bypro.com`,
-        hasPassword: !!acc.ps,
+        password: acc.ps,  // include password for editing
         blocked: acc.blocked || false,
         avatar: acc.avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       }))
@@ -420,6 +307,7 @@ app.get('/api/get-all-accounts', async (req, res) => {
   }
 });
 
+// Get single account
 app.get('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -446,6 +334,7 @@ app.get('/api/accounts/:id', async (req, res) => {
   }
 });
 
+// Update account
 app.put('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -475,6 +364,7 @@ app.put('/api/accounts/:id', async (req, res) => {
   }
 });
 
+// Delete account (permanent)
 app.delete('/api/accounts/:id', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -482,13 +372,13 @@ app.delete('/api/accounts/:id', async (req, res) => {
       return res.status(403).json({ success: false, error: "Access denied" });
     }
     await deleteAuthAccountPermanently(req.params.id);
-    await deleteFinancialUser(req.params.id);
     res.json({ success: true, message: "Account permanently deleted" });
   } catch (error) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
+// Block/unblock account
 app.post('/api/accounts/:id/block', async (req, res) => {
   try {
     const apiKey = req.headers['x-api-key'] || req.query.api_key;
@@ -506,6 +396,7 @@ app.post('/api/accounts/:id/block', async (req, res) => {
   }
 });
 
+// Verify account (login)
 app.post('/api/verify-account', async (req, res) => {
   try {
     const { id, password } = req.body;
@@ -527,7 +418,7 @@ app.post('/api/verify-account', async (req, res) => {
   }
 });
 
-// ==================== CREATE ACCOUNT ENDPOINT (FIXED) ====================
+// Create account (signup)
 app.post('/api/create-account', async (req, res) => {
   try {
     const { name, email, password, avatar } = req.body;
@@ -551,7 +442,6 @@ app.post('/api/create-account', async (req, res) => {
     };
     
     const createdId = await addAuthAccount(newAccount);
-    const financialAccount = await createFinancialUser(createdId, name, email);
     const qrResult = await generateQR(`BYPRO:${createdId}:${password}`);
     
     res.json({
@@ -564,320 +454,11 @@ app.post('/api/create-account', async (req, res) => {
         password,
         avatar: avatar || 'https://i.ibb.co/SDxkt40s/user.png'
       },
-      financialAccount: {
-        cardCode: financialAccount.cardCode,
-        balance: financialAccount.balance
-      },
       qrCode: qrResult.qrCode
     });
     
   } catch (error) {
     console.error('❌ Error creating account:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ==================== QR CODE ====================
-async function generateQR(data) {
-  try {
-    const qr = await QRCode.toDataURL(data, { width: 200, margin: 2, errorCorrectionLevel: 'H' });
-    return { success: true, qrCode: qr };
-  } catch { return { success: false }; }
-}
-
-// ==================== FINANCIAL ENDPOINTS ====================
-app.post('/api/financial/sync', async (req, res) => {
-  try {
-    const { userId, name, email } = req.body;
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
-    let user = await getFinancialUser(userId);
-    if (!user) user = await createFinancialUser(userId, name || `User ${userId}`, email || `${userId}@bypro.com`);
-    res.json({
-      success: true,
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        balance: user.balance,
-        cardCode: user.cardCode,
-        transactions: user.transactions || []
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error syncing user:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.get('/api/financial/:userId', async (req, res) => {
-  try {
-    if (!financialUsersCollection) {
-      return res.status(503).json({ success: false, error: "Database not ready, please retry" });
-    }
-    const { userId } = req.params;
-    const user = await getFinancialUser(userId);
-    if (!user) return res.status(404).json({ success: false, error: "User not found" });
-    res.json({
-      success: true,
-      data: {
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        balance: user.balance,
-        cardCode: user.cardCode,
-        transactions: user.transactions || []
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error fetching financial data:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/financial/add-balance', async (req, res) => {
-  try {
-    if (!financialUsersCollection) {
-      return res.status(503).json({ success: false, error: "Database not ready, please retry" });
-    }
-    const { userId, amount, description } = req.body;
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
-    const user = await getFinancialUser(userId);
-    if (!user) return res.status(404).json({ success: false, error: "User not found" });
-    const amountNum = parseFloat(amount);
-    const newBalance = user.balance + amountNum;
-    const transaction = {
-      type: 'deposit',
-      amount: amountNum,
-      description: description || 'Admin deposit',
-      date: new Date().toISOString()
-    };
-    await updateUserBalance(userId, newBalance, transaction);
-    res.json({ success: true, newBalance: newBalance, transaction });
-  } catch (error) {
-    console.error('❌ Error adding balance:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/financial/update-card', async (req, res) => {
-  try {
-    const { userId, cardCode } = req.body;
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
-    const user = await getFinancialUser(userId);
-    if (!user) return res.status(404).json({ success: false, error: "User not found" });
-    if (!cardCode || !cardCode.startsWith('byppcn-')) {
-      return res.status(400).json({ success: false, error: "Invalid card code" });
-    }
-    await updateUserCard(userId, cardCode);
-    const updated = await getFinancialUser(userId);
-    res.json({
-      success: true,
-      message: "Card updated",
-      data: {
-        id: updated.id,
-        name: updated.name,
-        email: updated.email,
-        balance: updated.balance,
-        cardCode: updated.cardCode
-      }
-    });
-  } catch (error) {
-    console.error('❌ Error updating card:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/financial/update-name', async (req, res) => {
-  try {
-    const { userId, name } = req.body;
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
-    const user = await getFinancialUser(userId);
-    if (!user) return res.status(404).json({ success: false, error: "User not found" });
-    await financialUsersCollection.updateOne({ id: userId }, { $set: { name } });
-    const updated = await getFinancialUser(userId);
-    res.json({ success: true, data: updated });
-  } catch (error) {
-    console.error('❌ Error updating name:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/financial/update-email', async (req, res) => {
-  try {
-    const { userId, email } = req.body;
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
-    const user = await getFinancialUser(userId);
-    if (!user) return res.status(404).json({ success: false, error: "User not found" });
-    await financialUsersCollection.updateOne({ id: userId }, { $set: { email } });
-    const updated = await getFinancialUser(userId);
-    res.json({ success: true, data: updated });
-  } catch (error) {
-    console.error('❌ Error updating email:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.get('/api/financial/all-users', async (req, res) => {
-  try {
-    const apiKey = req.headers['x-api-key'];
-    if (apiKey !== INTERNAL_API_KEY) return res.status(403).json({ success: false, error: "Access denied" });
-    const users = await getAllFinancialUsers();
-    res.json({ success: true, count: users.length, users });
-  } catch (error) {
-    console.error('❌ Error fetching all users:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/find-card', async (req, res) => {
-  try {
-    const { cardCode } = req.body;
-    if (!cardCode || !cardCode.startsWith('byppcn-')) {
-      return res.status(400).json({ success: false, error: "Invalid card code" });
-    }
-    const user = await getFinancialUserByCard(cardCode);
-    if (!user) return res.status(404).json({ success: false, error: "Card not found" });
-    res.json({
-      success: true,
-      accountId: user.id,
-      userData: {
-        id: user.id,
-        name: user.name,
-        balance: user.balance,
-        cardCode: user.cardCode
-      }
-    });
-  } catch (error) {
-    console.error('❌ find-card error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/verify-password', async (req, res) => {
-  try {
-    const { accountId, password } = req.body;
-    const account = await getAuthAccount(accountId, password);
-    if (account && !account.deleted && !account.blocked) {
-      res.json({
-        success: true,
-        account: {
-          id: account.id,
-          name: account.name,
-          email: account.email,
-          password: account.ps
-        }
-      });
-    } else {
-      res.json({ success: false, error: "Invalid password or account disabled" });
-    }
-  } catch (error) {
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-// ==================== PAYMENT ENDPOINTS ====================
-app.post('/api/create-payment', async (req, res) => {
-  try {
-    const { appName, amount, callbackUrl, description } = req.body;
-    if (!appName || !appName.startsWith('@byproapp:')) {
-      return res.status(400).json({ success: false, error: "Invalid appName" });
-    }
-    const amountNum = parseFloat(amount);
-    if (isNaN(amountNum) || amountNum <= 0 || amountNum > 1000) {
-      return res.status(400).json({ success: false, error: "Invalid amount" });
-    }
-    const paymentId = crypto.randomBytes(16).toString('hex');
-    const expiresAt = new Date(Date.now() + 30 * 60 * 1000);
-    await paymentsCollection.insertOne({
-      paymentId,
-      appName,
-      amount: amountNum,
-      callbackUrl,
-      description: description || '',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-      expiresAt
-    });
-    res.json({
-      success: true,
-      paymentId,
-      gatewayUrl: `https://b-y-pro-acounts-login.onrender.com/Payment%20gateway.html?payment_id=${paymentId}`,
-      amount: amountNum,
-      expiresIn: 1800
-    });
-  } catch (error) {
-    console.error('❌ create-payment error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/get-payment-info', async (req, res) => {
-  try {
-    const { paymentId } = req.body;
-    const payment = await paymentsCollection.findOne({ paymentId });
-    if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
-    if (new Date(payment.expiresAt) < new Date()) {
-      return res.status(410).json({ success: false, error: "Payment expired" });
-    }
-    res.json({
-      success: true,
-      amount: payment.amount,
-      appName: payment.appName,
-      description: payment.description,
-      callbackUrl: payment.callbackUrl,
-      status: payment.status
-    });
-  } catch (error) {
-    console.error('❌ get-payment-info error:', error);
-    res.status(500).json({ success: false, error: error.message });
-  }
-});
-
-app.post('/api/process-payment', async (req, res) => {
-  try {
-    const { accountId, cardCode, amount, paymentId, appName, description } = req.body;
-    const payment = await paymentsCollection.findOne({ paymentId });
-    if (!payment) return res.status(404).json({ success: false, error: "Payment not found" });
-    if (payment.status !== 'pending') {
-      return res.status(400).json({ success: false, error: "Payment already processed" });
-    }
-    if (new Date(payment.expiresAt) < new Date()) {
-      return res.status(410).json({ success: false, error: "Payment expired" });
-    }
-    const user = await getFinancialUserByCard(cardCode);
-    if (!user || user.id !== accountId) {
-      return res.status(400).json({ success: false, error: "Invalid account or card" });
-    }
-    const amountNum = parseFloat(amount);
-    if (user.balance < amountNum) {
-      return res.status(402).json({ success: false, error: "Insufficient balance" });
-    }
-    const newBalance = user.balance - amountNum;
-    const transaction = {
-      type: 'payment',
-      amount: amountNum,
-      appName,
-      paymentId,
-      date: new Date().toISOString(),
-      description: description || payment.description || `Payment to ${appName}`
-    };
-    await updateUserBalance(accountId, newBalance, transaction);
-    await paymentsCollection.updateOne(
-      { paymentId },
-      { $set: { status: 'completed', completedAt: new Date().toISOString(), accountId } }
-    );
-    if (payment.callbackUrl) {
-      const callbackData = { paymentId, success: true, accountId, amount: amountNum, transactionId: `txn_${Date.now()}`, timestamp: new Date().toISOString() };
-      axios.post(payment.callbackUrl, callbackData, { timeout: 5000 }).catch(e => console.log('Callback failed:', e.message));
-    }
-    res.json({ success: true, newBalance, transactionId: `txn_${Date.now()}`, transaction });
-  } catch (error) {
-    console.error('❌ process-payment error:', error);
     res.status(500).json({ success: false, error: error.message });
   }
 });
@@ -890,19 +471,13 @@ app.get('/api/ping', (req, res) => {
 app.get('/api/health', (req, res) => {
   res.json({
     status: 'operational',
-    service: 'B.Y PRO v9.8',
+    service: 'B.Y PRO Accounts (No Financial)',
     auth_storage: 'Google Drive',
-    financial_storage: 'MongoDB',
-    email_provider: 'Brevo SMTP',
-    payment_gateway: 'active',
-    admin_controls: 'active',
+    email_provider: 'Brevo SMTP (if configured)',
     avatar_support: !!IMGBB_API_KEY,
-    otp_required: false,
     id_generation: 'random (5-digit)',
     endpoints: {
-      auth: ['/api/verify-account', '/api/create-account', '/api/accounts/:id', '/api/accounts/:id/avatar', '/api/accounts/:id/avatar-url'],
-      financial: ['/api/financial/:userId', '/api/financial/add-balance', '/api/financial/update-card'],
-      payment: ['/api/create-payment', '/api/get-payment-info', '/api/process-payment', '/api/find-card', '/api/verify-password']
+      auth: ['/api/accounts', '/api/accounts/:id', '/api/accounts/:id/avatar', '/api/accounts/:id/avatar-url', '/api/verify-account', '/api/create-account'],
     },
     timestamp: new Date().toISOString()
   });
@@ -911,14 +486,6 @@ app.get('/api/health', (req, res) => {
 // ==================== STATIC PAGES ====================
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'login.html'));
-});
-
-app.get('/Payment%20gateway.html', (req, res) => {
-  res.sendFile(path.join(__dirname, 'Payment gateway.html'));
-});
-
-app.use('*', (req, res) => {
-  res.status(404).json({ success: false, error: "Not found" });
 });
 
 // ==================== KEEP-ALIVE ====================
@@ -932,21 +499,16 @@ setInterval(async () => {
 // ==================== START SERVER ====================
 async function startServer() {
   await initDrive();
-  await connectMongoDB();
   
   const server = app.listen(PORT, '0.0.0.0', () => {
     console.log('\n🎉 =================================');
-    console.log('🚀 B.Y PRO INTEGRATED SERVER v9.8');
-    console.log('✅ CORS: FIXED - Allowed origins:', allowedOrigins);
+    console.log('🚀 B.Y PRO ACCOUNTS SERVER (No Financial)');
+    console.log('✅ CORS: Allowed origins:', allowedOrigins);
     console.log('✅ Auth Storage: Google Drive');
-    console.log('✅ Financial Storage: MongoDB');
-    console.log('✅ Email: BREVO SMTP');
-    console.log('✅ Payment Gateway: ACTIVE');
+    console.log('✅ Payment Gateway: REMOVED');
+    console.log('✅ Financial Features: REMOVED');
     console.log('✅ Avatar Support: ' + (IMGBB_API_KEY ? 'ENABLED' : 'DISABLED'));
-    console.log('✅ OTP: DISABLED (Direct Signup)');
     console.log('✅ ID Generation: RANDOM (5 digits)');
-    console.log('✅ Delete: HARD DELETE (from Google Drive)');
-    console.log('✅ Create Account: FIXED');
     console.log(`✅ Server: http://localhost:${PORT}`);
     console.log('🎉 =================================\n');
   });
